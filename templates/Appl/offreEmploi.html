@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>Gestion des Offres d'Emploi</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: auto;
+        }
+        
+        .main-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            animation: slideInUp 0.6s ease-out;
+        }
+        
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .card-header-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px 35px;
+            color: white;
+        }
+        
+        .header-title {
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .header-title i {
+            font-size: 32px;
+            margin-right: 12px;
+        }
+        
+        .badge-stats {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 18px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .card-body-custom {
+            padding: 35px;
+            background: #f8f9fa;
+        }
+        
+        .btn-add {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-add:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+        
+        .table-custom {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        }
+        
+        .table-custom thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .table-custom thead th {
+            color: white;
+            font-weight: 600;
+            padding: 18px 15px;
+            border: none;
+        }
+        
+        .table-custom tbody tr {
+            transition: all 0.3s ease;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .table-custom tbody tr:hover {
+            background: #f8f9ff;
+            transform: scale(1.01);
+        }
+        
+        .table-custom tbody td {
+            padding: 16px 15px;
+            vertical-align: middle;
+        }
+        
+        .btn-action {
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 12px;
+            margin: 0 4px;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-edit {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+        }
+        
+        .btn-delete {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+        
+        .btn-download {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            padding: 5px 12px;
+            font-size: 11px;
+        }
+        
+        .btn-download:hover, .btn-edit:hover, .btn-delete:hover {
+            transform: translateY(-2px);
+            color: white;
+        }
+        
+        .badge-domaine {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 5px 12px;
+            border-radius: 20px;
+            color: white;
+            font-weight: 500;
+            font-size: 12px;
+            display: inline-block;
+        }
+        
+        .modal-content-custom {
+            border-radius: 25px;
+            border: none;
+            overflow: hidden;
+        }
+        
+        .modal-header-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 25px;
+            border: none;
+        }
+        
+        .modal-body-custom {
+            padding: 30px;
+            background: #f8f9fa;
+        }
+        
+        .modal-footer-custom {
+            padding: 20px 25px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .form-group-custom {
+            margin-bottom: 25px;
+        }
+        
+        .form-label-custom {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .form-control-custom,
+        .form-select-custom {
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            padding: 12px 15px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control-custom:focus,
+        .form-select-custom:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            outline: none;
+        }
+        
+        .btn-cancel {
+            background: #e9ecef;
+            color: #6c757d;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        
+        .btn-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        
+        .btn-danger-custom {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        
+        .empty-state-custom {
+            text-align: center;
+            padding: 80px 20px;
+            background: white;
+            border-radius: 20px;
+        }
+        
+        .empty-state-custom i {
+            font-size: 80px;
+            color: #667eea;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .loading-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 768px) {
+            .card-header-custom { padding: 20px; }
+            .header-title { font-size: 20px; flex-direction: column; text-align: center; }
+            .card-body-custom { padding: 20px; }
+            .btn-action { padding: 5px 10px; font-size: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Traitement en cours...</p>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="main-card">
+            <div class="card-header-custom">
+                <div class="header-title">
+                    <div>
+                        <i class="fas fa-briefcase"></i>
+                        Gestion des Offres d'Emploi
+                    </div>
+                    <div class="badge-stats">
+                        <i class="fas fa-file-alt"></i>
+                        <span id="totalCount">0</span> offre(s)
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-body-custom">
+                <div class="mb-4 text-end">
+                    <button class="btn-add" data-bs-toggle="modal" data-bs-target="#ajouterModal">
+                        <i class="fas fa-plus-circle"></i> Ajouter une Offre
+                    </button>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Titre</th>
+                                <th>Domaine</th>
+                                <th>Fichier</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="offresTableBody">
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 60px;">
+                                    <div class="loading-spinner" style="width: 40px; height: 40px;"></div>
+                                    <p class="mt-3">Chargement des offres...</p>
+                                 </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Ajouter -->
+    <div class="modal fade" id="ajouterModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus-circle"></i> Nouvelle Offre
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body modal-body-custom">
+                    <form id="ajouterForm" enctype="multipart/form-data">
+                        <div class="form-group-custom">
+                            <label class="form-label-custom">
+                                <i class="fas fa-tag"></i> Titre <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control-custom" id="ajouterTitre" 
+                                   placeholder="Ex: Développeur Full Stack">
+                        </div>
+                        <div class="form-group-custom">
+                            <label class="form-label-custom">
+                                <i class="fas fa-layer-group"></i> Domaine <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select-custom" id="ajouterDomaine">
+                                <option value="">-- Chargement des domaines... --</option>
+                            </select>
+                        </div>
+                        <div class="form-group-custom">
+                            <label class="form-label-custom">
+                                <i class="fas fa-paperclip"></i> Fichier (PDF, DOC)
+                            </label>
+                            <input type="file" class="form-control-custom" id="ajouterFichier" accept=".pdf,.doc,.docx,.txt">
+                            <small class="text-muted">Max 10MB</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer modal-footer-custom">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn-submit" onclick="ajouterOffre()">Ajouter</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Modifier -->
+    <div class="modal fade" id="modifierModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title">
+                        <i class="fas fa-edit"></i> Modifier l'Offre
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body modal-body-custom">
+                    <form id="modifierForm" enctype="multipart/form-data">
+                        <input type="hidden" id="modifierId">
+                        <div class="form-group-custom">
+                            <label class="form-label-custom">Titre <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control-custom" id="modifierTitre">
+                        </div>
+                        <div class="form-group-custom">
+                            <label class="form-label-custom">Domaine <span class="text-danger">*</span></label>
+                            <select class="form-select-custom" id="modifierDomaine">
+                                <option value="">-- Chargement... --</option>
+                            </select>
+                        </div>
+                        <div class="form-group-custom">
+                            <label class="form-label-custom">Nouveau fichier (optionnel)</label>
+                            <input type="file" class="form-control-custom" id="modifierFichier" accept=".pdf,.doc,.docx,.txt">
+                            <small class="text-muted">Laissez vide pour conserver le fichier actuel</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer modal-footer-custom">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn-submit" onclick="modifierOffre()">Mettre à jour</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Supprimer -->
+    <div class="modal fade" id="supprimerModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title">
+                        <i class="fas fa-trash-alt"></i> Confirmation
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body modal-body-custom">
+                    <div style="text-align: center; padding: 20px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 60px; color: #e74c3c; margin-bottom: 20px;"></i>
+                        <p>Êtes-vous sûr de vouloir supprimer cette offre ?</p>
+                        <p class="text-danger">Cette action est irréversible !</p>
+                        <input type="hidden" id="supprimerId">
+                    </div>
+                </div>
+                <div class="modal-footer modal-footer-custom">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn-danger-custom" onclick="supprimerOffre()">Supprimer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script>
+        let currentOffres = [];
+        
+        function getCSRFToken() {
+            return document.querySelector('[name=csrf-token]').getAttribute('content');
+        }
+        
+        function showLoading() {
+            $('#loadingOverlay').fadeIn(300);
+        }
+        
+        function hideLoading() {
+            $('#loadingOverlay').fadeOut(300);
+        }
+        
+        function showSuccess(message) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Succès !',
+                text: message,
+                timer: 2500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        }
+        
+        function showError(message) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Erreur',
+                text: message,
+                confirmButtonColor: '#e74c3c'
+            });
+        }
+        
+        // Charger les domaines
+        function chargerDomaines() {
+            $.ajax({
+                url: '/api/domaines/',
+                method: 'GET',
+                success: function(response) {
+                    if (response.success && response.domaines) {
+                        var selectAdd = $('#ajouterDomaine');
+                        var selectEdit = $('#modifierDomaine');
+                        
+                        selectAdd.empty();
+                        selectEdit.empty();
+                        
+                        selectAdd.append('<option value="">-- Sélectionnez un domaine --</option>');
+                        selectEdit.append('<option value="">-- Sélectionnez un domaine --</option>');
+                        
+                        response.domaines.forEach(function(domaine) {
+                            selectAdd.append('<option value="' + domaine.id + '">' + domaine.NomDomaine + '</option>');
+                            selectEdit.append('<option value="' + domaine.id + '">' + domaine.NomDomaine + '</option>');
+                        });
+                        
+                        if (response.domaines.length === 0) {
+                            selectAdd.append('<option value="" disabled>Aucun domaine disponible</option>');
+                            selectEdit.append('<option value="" disabled>Aucun domaine disponible</option>');
+                        }
+                    }
+                },
+                error: function() {
+                    $('#ajouterDomaine').html('<option value="">Erreur de chargement</option>');
+                    $('#modifierDomaine').html('<option value="">Erreur de chargement</option>');
+                }
+            });
+        }
+        
+        // Charger les offres
+        function chargerOffres() {
+            showLoading();
+            
+            $.ajax({
+                url: '/api/offres/',
+                method: 'GET',
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                success: function(response) {
+                    hideLoading();
+                    if (response.success) {
+                        currentOffres = response.offres;
+                        afficherOffres(response.offres);
+                        $('#totalCount').text(response.total);
+                    } else {
+                        showError('Impossible de charger les offres');
+                    }
+                },
+                error: function() {
+                    hideLoading();
+                    showError('Erreur de connexion');
+                }
+            });
+        }
+        
+        // Afficher les offres
+        function afficherOffres(offres) {
+            const tbody = $('#offresTableBody');
+            tbody.empty();
+            
+            if (!offres || offres.length === 0) {
+                tbody.html(`
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state-custom">
+                                <i class="fas fa-folder-open"></i>
+                                <p>Aucune offre d'emploi</p>
+                                <button class="btn-add" data-bs-toggle="modal" data-bs-target="#ajouterModal">
+                                    <i class="fas fa-plus-circle"></i> Créer la première offre
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
+            
+            offres.forEach(offre => {
+                const fichierHtml = offre.offre_fichier ? 
+                    `<button class="btn-download btn-action" onclick="telechargerFichier(${offre.id})">
+                        <i class="fas fa-download"></i> ${offre.nom_fichier}
+                    </button>` : 
+                    '<span class="text-muted">Aucun fichier</span>';
+                
+                const row = `
+                    <tr class="fade-in">
+                        <td><strong>#${offre.id}</strong></td>
+                        <td><strong>${escapeHtml(offre.titre)}</strong></td>
+                        <td><span class="badge-domaine">${escapeHtml(offre.domaine_nom)}</span></td>
+                        <td>${fichierHtml}</td>
+                        <td><i class="fas fa-calendar"></i> ${offre.date_publication}</td>
+                        <td>
+                            <button class="btn-action btn-edit" onclick="openEditModal(${offre.id})">
+                                <i class="fas fa-edit"></i> Modifier
+                            </button>
+                            <button class="btn-action btn-delete" onclick="openDeleteModal(${offre.id})">
+                                <i class="fas fa-trash"></i> Supprimer
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Ajouter une offre
+        function ajouterOffre() {
+            const titre = $('#ajouterTitre').val().trim();
+            const domaineId = $('#ajouterDomaine').val();
+            const fichier = $('#ajouterFichier')[0].files[0];
+            
+            if (!titre) {
+                showError('Veuillez saisir le titre');
+                return;
+            }
+            
+            if (!domaineId) {
+                showError('Veuillez sélectionner un domaine');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('titre', titre);
+            formData.append('domaine_id', domaineId);
+            if (fichier) formData.append('offre_fichier', fichier);
+            
+            showLoading();
+            
+            $.ajax({
+                url: '/api/offres/ajouter/',
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                success: function(response) {
+                    hideLoading();
+                    if (response.success) {
+                        showSuccess(response.message);
+                        $('#ajouterModal').modal('hide');
+                        $('#ajouterForm')[0].reset();
+                        chargerOffres();
+                    } else {
+                        showError(response.message);
+                    }
+                },
+                error: function() {
+                    hideLoading();
+                    showError('Erreur lors de l\'ajout');
+                }
+            });
+        }
+        
+        // Modifier une offre
+        function openEditModal(id) {
+            const offre = currentOffres.find(o => o.id === id);
+            if (offre) {
+                $('#modifierId').val(id);
+                $('#modifierTitre').val(offre.titre);
+                $('#modifierDomaine').val(offre.domaine_id);
+                $('#modifierModal').modal('show');
+            }
+        }
+        
+        function modifierOffre() {
+            const id = $('#modifierId').val();
+            const titre = $('#modifierTitre').val().trim();
+            const domaineId = $('#modifierDomaine').val();
+            const fichier = $('#modifierFichier')[0].files[0];
+            
+            if (!titre) {
+                showError('Veuillez saisir le titre');
+                return;
+            }
+            
+            if (!domaineId) {
+                showError('Veuillez sélectionner un domaine');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('titre', titre);
+            formData.append('domaine_id', domaineId);
+            if (fichier) formData.append('offre_fichier', fichier);
+            
+            showLoading();
+            
+            $.ajax({
+                url: `/api/offres/modifier/${id}/`,
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                success: function(response) {
+                    hideLoading();
+                    if (response.success) {
+                        showSuccess(response.message);
+                        $('#modifierModal').modal('hide');
+                        $('#modifierForm')[0].reset();
+                        chargerOffres();
+                    } else {
+                        showError(response.message);
+                    }
+                },
+                error: function() {
+                    hideLoading();
+                    showError('Erreur lors de la modification');
+                }
+            });
+        }
+        
+        // Supprimer une offre
+        function openDeleteModal(id) {
+            $('#supprimerId').val(id);
+            $('#supprimerModal').modal('show');
+        }
+        
+        function supprimerOffre() {
+            const id = $('#supprimerId').val();
+            
+            showLoading();
+            
+            $.ajax({
+                url: `/api/offres/supprimer/${id}/`,
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                success: function(response) {
+                    hideLoading();
+                    if (response.success) {
+                        showSuccess(response.message);
+                        $('#supprimerModal').modal('hide');
+                        chargerOffres();
+                    } else {
+                        showError(response.message);
+                    }
+                },
+                error: function() {
+                    hideLoading();
+                    showError('Erreur lors de la suppression');
+                }
+            });
+        }
+        
+        // Télécharger fichier
+        function telechargerFichier(id) {
+            window.open(`/api/offres/telecharger/${id}/`, '_blank');
+        }
+        
+        // Initialisation
+        $(document).ready(function() {
+            chargerDomaines();
+            chargerOffres();
+        });
+        
+        // Réinitialisation des formulaires
+        $('#ajouterModal').on('hidden.bs.modal', function() {
+            $('#ajouterForm')[0].reset();
+        });
+        
+        $('#modifierModal').on('hidden.bs.modal', function() {
+            $('#modifierForm')[0].reset();
+        });
+    </script>
+</body>
+</html>

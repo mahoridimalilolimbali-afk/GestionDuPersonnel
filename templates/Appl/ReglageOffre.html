@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>Paramétrage des offres - ONEM</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { max-width: 1400px; margin: auto; }
+        .main-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .card-header-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px 35px;
+            color: white;
+        }
+        .header-title {
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .header-title i { font-size: 32px; margin-right: 12px; }
+        .badge-stats {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 18px;
+            border-radius: 50px;
+            font-size: 14px;
+        }
+        .card-body-custom { padding: 35px; background: #f8f9fa; }
+        
+        .table-custom {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            width: 100%;
+        }
+        .badge-expire {
+    background: #e74c3c;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+}
+        .table-custom thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .table-custom thead th {
+            color: white;
+            font-weight: 600;
+            padding: 15px 12px;
+            border: none;
+            font-size: 13px;
+            text-align: center;
+        }
+        .table-custom tbody tr {
+            transition: all 0.3s ease;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .table-custom tbody tr:hover {
+            background: #f8f9ff;
+            transform: scale(1.01);
+        }
+        .table-custom tbody td {
+            padding: 12px 12px;
+            vertical-align: middle;
+            text-align: center;
+        }
+        
+        .btn-action {
+            padding: 6px 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 11px;
+            margin: 0 3px;
+            border: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn-parametrer {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+        }
+        .btn-modifier {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+        }
+        .btn-disabled {
+            background: #95a5a6;
+            color: white;
+            cursor: not-allowed;
+        }
+        .btn-action:hover { transform: translateY(-2px); color: white; }
+        
+        .badge-accepte {
+            background: #27ae60;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-attente {
+            background: #f39c12;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-refuse {
+            background: #e74c3c;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-non-traite {
+            background: #95a5a6;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-actif {
+            background: #27ae60;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-stopper {
+            background: #e74c3c;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-renouveler {
+            background: #3498db;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .modal-content-custom {
+            border-radius: 25px;
+            border: none;
+            overflow: hidden;
+        }
+        .modal-header-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 25px;
+            border: none;
+        }
+        .modal-header-custom h5 { font-weight: 700; font-size: 22px; }
+        .modal-header-custom i { margin-right: 10px; }
+        .modal-body-custom { padding: 30px; background: #f8f9fa; }
+        .modal-footer-custom {
+            padding: 20px 25px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .form-group-custom { margin-bottom: 25px; }
+        .form-label-custom {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: block;
+            font-size: 14px;
+        }
+        .form-label-custom i { margin-right: 6px; color: #667eea; }
+        .form-control-custom, .form-select-custom, textarea.form-control-custom {
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            padding: 12px 15px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        .form-control-custom:focus, .form-select-custom:focus, textarea.form-control-custom:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            outline: none;
+        }
+        textarea.form-control-custom { resize: vertical; min-height: 100px; }
+        
+        .btn-cancel {
+            background: #e9ecef;
+            color: #6c757d;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        
+        .empty-state-custom {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 20px;
+        }
+        .empty-state-custom i {
+            font-size: 60px;
+            color: #667eea;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .loading-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .text-left { text-align: left !important; }
+        .info-offre {
+            background: #e8f0fe;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .card-header-custom { padding: 20px; }
+            .header-title { font-size: 20px; flex-direction: column; text-align: center; }
+            .card-body-custom { padding: 20px; }
+            .btn-action { padding: 4px 8px; font-size: 10px; }
+            .table-custom thead th, .table-custom tbody td { padding: 8px 6px; font-size: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Traitement en cours...</p>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="main-card">
+            <div class="card-header-custom">
+                <div class="header-title">
+                    <div>
+                        <i class="fas fa-sliders-h"></i>
+                        Paramétrage des offres
+                    </div>
+                    <div class="badge-stats">
+                        <i class="fas fa-chart-line"></i>
+                        Gestion des offres acceptées
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-body-custom">
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-info-circle"></i> 
+                    Seules les offres avec la décision <strong>"Accepter"</strong> peuvent être paramétrées.
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th style="width: 5%;">ID</th>
+                                <th style="width: 20%; text-align: left;">Titre</th>
+                                <th style="width: 12%;">Domaine</th>
+                                <th style="width: 10%;">Date publication</th>
+                                <th style="width: 10%;">Décision ONEM</th>
+                                <th style="width: 10%;">État actuel</th>
+                                <th style="width: 10%;">Date expiration</th>
+                                <th style="width: 13%;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="offresTableBody">
+                            <tr>
+                                <td colspan="8" class="text-center py-5">
+                                    <div class="loading-spinner" style="margin: 0 auto;"></div>
+                                    <p class="mt-3">Chargement des offres...</p>
+                                 </div>
+                              </tr>
+                        </tbody>
+                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Paramétrage -->
+    <div class="modal fade" id="parametrageModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title">
+                        <i class="fas fa-cog"></i> Paramétrage de l'offre
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body modal-body-custom">
+                    <div class="info-offre">
+                        <p><strong><i class="fas fa-briefcase"></i> Offre :</strong> <span id="offreTitre"></span></p>
+                        <p><strong><i class="fas fa-tag"></i> Domaine :</strong> <span id="offreDomaine"></span></p>
+                        <p><strong><i class="fas fa-calendar"></i> Date de publication :</strong> <span id="offreDatePub"></span></p>
+                    </div>
+                    <form id="parametrageForm" onsubmit="return false;">
+                        <input type="hidden" id="offreId">
+                        
+                        <!-- Sélection de l'état - AJOUTÉ ICI -->
+                        <div class="form-group-custom">
+                            <label class="form-label-custom">
+                                <i class="fas fa-flag-checkered"></i> État de l'offre <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select-custom" id="typeEtatSelect" required>
+                                <option value="">-- Sélectionnez un état --</option>
+                                {% for type in types_etat %}
+                                    <option value="{{ type.id }}">{{ type.designation }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">
+                                <strong>Actif</strong> : L'offre est affichée<br>
+                                <strong>Stopper</strong> : L'offre n'est pas affichée (même si date valide)<br>
+                                <strong>Renouveler</strong> : L'offre est réactivée avec nouvelle date
+                            </small>
+                        </div>
+                        
+                        <div class="form-group-custom">
+                            <label class="form-label-custom">
+                                <i class="fas fa-calendar-times"></i> Date d'expiration
+                            </label>
+                            <input type="date" class="form-control-custom" id="dateExpiration">
+                            <small class="text-muted">L'offre ne sera plus affichée après cette date</small>
+                        </div>
+                        
+                        <div class="form-group-custom">
+                            <label class="form-label-custom">
+                                <i class="fas fa-calendar-plus"></i> Date de renouvellement
+                            </label>
+                            <input type="date" class="form-control-custom" id="dateRenouvellement">
+                            <small class="text-muted">Pour les offres renouvelées</small>
+                        </div>
+                        
+                        <div class="form-group-custom">
+                            <label class="form-label-custom">
+                                <i class="fas fa-comment"></i> Motif
+                            </label>
+                            <textarea class="form-control-custom" id="motif" rows="3" placeholder="Raison du paramétrage..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer modal-footer-custom">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                    <button type="button" class="btn-submit" onclick="saveParametrage()">
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    let currentOffres = [];
+    let typesEtat = [];
+    
+    function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
+    function showLoading() { $('#loadingOverlay').fadeIn(300); }
+    function hideLoading() { $('#loadingOverlay').fadeOut(300); }
+    
+    function showSuccess(message) {
+        Swal.fire({
+            icon: 'success',
+            title: 'Succès !',
+            text: message,
+            timer: 2500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+        });
+    }
+    
+    function showError(message) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Erreur',
+            text: message,
+            confirmButtonColor: '#e74c3c'
+        });
+    }
+    
+    // Charger les types d'états via l'API
+    function chargerTypesEtat() {
+        $.ajax({
+            url: '/api/type-etat-offre/',
+            method: 'GET',
+            success: function(response) {
+                if (response.success && response.types_etat) {
+                    typesEtat = response.types_etat;
+                    remplirSelectTypesEtat(typesEtat);
+                } else {
+                    console.error('Erreur chargement types état');
+                }
+            },
+            error: function(xhr) {
+                console.error('Erreur API types état:', xhr);
+            }
+        });
+    }
+    
+    // Remplir le select des types d'états
+    function remplirSelectTypesEtat(types) {
+        const select = $('#typeEtatSelect');
+        select.empty();
+        select.append('<option value="">-- Sélectionnez un état --</option>');
+        
+        types.forEach(type => {
+            select.append(`<option value="${type.id}">${type.designation}</option>`);
+        });
+    }
+    
+    function chargerOffres() {
+        showLoading();
+        
+        $.ajax({
+            url: '/api/offres-avec-decision/',
+            method: 'GET',
+            headers: { 'X-CSRFToken': getCSRFToken() },
+            success: function(response) {
+                hideLoading();
+                if (response.success) {
+                    currentOffres = response.offres;
+                    afficherOffres(response.offres);
+                    $('#totalCount').text(response.total);
+                } else {
+                    showError(response.error || 'Impossible de charger les données');
+                }
+            },
+            error: function() {
+                hideLoading();
+                showError('Erreur de connexion au serveur');
+            }
+        });
+    }
+    
+    function getBadgeDecision(decision) {
+        switch(decision) {
+            case 'Accepter':
+                return '<span class="badge-accepte"><i class="fas fa-check-circle"></i> Accepter</span>';
+            case 'En attente':
+                return '<span class="badge-attente"><i class="fas fa-clock"></i> En attente</span>';
+            case 'Rejeter':
+                return '<span class="badge-refuse"><i class="fas fa-times-circle"></i> Rejeter</span>';
+            default:
+                return '<span class="badge-non-traite"><i class="fas fa-question-circle"></i> Non traitée</span>';
+        }
+    }
+   function getEtatBadge(etat, estExpiree) {
+    // Si la date d'expiration est dépassée, afficher "Expiré"
+    // Mais c'est juste un affichage, l'utilisateur peut toujours changer l'état via "Renouveler"
+    if (estExpiree) {
+        return '<span class="badge-expire"><i class="fas fa-hourglass-end"></i> Expiré</span>';
+    }
+    
+    if (!etat) return '<span class="badge-non-traite">Non défini</span>';
+    
+    switch(etat) {
+        case 'Actif':
+            return '<span class="badge-actif"><i class="fas fa-play-circle"></i> Actif</span>';
+        case 'Stopper':
+            return '<span class="badge-stopper"><i class="fas fa-stop-circle"></i> Stopper</span>';
+        case 'Renouveler':
+            return '<span class="badge-renouveler"><i class="fas fa-sync-alt"></i> Renouveler</span>';
+        default:
+            return '<span class="badge-non-traite">' + etat + '</span>';
+    }
+}
+function afficherOffres(offres) {
+    const tbody = $('#offresTableBody');
+    tbody.empty();
+    
+    if (!offres || offres.length === 0) {
+        tbody.html(`
+            <tr><td colspan="8"><div class="empty-state-custom">
+                <i class="fas fa-folder-open"></i>
+                <p>Aucune offre trouvée</p>
+            </div><\/div><\/td><\/tr>
+        `);
+        return;
+    }
+    
+    offres.forEach(offre => {
+        let actionButton = '';
+        
+        // Le bouton Paramétrer est actif pour TOUTES les offres acceptées
+        // Peu importe la date d'expiration, l'utilisateur peut toujours modifier l'état
+        if (offre.est_acceptee) {
+            actionButton = `
+                <button class="btn-action btn-parametrer" onclick="ouvrirModalParametrage(${offre.id}, '${escapeHtml(offre.titre)}', '${escapeHtml(offre.domaine)}', '${offre.date_publication}')">
+                    <i class="fas fa-cog"></i> Paramétrer
+                </button>
+            `;
+        } else {
+            actionButton = `
+                <button class="btn-action btn-disabled" disabled>
+                    <i class="fas fa-lock"></i> Non disponible
+                </button>
+            `;
+        }
+        
+        const dateExpirationHtml = offre.date_expiration ? 
+            `<span class="badge-renouveler">${offre.date_expiration}</span>` : 
+            '<span class="text-muted">Non définie</span>';
+        
+        // Pour l'affichage, si la date est dépassée, on affiche "Expiré" temporairement
+        // Mais cela n'empêche pas le paramétrage
+        const etatBadge = getEtatBadge(offre.type_etat_affiche || offre.type_etat, offre.est_expiree);
+        
+        const row = `
+            <tr class="fade-in">
+                <td style="text-align: center;"><strong style="color: #667eea;">#${offre.id}</strong><\/td>
+                <td style="text-align: left;"><strong>${escapeHtml(offre.titre)}</strong><\/td>
+                <td style="text-align: center;">${escapeHtml(offre.domaine)}<\/td>
+                <td style="text-align: center;"><i class="fas fa-calendar"></i> ${offre.date_publication}<\/td>
+                <td style="text-align: center;">${getBadgeDecision(offre.decision)}<\/td>
+                <td style="text-align: center;">${etatBadge}<\/td>
+                <td style="text-align: center;">${dateExpirationHtml}<\/td>
+                <td style="text-align: center;">${actionButton}<\/td>
+             \/tr>
+        `;
+        tbody.append(row);
+    });
+}
+    
+    function ouvrirModalParametrage(offreId, titre, domaine, datePub) {
+        // Charger les informations existantes du réglage
+        $.ajax({
+            url: `/api/reglage/offre/${offreId}/`,
+            method: 'GET',
+            success: function(response) {
+                if (response.success && response.reglage) {
+                    $('#typeEtatSelect').val(response.reglage.type_etat_id);
+                    $('#dateExpiration').val(response.reglage.date_expiration);
+                    $('#dateRenouvellement').val(response.reglage.date_renouvellement);
+                    $('#motif').val(response.reglage.motif);
+                } else {
+                    $('#typeEtatSelect').val('');
+                    $('#dateExpiration').val('');
+                    $('#dateRenouvellement').val('');
+                    $('#motif').val('');
+                }
+            },
+            error: function() {
+                $('#typeEtatSelect').val('');
+                $('#dateExpiration').val('');
+                $('#dateRenouvellement').val('');
+                $('#motif').val('');
+            }
+        });
+        
+        $('#offreId').val(offreId);
+        $('#offreTitre').text(titre);
+        $('#offreDomaine').text(domaine);
+        $('#offreDatePub').text(datePub);
+        $('#parametrageModal').modal('show');
+    }
+    
+    function saveParametrage() {
+        const offreId = $('#offreId').val();
+        const typeEtatId = $('#typeEtatSelect').val();
+        const dateExpiration = $('#dateExpiration').val();
+        const dateRenouvellement = $('#dateRenouvellement').val();
+        const motif = $('#motif').val();
+        
+        if (!typeEtatId) {
+            showError('Veuillez sélectionner un état');
+            $('#typeEtatSelect').focus();
+            return;
+        }
+        
+        showLoading();
+        
+        $.ajax({
+            url: '/api/reglages/ajouter/',
+            method: 'POST',
+            data: JSON.stringify({
+                offre_id: offreId,
+                type_etat_id: typeEtatId,
+                date_expiration: dateExpiration,
+                date_renouvellement: dateRenouvellement,
+                motif: motif
+            }),
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            },
+            success: function(response) {
+                hideLoading();
+                if (response.success) {
+                    showSuccess(response.message);
+                    $('#parametrageModal').modal('hide');
+                    chargerOffres();
+                } else {
+                    showError(response.message);
+                }
+            },
+            error: function(xhr) {
+                hideLoading();
+                const message = xhr.responseJSON?.message || 'Erreur lors de l\'enregistrement';
+                showError(message);
+            }
+        });
+    }
+    
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    $(document).ready(function() {
+        chargerTypesEtat();  // Charger d'abord les types d'états
+        chargerOffres();
+    });
+</script>
+</body>
+</html>

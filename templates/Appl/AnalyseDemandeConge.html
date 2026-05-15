@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>Analyse des Demandes de Congé - GRH</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { max-width: 1400px; margin: auto; }
+        .main-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .card-header-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px 35px;
+            color: white;
+        }
+        .header-title {
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .header-title i { font-size: 32px; margin-right: 12px; }
+        .badge-stats {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 18px;
+            border-radius: 50px;
+            font-size: 14px;
+        }
+        .nav-tabs-custom {
+            border-bottom: 2px solid #e1e8ed;
+            padding: 0 35px;
+            background: white;
+        }
+        .nav-tabs-custom .nav-link {
+            border: none;
+            padding: 15px 25px;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s;
+        }
+        .nav-tabs-custom .nav-link:hover { color: #667eea; }
+        .nav-tabs-custom .nav-link.active {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            background: transparent;
+        }
+        .modal { z-index: 9999; }
+        .modal-backdrop { z-index: 9998; }
+        .card-body-custom { padding: 35px; background: #f8f9fa; }
+        
+        .table-custom {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            width: 100%;
+            margin-bottom: 0;
+        }
+        .table-custom thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .table-custom thead th {
+            color: white;
+            font-weight: 600;
+            padding: 15px 12px;
+            border: none;
+            font-size: 13px;
+            text-align: center;
+        }
+        .table-custom tbody tr {
+            transition: all 0.3s ease;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .table-custom tbody tr:hover {
+            background: #f8f9ff;
+            transform: scale(1.01);
+        }
+        .table-custom tbody td {
+            padding: 12px 12px;
+            vertical-align: middle;
+            text-align: center;
+        }
+        
+        .btn-action {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 11px;
+            margin: 0 3px;
+            border: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn-analyser {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+        }
+        .btn-modifier {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+        }
+        .btn-recu {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+        .btn-action:hover { transform: translateY(-2px); color: white; }
+        
+        .badge-agent {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .badge-approuve {
+            background: #27ae60;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .badge-refuse {
+            background: #e74c3c;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .badge-attente {
+            background: #f39c12;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        
+        .modal-content-custom {
+            border-radius: 25px;
+            border: none;
+            overflow: hidden;
+        }
+        .modal-header-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 25px;
+            border: none;
+        }
+        .modal-body-custom { padding: 30px; background: #f8f9fa; }
+        .modal-footer-custom {
+            padding: 20px 25px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .form-group-custom { margin-bottom: 25px; }
+        .form-label-custom {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .form-label-custom i { margin-right: 6px; color: #667eea; }
+        .form-control-custom, .form-select-custom, textarea.form-control-custom {
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            padding: 12px 15px;
+            width: 100%;
+        }
+        textarea.form-control-custom { resize: vertical; min-height: 100px; }
+        
+        .btn-cancel {
+            background: #e9ecef;
+            color: #6c757d;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        
+        .empty-state-custom {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 20px;
+        }
+        .empty-state-custom i { font-size: 60px; color: #667eea; margin-bottom: 15px; opacity: 0.5; }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .loading-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .attestation-container {
+            background: white;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+            font-family: 'Times New Roman', serif;
+        }
+        .attestation-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .attestation-header h1 {
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        .attestation-header h2 { font-size: 18px; font-weight: normal; }
+        .attestation-header .logo { font-size: 48px; color: #667eea; margin-bottom: 10px; }
+        .attestation-body { margin: 30px 0; line-height: 1.8; }
+        .attestation-footer { margin-top: 50px; text-align: right; }
+        .attestation-signature {
+            margin-top: 30px;
+            border-top: 1px solid #333;
+            width: 250px;
+            text-align: center;
+            padding-top: 10px;
+            margin-left: auto;
+        }
+        @media print {
+            body * { visibility: hidden; }
+            .attestation-container, .attestation-container * { visibility: visible; }
+            .attestation-container { position: absolute; top: 0; left: 0; width: 100%; }
+            .btn-action, .nav-tabs-custom, .card-header-custom, .badge-stats { display: none !important; }
+        }
+        
+        @media (max-width: 768px) {
+            .card-header-custom { padding: 20px; }
+            .header-title { font-size: 20px; flex-direction: column; text-align: center; }
+            .card-body-custom { padding: 20px; }
+            .btn-action { padding: 4px 8px; font-size: 10px; }
+            .table-custom thead th, .table-custom tbody td { padding: 8px 6px; font-size: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Traitement en cours...</p>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="main-card">
+            <div class="card-header-custom">
+                <div class="header-title">
+                    <div><i class="fas fa-clipboard-list"></i> Analyse des Demandes de Congé</div>
+                    <div class="badge-stats"><i class="fas fa-chart-line"></i> Gestion des analyses</div>
+                </div>
+            </div>
+            
+            <ul class="nav nav-tabs nav-tabs-custom" id="analyseTab" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active" id="non-analysees-tab" data-bs-toggle="tab" data-bs-target="#non-analysees" type="button">
+                        <i class="fas fa-clock"></i> À analyser <span id="nonAnalyseesCount" class="badge bg-warning ms-2">0</span>
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="analysees-tab" data-bs-toggle="tab" data-bs-target="#analysees" type="button">
+                        <i class="fas fa-check-circle"></i> Demandes analysées <span id="analyseesCount" class="badge bg-success ms-2">0</span>
+                    </button>
+                </li>
+            </ul>
+            
+            <div class="card-body-custom">
+                <div class="tab-content">
+                    <!-- Tab: Demandes non analysées -->
+                    <div class="tab-pane fade show active" id="non-analysees" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-custom">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th><th>Agent</th><th>Type</th><th>Motif</th><th>Période</th><th>Jours</th><th>Date demande</th><th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="nonAnalyseesBody">
+                                    <tr><td colspan="8" class="text-center py-5"><div class="loading-spinner"></div><p>Chargement...</p></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Tab: Demandes analysées -->
+                    <div class="tab-pane fade" id="analysees" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-custom">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th><th>Agent</th><th>Type</th><th>Décision</th><th>Période</th><th>Jours</th><th>Date analyse</th><th>Motif</th><th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="analyseesBody">
+                                    <tr><td colspan="9" class="text-center py-5"><div class="loading-spinner"></div><p>Chargement...</p><\/td><\/tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Analyser -->
+    <div class="modal fade" id="analyserModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title"><i class="fas fa-gavel"></i> Analyser la demande</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body modal-body-custom">
+                    <div class="alert alert-info mb-3"><i class="fas fa-info-circle"></i> <strong>Agent :</strong> <span id="modalAgentNom"></span></div>
+                    <div class="alert alert-secondary mb-3"><i class="fas fa-calendar"></i> <strong>Période :</strong> <span id="modalPeriode"></span></div>
+                    <form id="analyseForm" onsubmit="return false;">
+                        <input type="hidden" id="analyseDemandeId">
+                        <div class="form-group-custom">
+                            <label class="form-label-custom"><i class="fas fa-gavel"></i> Décision <span class="text-danger">*</span></label>
+                            <select class="form-select-custom" id="decisionSelect" required>
+                                <option value="">-- Sélectionnez une décision --</option>
+                                <option value="approuve">✅ Approuvé</option>
+                                <option value="refuse">❌ Refusé</option>
+                                <option value="en_attente">⏳ En attente</option>
+                            </select>
+                        </div>
+                        <div class="form-group-custom">
+                            <label class="form-label-custom"><i class="fas fa-comment"></i> Motif de l'analyse</label>
+                            <textarea class="form-control-custom" id="motifAnalyse" rows="3" placeholder="Justification de la décision..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer modal-footer-custom">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn-submit" onclick="enregistrerAnalyse()">Enregistrer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Modifier Analyse -->
+    <div class="modal fade" id="modifierAnalyseModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title"><i class="fas fa-edit"></i> Modifier l'analyse</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body modal-body-custom">
+                    <form id="modifierAnalyseForm" onsubmit="return false;">
+                        <input type="hidden" id="modifierAnalyseId">
+                        <div class="form-group-custom">
+                            <label class="form-label-custom"><i class="fas fa-gavel"></i> Décision</label>
+                            <select class="form-select-custom" id="modifierDecisionSelect">
+                                <option value="">-- Sélectionnez une décision --</option>
+                                <option value="approuve">✅ Approuvé</option>
+                                <option value="refuse">❌ Refusé</option>
+                                <option value="en_attente">⏳ En attente</option>
+                            </select>
+                        </div>
+                        <div class="form-group-custom">
+                            <label class="form-label-custom"><i class="fas fa-comment"></i> Motif de l'analyse</label>
+                            <textarea class="form-control-custom" id="modifierMotifAnalyse" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer modal-footer-custom">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn-submit" onclick="updateAnalyse()">Mettre à jour</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Attestation -->
+    <div class="modal fade" id="attestationModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title"><i class="fas fa-file-alt"></i> Attestation de Congé</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body modal-body-custom" id="attestationContent"></div>
+                <div class="modal-footer modal-footer-custom">
+                    <button type="button" class="btn-cancel" onclick="imprimerAttestation()"><i class="fas fa-print"></i> Imprimer</button>
+                    <button type="button" class="btn-submit" onclick="telechargerAttestation()"><i class="fas fa-download"></i> Télécharger PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <script>
+        let analysesExistantes = [];
+        let attestationData = null;
+        
+        function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
+        function showLoading() { $('#loadingOverlay').fadeIn(300); }
+        function hideLoading() { $('#loadingOverlay').fadeOut(300); }
+        function showSuccess(msg) { Swal.fire({ icon: 'success', title: 'Succès !', text: msg, timer: 2500, showConfirmButton: false, toast: true, position: 'top-end' }); }
+        function showError(msg) { Swal.fire({ icon: 'error', title: 'Erreur', text: msg, confirmButtonColor: '#e74c3c' }); }
+        
+        function getDecisionBadge(decision) {
+            switch(decision) {
+                case 'approuve': return '<span class="badge-approuve"><i class="fas fa-check-circle"></i> Approuvé</span>';
+                case 'refuse': return '<span class="badge-refuse"><i class="fas fa-times-circle"></i> Refusé</span>';
+                default: return '<span class="badge-attente"><i class="fas fa-clock"></i> En attente</span>';
+            }
+        }
+        
+        function chargerDemandesNonAnalysees() {
+            $.ajax({
+                url: '/api/analyse-demandes/non-analysees/',
+                method: 'GET',
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                success: function(response) {
+                    if (response.success) {
+                        const tbody = $('#nonAnalyseesBody');
+                        tbody.empty();
+                        if (response.demandes.length === 0) {
+                            tbody.html(`<tr><td colspan="8"><div class="empty-state-custom"><i class="fas fa-check-circle"></i><p>Toutes les demandes ont été analysées !</p></div></td></tr>`);
+                        } else {
+                            response.demandes.forEach(d => {
+                                const periode = `${d.date_debut} → ${d.date_fin}`;
+                                tbody.append(`<tr class="fade-in">
+                                    <td><strong>#${d.id}</strong></td>
+                                    <td style="text-align: left;"><strong>${escapeHtml(d.agent_nom)}</strong></td>
+                                    <td><span class="badge-agent">${escapeHtml(d.type_conge)}</span></td>
+                                    <td style="text-align: left;"><small>${escapeHtml(d.motif.substring(0, 50))}${d.motif.length > 50 ? '...' : ''}</small></td>
+                                    <td><small>${periode}</small></td>
+                                    <td><span class="badge-agent">${d.nombre_jours} j</span></td>
+                                    <td>${d.date_demande}</td>
+                                    <td><button class="btn-action btn-analyser" onclick="ouvrirModalAnalyser(${d.id}, '${escapeHtml(d.agent_nom)}', '${periode}')"><i class="fas fa-gavel"></i> Analyser</button></td>
+                                <tr>`);
+                            });
+                        }
+                        $('#nonAnalyseesCount').text(response.total);
+                    }
+                }
+            });
+        }
+        
+        function chargerDemandesAnalysees() {
+            $.ajax({
+                url: '/api/analyse-demandes/analysees/',
+                method: 'GET',
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                success: function(response) {
+                    if (response.success) {
+                        analysesExistantes = response.analyses;
+                        const tbody = $('#analyseesBody');
+                        tbody.empty();
+                        if (response.analyses.length === 0) {
+                            tbody.html(`<tr><td colspan="9"><div class="empty-state-custom"><i class="fas fa-folder-open"></i><p>Aucune analyse enregistrée</p></div></td></table>`);
+                        } else {
+                            response.analyses.forEach(a => {
+                                const periode = `${a.date_debut} → ${a.date_fin}`;
+                                const decisionBadge = getDecisionBadge(a.decision);
+                                const actionsHtml = a.decision === 'approuve' ? `
+                                    <button class="btn-action btn-recu" onclick="voirAttestation(${a.demande_id})"><i class="fas fa-file-alt"></i> Reçu</button>
+                                    <button class="btn-action btn-modifier" onclick="ouvrirModalModifierAnalyse(${a.id})"><i class="fas fa-edit"></i> Modifier</button>
+                                ` : `
+                                    <button class="btn-action btn-modifier" onclick="ouvrirModalModifierAnalyse(${a.id})"><i class="fas fa-edit"></i> Modifier</button>
+                                `;
+                                tbody.append(`<tr class="fade-in">
+                                    <td><strong>#${a.id}</strong></td>
+                                    <td style="text-align: left;"><strong>${escapeHtml(a.agent_nom)}</strong></td>
+                                    <td><span class="badge-agent">${escapeHtml(a.type_conge)}</span></td>
+                                    <td>${decisionBadge}</td>
+                                    <td><small>${periode}</small></td>
+                                    <td>${a.nombre_jours} j</span></td>
+                                    <td>${a.date_analyse}</td>
+                                    <td style="text-align: left;"><small>${escapeHtml(a.motif_analyse ? a.motif_analyse.substring(0, 40) : '-')}</small></td>
+                                    <td>${actionsHtml}</td>
+                                </tr>`);
+                            });
+                        }
+                        $('#analyseesCount').text(response.total);
+                    }
+                }
+            });
+        }
+        
+        function ouvrirModalAnalyser(demandeId, agentNom, periode) {
+            $('#analyseDemandeId').val(demandeId);
+            $('#modalAgentNom').text(agentNom);
+            $('#modalPeriode').text(periode);
+            $('#decisionSelect').val('');
+            $('#motifAnalyse').val('');
+            $('#analyserModal').modal('show');
+        }
+        
+        function enregistrerAnalyse() {
+            const demandeId = $('#analyseDemandeId').val();
+            const decision = $('#decisionSelect').val();
+            const motifAnalyse = $('#motifAnalyse').val();
+            
+            if (!decision) { showError('Veuillez sélectionner une décision'); return; }
+            
+            showLoading();
+            $.ajax({
+                url: '/api/analyse-demandes/enregistrer/',
+                method: 'POST',
+                data: JSON.stringify({ demande_id: demandeId, decision: decision, motif_analyse: motifAnalyse }),
+                headers: { 'X-CSRFToken': getCSRFToken(), 'Content-Type': 'application/json' },
+                success: function(response) {
+                    hideLoading();
+                    if (response.success) {
+                        showSuccess(response.message);
+                        $('#analyserModal').modal('hide');
+                        chargerDemandesNonAnalysees();
+                        chargerDemandesAnalysees();
+                    } else { showError(response.message); }
+                },
+                error: function(xhr) { hideLoading(); showError(xhr.responseJSON?.message || 'Erreur'); }
+            });
+        }
+        
+        function ouvrirModalModifierAnalyse(analyseId) {
+            const analyse = analysesExistantes.find(a => a.id === analyseId);
+            if (analyse) {
+                $('#modifierAnalyseId').val(analyseId);
+                $('#modifierDecisionSelect').val(analyse.decision);
+                $('#modifierMotifAnalyse').val(analyse.motif_analyse || '');
+                $('#modifierAnalyseModal').modal('show');
+            }
+        }
+        
+        function updateAnalyse() {
+            const analyseId = $('#modifierAnalyseId').val();
+            const decision = $('#modifierDecisionSelect').val();
+            const motifAnalyse = $('#modifierMotifAnalyse').val();
+            
+            showLoading();
+            $.ajax({
+                url: `/api/analyse-demandes/modifier/${analyseId}/`,
+                method: 'POST',
+                data: JSON.stringify({ decision: decision, motif_analyse: motifAnalyse }),
+                headers: { 'X-CSRFToken': getCSRFToken(), 'Content-Type': 'application/json' },
+                success: function(response) {
+                    hideLoading();
+                    if (response.success) {
+                        showSuccess(response.message);
+                        $('#modifierAnalyseModal').modal('hide');
+                        chargerDemandesAnalysees();
+                    } else { showError(response.message); }
+                },
+                error: function(xhr) { hideLoading(); showError(xhr.responseJSON?.message || 'Erreur'); }
+            });
+        }
+        
+        function genererAttestation(demandeId) {
+            const demande = analysesExistantes.find(a => a.demande_id === demandeId);
+            if (!demande) return '';
+            
+            const dateActuelle = new Date().toLocaleDateString('fr-FR');
+            const mois = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+            const dateDebutParts = demande.date_debut.split('/');
+            const dateFinParts = demande.date_fin.split('/');
+            const dateDebut = new Date(`${dateDebutParts[2]}-${dateDebutParts[1]}-${dateDebutParts[0]}`);
+            const dateFin = new Date(`${dateFinParts[2]}-${dateFinParts[1]}-${dateFinParts[0]}`);
+            const dateDebutStr = `${dateDebut.getDate()} ${mois[dateDebut.getMonth()]} ${dateDebut.getFullYear()}`;
+            const dateFinStr = `${dateFin.getDate()} ${mois[dateFin.getMonth()]} ${dateFin.getFullYear()}`;
+            
+            return `
+                <div class="attestation-container">
+                    <div class="attestation-header">
+                        <div class="logo"><i class="fas fa-building"></i></div>
+                        <h1>RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</h1>
+                        <h2>GRH ENGENEERING SARL (GRH)</h2>
+                        <hr>
+                        <h3>ATTESTATION DE CONGÉ</h3>
+                    </div>
+                    <div class="attestation-body">
+                        <p>Je soussigné(e), <strong>Le Directeur Général de l'entreprise GRH ENGENEERING/strong>, certifie que :</p>
+                        <p style="margin: 20px 0;"><strong>Monsieur/Madame ${escapeHtml(demande.agent_nom)}</strong><br>est autorisé(e) à prendre un congé de <strong>${demande.nombre_jours} jours</strong> à compter du <strong>${dateDebutStr}</strong> au <strong>${dateFinStr}</strong>.</p>
+                        <p>Type de congé : <strong>${escapeHtml(demande.type_conge)}</strong></p>
+                        <p>Motif : <strong>${escapeHtml(demande.motif_analyse || 'Non spécifié')}</strong></p>
+                        <p>Fait à Goma, le <strong>${dateActuelle}</strong></p>
+                    </div>
+                    <div class="attestation-footer">
+                        <div class="attestation-signature">
+                            <p>Le Directeur Général</p>
+                            <p style="margin-top: 20px;">(Signature et cachet)</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function voirAttestation(demandeId) {
+            const demande = analysesExistantes.find(a => a.demande_id === demandeId);
+            if (!demande) { showError('Données non disponibles'); return; }
+            attestationData = demande;
+            const html = genererAttestation(demandeId);
+            $('#attestationContent').html(html);
+            $('#attestationModal').modal('show');
+        }
+        
+        function imprimerAttestation() {
+            const element = document.getElementById('attestationContent');
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write('<html><head><title>Attestation de Congé</title>');
+            printWindow.document.write('<style>body{font-family:"Times New Roman",serif;padding:40px;} .attestation-container{max-width:800px;margin:0 auto;}</style>');
+            printWindow.document.write('</head><body>');
+            printWindow.document.write(element.innerHTML);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.print();
+            printWindow.close();
+        }
+        
+        function telechargerAttestation() {
+            const element = document.getElementById('attestationContent');
+            html2pdf().set({ margin: 0.5, filename: `attestation_conge_${attestationData?.agent_nom?.replace(/\s/g, '_') || 'agent'}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } }).from(element).save();
+        }
+        
+        function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+        
+        $('#analyseTab button').on('shown.bs.tab', function(e) {
+            if (e.target.id === 'non-analysees-tab') chargerDemandesNonAnalysees();
+            else if (e.target.id === 'analysees-tab') chargerDemandesAnalysees();
+        });
+        
+        $(document).ready(function() { chargerDemandesNonAnalysees(); chargerDemandesAnalysees(); });
+    </script>
+</body>
+</html>

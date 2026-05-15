@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscription Candidat - GRH</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { max-width: 900px; margin: auto; }
+        .card {
+            border: none;
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .card-header h2 { font-weight: 700; margin: 0; }
+        .card-header p { margin: 10px 0 0; opacity: 0.9; }
+        .card-body { padding: 40px; background: #f8f9fa; }
+        .form-group { margin-bottom: 20px; }
+        .form-label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .form-label i { margin-right: 8px; color: #667eea; }
+        .form-control, .form-select {
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            outline: none;
+        }
+        .btn-inscription {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        .btn-inscription:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e1e8ed;
+        }
+        .login-link a { color: #667eea; text-decoration: none; font-weight: 600; }
+        .alert { border-radius: 12px; border: none; }
+        .row { margin: 0 -10px; }
+        .col-md-6, .col-md-4, .col-md-12 { padding: 0 10px; }
+        
+        .photo-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 10px auto;
+            display: block;
+            border: 3px solid #667eea;
+        }
+        .file-input {
+            border: 2px dashed #e1e8ed;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .file-input:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        @media (max-width: 768px) {
+            .card-body { padding: 25px; }
+            .form-label { font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-user-graduate"></i> Inscription Candidat</h2>
+                <p>Créez votre compte pour postuler aux offres d'emploi</p>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show">
+                            <i class="fas fa-{% if message.tags == 'error' %}exclamation-triangle{% else %}check-circle{% endif %} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <form method="POST" action="{% url 'inscriptionCandidat' %}" id="inscriptionForm" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <h5 class="mb-3"><i class="fas fa-user-circle"></i> Photo de profil</h5>
+                    <div class="row">
+                        <div class="col-md-12 text-center">
+                            <img id="photoPreview" class="photo-preview" src="https://via.placeholder.com/120?text=Photo" alt="Aperçu photo">
+                            <div class="file-input" onclick="document.getElementById('photoInput').click()">
+                                <i class="fas fa-camera"></i> Cliquez pour ajouter votre photo
+                                <input type="file" id="photoInput" name="photo" accept="image/*" style="display: none;" onchange="previewPhoto(this)">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h5 class="mb-3 mt-4"><i class="fas fa-user-circle"></i> Informations personnelles</h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-user"></i> Nom *</label>
+                                <input type="text" class="form-control" name="nom" required placeholder="Votre nom">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-user"></i> Postnom *</label>
+                                <input type="text" class="form-control" name="postnom" required placeholder="Votre postnom">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-user"></i> Prénom *</label>
+                                <input type="text" class="form-control" name="prenom" required placeholder="Votre prénom">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-venus-mars"></i> Sexe *</label>
+                                <select class="form-select" name="sexe" required>
+                                    <option value="">Sélectionnez</option>
+                                    <option value="Masculin">Masculin</option>
+                                    <option value="Féminin">Féminin</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-globe"></i> Nationalité *</label>
+                                <input type="text" class="form-control" name="nationalite" required placeholder="Nationalité" value="Congolaise">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-map-marker-alt"></i> Lieu de naissance *</label>
+                                <input type="text" class="form-control" name="lieuNaissance" required placeholder="Lieu de naissance">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-city"></i> Ville *</label>
+                                <input type="text" class="form-control" name="ville" required placeholder="Votre ville">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-calendar-alt"></i> Date de naissance *</label>
+                                <input type="date" class="form-control" name="dateNaissance" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-phone"></i> Téléphone *</label>
+                                <input type="tel" class="form-control" name="numeroTelephone" required placeholder="+243 XX XXX XXXX">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h5 class="mb-3 mt-4"><i class="fas fa-map-marker-alt"></i> Adresse</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-location-dot"></i> Quartier *</label>
+                                <input type="text" class="form-control" name="quartier" required placeholder="Votre quartier">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-road"></i> Avenue</label>
+                                <input type="text" class="form-control" name="avenue" placeholder="Avenue (optionnel)">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h5 class="mb-3 mt-4"><i class="fas fa-lock"></i> Informations de connexion</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-envelope"></i> Email *</label>
+                                <input type="email" class="form-control" name="email" required placeholder="votre@email.com">
+                                <small class="text-muted">Utilisé pour la connexion et les notifications</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-user-tag"></i> Nom d'utilisateur *</label>
+                                <input type="text" class="form-control" name="username" required placeholder="Choisissez un nom d'utilisateur">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-key"></i> Mot de passe *</label>
+                                <input type="password" class="form-control" name="password" required placeholder="Mot de passe">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-check-circle"></i> Confirmer *</label>
+                                <input type="password" class="form-control" name="confirm_password" required placeholder="Confirmez">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn-inscription mt-3">
+                        <i class="fas fa-user-plus me-2"></i> S'inscrire
+                    </button>
+                    
+                    <div class="login-link">
+                        <p>Déjà inscrit ? <a href="{% url 'login' %}"><i class="fas fa-sign-in-alt"></i> Connectez-vous ici</a></p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function previewPhoto(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('photoPreview').src = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+        
+        // Validation du formulaire
+        document.getElementById('inscriptionForm').addEventListener('submit', function(e) {
+            const password = document.querySelector('input[name="password"]').value;
+            const confirm = document.querySelector('input[name="confirm_password"]').value;
+            
+            if (password !== confirm) {
+                e.preventDefault();
+                alert('Les mots de passe ne correspondent pas');
+                return false;
+            }
+            
+            if (password.length < 6) {
+                e.preventDefault();
+                alert('Le mot de passe doit contenir au moins 6 caractères');
+                return false;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>Mes Résultats de Tests - ONEM</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { max-width: 1400px; margin: auto; }
+        .main-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .card-header-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px 35px;
+            color: white;
+        }
+        .header-title {
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .header-title i { font-size: 32px; margin-right: 12px; }
+        .badge-stats {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 18px;
+            border-radius: 50px;
+            font-size: 14px;
+        }
+        .card-body-custom { padding: 35px; background: #f8f9fa; }
+        
+        .table-custom {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            width: 100%;
+            margin-bottom: 0;
+        }
+        .table-custom thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .table-custom thead th {
+            color: white;
+            font-weight: 600;
+            padding: 15px 12px;
+            border: none;
+            font-size: 13px;
+            text-align: center;
+        }
+        .table-custom tbody tr {
+            transition: all 0.3s ease;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .table-custom tbody tr:hover {
+            background: #f8f9ff;
+        }
+        .table-custom tbody td {
+            padding: 12px 12px;
+            vertical-align: middle;
+            text-align: center;
+        }
+        
+        .badge-domaine {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .badge-retenu {
+            background: #27ae60;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .badge-note {
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        .badge-note.eleve { background: #27ae60; color: white; }
+        .badge-note.moyen { background: #f39c12; color: white; }
+        .badge-note.faible { background: #e74c3c; color: white; }
+        
+        .info-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        }
+        .info-card h4 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .info-card h4 i { margin-right: 10px; }
+        .info-row {
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e1e8ed;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #2c3e50;
+            width: 170px;
+            display: inline-block;
+        }
+        .info-label i { width: 25px; color: #667eea; margin-right: 8px; }
+        
+        .modal-content-custom {
+            border-radius: 25px;
+            border: none;
+            overflow: hidden;
+        }
+        .modal-header-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 25px;
+            border: none;
+        }
+        .modal-header-custom h5 { font-weight: 700; }
+        .modal-header-custom i { margin-right: 10px; }
+        .modal-body-custom { padding: 30px; background: #f8f9fa; }
+        .modal-footer-custom {
+            padding: 20px 25px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .empty-state-custom {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 20px;
+        }
+        .empty-state-custom i {
+            font-size: 60px;
+            color: #667eea;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .loading-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 768px) {
+            .card-header-custom { padding: 20px; }
+            .header-title { font-size: 20px; flex-direction: column; text-align: center; }
+            .card-body-custom { padding: 20px; }
+            .info-label { width: 140px; font-size: 13px; }
+            .table-custom thead th, .table-custom tbody td { padding: 8px 6px; font-size: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Traitement en cours...</p>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="main-card">
+            <div class="card-header-custom">
+                <div class="header-title">
+                    <div>
+                        <i class="fas fa-chart-line"></i>
+                        Mes Résultats de Tests
+                    </div>
+                    <div class="badge-stats">
+                        <i class="fas fa-user-circle"></i>
+                        <span id="userName">Chargement...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-body-custom">
+                <!-- Message de bienvenue -->
+                <div class="alert alert-success text-center mb-4" style="border-radius: 15px;">
+                    <i class="fas fa-check-circle"></i> <span id="welcomeMessage">Chargement...</span>
+                </div>
+                
+                <!-- Tableau des évaluations -->
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th style="width: 5%;">ID</th>
+                                <th style="width: 20%; text-align: left;">Offre</th>
+                                <th style="width: 10%;">Domaine</th>
+                                <th style="width: 15%;">Test</th>
+                                <th style="width: 10%;">Note</th>
+                                <th style="width: 15%;">Date évaluation</th>
+                                <th style="width: 15%;">Observation</th>
+                                <th style="width: 10%;">Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody id="evaluationsBody">
+                            <tr><td colspan="8" class="text-center py-5"><div class="loading-spinner"></div><p>Chargement de vos résultats...</p></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Informations personnelles du candidat -->
+        <div class="info-card">
+            <h4><i class="fas fa-id-card"></i> Mes informations personnelles</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="info-row">
+                        <span class="info-label"><i class="fas fa-user"></i> Nom complet :</span>
+                        <span id="infoNom">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label"><i class="fas fa-venus-mars"></i> Sexe :</span>
+                        <span id="infoSexe">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label"><i class="fas fa-globe"></i> Nationalité :</span>
+                        <span id="infoNationalite">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label"><i class="fas fa-map-marker-alt"></i> Lieu de naissance :</span>
+                        <span id="infoLieuNaissance">-</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-row">
+                        <span class="info-label"><i class="fas fa-city"></i> Ville :</span>
+                        <span id="infoVille">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label"><i class="fas fa-calendar"></i> Date de naissance :</span>
+                        <span id="infoDateNaissance">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label"><i class="fas fa-phone"></i> Téléphone :</span>
+                        <span id="infoTelephone">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label"><i class="fas fa-map-marker"></i> Adresse :</span>
+                        <span id="infoAdresse">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script>
+    function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
+    function showLoading() { $('#loadingOverlay').fadeIn(300); }
+    function hideLoading() { $('#loadingOverlay').fadeOut(300); }
+    
+    function showError(message) {
+        Swal.fire({ icon: 'error', title: 'Erreur', text: message, confirmButtonColor: '#e74c3c' });
+    }
+    
+    function getNoteClass(note) {
+        if (note >= 70) return 'eleve';
+        if (note >= 50) return 'moyen';
+        return 'faible';
+    }
+    
+    // ==================== CHARGER LES INFOS DU CANDIDAT ====================
+    
+    function chargerInfosCandidat() {
+        $.ajax({
+            url: '/api/candidat/infos/',
+            method: 'GET',
+            headers: { 'X-CSRFToken': getCSRFToken() },
+            success: function(response) {
+                if (response.success) {
+                    $('#userName').text(response.candidat.prenom + ' ' + response.candidat.nom);
+                    $('#welcomeMessage').text('Bienvenue, ' + response.candidat.prenom + ' ' + response.candidat.nom + ' ! Voici vos résultats de tests.');
+                    
+                    $('#infoNom').text(response.candidat.nom + ' ' + response.candidat.postnom + ' ' + response.candidat.prenom);
+                    $('#infoSexe').text(response.candidat.sexe);
+                    $('#infoNationalite').text(response.candidat.nationalite);
+                    $('#infoLieuNaissance').text(response.candidat.lieuNaissance);
+                    $('#infoVille').text(response.candidat.ville);
+                    $('#infoDateNaissance').text(response.candidat.dateNaissance);
+                    $('#infoTelephone').text(response.candidat.numeroTelephone);
+                    $('#infoAdresse').text(response.candidat.quartier + ' ' + (response.candidat.avenue || ''));
+                }
+            },
+            error: function() {
+                $('#userName').text('Utilisateur');
+                $('#welcomeMessage').text('Bienvenue dans votre espace de résultats');
+            }
+        });
+    }
+    
+    // ==================== CHARGER LES ÉVALUATIONS DU CANDIDAT CONNECTÉ ====================
+    
+    function chargerMesEvaluations() {
+        showLoading();
+        
+        $.ajax({
+            url: '/api/candidat/mes-evaluations/',
+            method: 'GET',
+            headers: { 'X-CSRFToken': getCSRFToken() },
+            success: function(response) {
+                hideLoading();
+                if (response.success) {
+                    const tbody = $('#evaluationsBody');
+                    tbody.empty();
+                    if (response.evaluations.length === 0) {
+                        tbody.html(`<tr><td colspan="8"><div class="empty-state-custom">
+                            <i class="fas fa-folder-open"></i>
+                            <p>Aucune évaluation trouvée</p>
+                            <small>Vous n'avez pas encore de résultats de tests disponibles</small>
+                        </div><\/td><\/tr>`);
+                    } else {
+                        response.evaluations.forEach(e => {
+                            const noteClass = getNoteClass(e.note);
+                            const statutBadge = e.note >= 70 ? 
+                                '<span class="badge-retenu"><i class="fas fa-check-circle"></i> Validé</span>' : 
+                                '<span class="badge-note moyen">En cours</span>';
+                            
+                            const row = `<tr class="fade-in">
+                                <td><strong>#${e.id}</strong><\/td>
+                                <td style="text-align: left;"><strong>${escapeHtml(e.offre_titre)}</strong><\/td>
+                                <td><span class="badge-domaine">${escapeHtml(e.offre_domaine)}</span><\/td>
+                                <td><small>Test du ${e.test_date}<\/small><\/td>
+                                <td><span class="badge-note ${noteClass}">${e.note}%</span><\/td>
+                                <td>${e.date_evaluation}<\/td>
+                                <td style="text-align: left;"><small>${escapeHtml(e.observation || '-')}<\/small><\/td>
+                                <td>${statutBadge}<\/td>
+                             <\/tr>`;
+                            tbody.append(row);
+                        });
+                    }
+                    $('#totalCount').text(response.total);
+                } else {
+                    showError(response.error || 'Impossible de charger vos résultats');
+                }
+            },
+            error: function() {
+                hideLoading();
+                showError('Erreur de connexion au serveur');
+            }
+        });
+    }
+    
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    $(document).ready(function() {
+        chargerInfosCandidat();
+        chargerMesEvaluations();
+    });
+    </script>
+</body>
+</html>

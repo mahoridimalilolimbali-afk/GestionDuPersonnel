@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>Liste des Candidats - GRH</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { max-width: 1400px; margin: auto; }
+        .main-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .card-header-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px 35px;
+            color: white;
+        }
+        .header-title {
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .header-title i { font-size: 32px; margin-right: 12px; }
+        .badge-stats {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 18px;
+            border-radius: 50px;
+            font-size: 14px;
+        }
+        .card-body-custom { padding: 35px; background: #f8f9fa; }
+        
+        /* Filtres */
+        .filters-section {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .filter-label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 0;
+        }
+        .filter-select {
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            padding: 10px 20px;
+            font-size: 14px;
+            min-width: 200px;
+            background: white;
+        }
+        .filter-select:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        .btn-filtrer {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-filtrer:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .btn-tous {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-tous:hover {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+        }
+        .stats-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e1e8ed;
+        }
+        .stat-item {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 12px;
+            text-align: center;
+            min-width: 100px;
+        }
+        .stat-item .nombre {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+        }
+        .stat-item .label {
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        .table-custom {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            width: 100%;
+        }
+        .table-custom thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .table-custom thead th {
+            color: white;
+            font-weight: 600;
+            padding: 15px 10px;
+            border: none;
+            font-size: 12px;
+            text-align: center;
+        }
+        .table-custom tbody tr {
+            transition: all 0.3s ease;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .table-custom tbody tr:hover {
+            background: #f8f9ff;
+            transform: scale(1.01);
+        }
+        .table-custom tbody td {
+            padding: 12px 10px;
+            vertical-align: middle;
+            text-align: center;
+            font-size: 13px;
+        }
+        
+        .btn-action {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 11px;
+            margin: 0 3px;
+            border: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn-changer-role {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+        }
+        .btn-supprimer {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+        .btn-action:hover { transform: translateY(-2px); color: white; }
+        
+        .badge-role {
+            display: inline-block;
+            margin: 2px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            color: white;
+        }
+        .badge-superuser {
+            background: #e74c3c;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 3px;
+        }
+        .avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .modal-content-custom {
+            border-radius: 25px;
+            border: none;
+            overflow: hidden;
+        }
+        .modal-header-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 25px;
+            border: none;
+        }
+        .modal-header-custom h5 { font-weight: 700; font-size: 22px; }
+        .modal-header-custom i { margin-right: 10px; }
+        .modal-body-custom { padding: 30px; background: #f8f9fa; }
+        .modal-footer-custom {
+            padding: 20px 25px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .form-group-custom { margin-bottom: 25px; }
+        .form-label-custom {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: block;
+            font-size: 14px;
+        }
+        .form-label-custom i { margin-right: 6px; color: #667eea; }
+        .form-select-custom {
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            padding: 12px 15px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        .form-select-custom:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            outline: none;
+        }
+        
+        .btn-cancel {
+            background: #e9ecef;
+            color: #6c757d;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        .btn-danger-custom {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        
+        .empty-state-custom {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 20px;
+        }
+        .empty-state-custom i {
+            font-size: 60px;
+            color: #667eea;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .loading-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .text-left { text-align: left !important; }
+        
+        @media (max-width: 768px) {
+            .card-header-custom { padding: 20px; }
+            .header-title { font-size: 20px; flex-direction: column; text-align: center; }
+            .card-body-custom { padding: 20px; }
+            .btn-action { padding: 4px 8px; font-size: 10px; }
+            .table-custom thead th, .table-custom tbody td { padding: 8px 5px; font-size: 10px; }
+            .filter-group { flex-direction: column; align-items: stretch; }
+            .filter-select { width: 100%; }
+            .stats-group { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Traitement en cours...</p>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="main-card">
+            <div class="card-header-custom">
+                <div class="header-title">
+                    <div>
+                        <i class="fas fa-users"></i>
+                        Liste des Candidats
+                    </div>
+                    <div class="badge-stats">
+                        <i class="fas fa-chart-line"></i>
+                        Gestion des utilisateurs
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-body-custom">
+                <!-- Section Filtres -->
+                <div class="filters-section">
+                    <div class="filter-group">
+                        <span class="filter-label"><i class="fas fa-filter"></i> Filtrer par rôle :</span>
+                        <select id="filtreRole" class="filter-select">
+                            <option value="tous">📋 Tous les rôles</option>
+                            <option value="superuser">⭐ Superuser</option>
+                            <option value="sans_role">❌ Sans rôle</option>
+                        </select>
+                        <button class="btn-filtrer" onclick="filtrerParRole()">
+                            <i class="fas fa-search"></i> Filtrer
+                        </button>
+                        <button class="btn-tous" onclick="afficherTous()">
+                            <i class="fas fa-eye"></i> Afficher tous
+                        </button>
+                    </div>
+                    
+                    <!-- Statistiques -->
+                    <div class="stats-group" id="statsContainer">
+                        <div class="stat-item">
+                            <div class="nombre" id="totalCandidats">0</div>
+                            <div class="label">Total candidats</div>
+                        </div>
+                        <div class="stat-item" id="statSuperuser">
+                            <div class="nombre" id="totalSuperuser">0</div>
+                            <div class="label">Superuser</div>
+                        </div>
+                        <div class="stat-item" id="statSansRole">
+                            <div class="nombre" id="totalSansRole">0</div>
+                            <div class="label">Sans rôle</div>
+                        </div>
+                        <!-- Les stats par groupe seront ajoutées dynamiquement ici -->
+                    </div>
+                </div>
+                
+                <!-- Tableau -->
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th style="width: 3%;">ID</th>
+                                <th style="width: 5%;">Avatar</th>
+                                <th style="width: 12%; text-align: left;">Nom complet</th>
+                                <th style="width: 5%;">Sexe</th>
+                                <th style="width: 10%;">Téléphone</th>
+                                <th style="width: 10%;">Email</th>
+                                <th style="width: 8%;">Nom d'utilisateur</th>
+                                <th style="width: 15%;">Rôle(s)</th>
+                                <th style="width: 10%;">Date inscription</th>
+                                <th style="width: 12%;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="candidatsTableBody">
+                            <tr><td colspan="10" class="text-center py-5"><div class="loading-spinner"></div><p class="mt-3">Chargement des candidats...</p></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Changer Rôle -->
+    <div class="modal fade" id="changerRoleModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exchange-alt"></i> Changer le rôle
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body modal-body-custom">
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle"></i> <strong>Candidat :</strong> <span id="modalCandidatNom"></span>
+                    </div>
+                    <form id="changerRoleForm" onsubmit="return false;">
+                        <input type="hidden" id="changerRoleCandidatId">
+                        <div class="form-group-custom">
+                            <label class="form-label-custom">
+                                <i class="fas fa-tag"></i> Nouveau rôle <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select-custom" id="roleSelect" required>
+                                <option value="">-- Chargement des rôles... --</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer modal-footer-custom">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                    <button type="button" class="btn-submit" onclick="changerRole()">
+                        <i class="fas fa-save"></i> Changer le rôle
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Supprimer -->
+    <div class="modal fade" id="supprimerModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title">
+                        <i class="fas fa-trash-alt"></i> Confirmer la suppression
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body modal-body-custom">
+                    <div style="text-align: center; padding: 20px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 60px; color: #e74c3c; margin-bottom: 20px;"></i>
+                        <p style="font-size: 16px; color: #2c3e50; margin-bottom: 10px;">
+                            Êtes-vous sûr de vouloir supprimer ce candidat ?
+                        </p>
+                        <p class="text-danger mb-0">
+                            <i class="fas fa-info-circle"></i> Cette action supprimera également son compte utilisateur.
+                        </p>
+                        <input type="hidden" id="supprimerCandidatId">
+                    </div>
+                </div>
+                <div class="modal-footer modal-footer-custom">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                    <button type="button" class="btn-danger-custom" onclick="supprimerCandidat()">
+                        <i class="fas fa-trash-alt"></i> Supprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script>
+        let candidatsComplets = [];
+        let candidatsFiltres = [];
+        let groupesList = [];
+        let groupesStats = {};
+        
+        function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
+        function showLoading() { $('#loadingOverlay').fadeIn(300); }
+        function hideLoading() { $('#loadingOverlay').fadeOut(300); }
+        
+        function showSuccess(message) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Succès !',
+                text: message,
+                timer: 2500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        }
+        
+        function showError(message) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Erreur',
+                text: message,
+                confirmButtonColor: '#e74c3c'
+            });
+        }
+        
+        // Fonction pour générer une couleur dynamique à partir d'une chaîne
+        function stringToColor(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            let color = '#';
+            for (let i = 0; i < 3; i++) {
+                const value = (hash >> (i * 8)) & 0xFF;
+                color += ('00' + value.toString(16)).substr(-2);
+            }
+            return color;
+        }
+        
+        // Charger les groupes depuis Django
+        function chargerGroupes() {
+            $.ajax({
+                url: '/api/groupes/',
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        groupesList = response.groupes;
+                        
+                        // Remplir le select du modal
+                        var select = $('#roleSelect');
+                        select.empty();
+                        select.append('<option value="">-- Sélectionnez un rôle --</option>');
+                        response.groupes.forEach(function(groupe) {
+                            select.append('<option value="' + groupe.id + '">' + groupe.name + '</option>');
+                        });
+                        
+                        // Ajouter dynamiquement les options de filtre pour chaque groupe
+                        const filtreSelect = $('#filtreRole');
+                        response.groupes.forEach(function(groupe) {
+                            let icon = '👤';
+                            if (groupe.name === 'ADMIN') icon = '👑';
+                            else if (groupe.name === 'ONEM') icon = '🏢';
+                            else if (groupe.name === 'CANDIDAT') icon = '👤';
+                            else icon = '🏷️';
+                            filtreSelect.append(`<option value="${groupe.name}">${icon} ${groupe.name}</option>`);
+                        });
+                        
+                        // Mettre à jour les statistiques des groupes
+                        mettreAJourGroupesStats();
+                    }
+                }
+            });
+        }
+        
+        // Charger tous les candidats
+        function chargerCandidats() {
+            showLoading();
+            
+            $.ajax({
+                url: '/api/candidats/',
+                method: 'GET',
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                success: function(response) {
+                    hideLoading();
+                    if (response.success) {
+                        candidatsComplets = response.candidats;
+                        mettreAJourStatistiques();
+                        afficherCandidats(candidatsComplets);
+                    } else {
+                        showError(response.error || 'Impossible de charger les données');
+                    }
+                },
+                error: function() {
+                    hideLoading();
+                    showError('Erreur de connexion au serveur');
+                }
+            });
+        }
+        
+        // Mettre à jour les statistiques des groupes
+        function mettreAJourGroupesStats() {
+            const statsContainer = $('#statsContainer');
+            // Supprimer les anciennes stats des groupes (garder les 3 premières)
+            statsContainer.find('.stat-groupe').remove();
+            
+            groupesList.forEach(groupe => {
+                const statHtml = `
+                    <div class="stat-item stat-groupe">
+                        <div class="nombre" id="totalGroupe_${groupe.name}">0</div>
+                        <div class="label">${groupe.name}</div>
+                    </div>
+                `;
+                statsContainer.append(statHtml);
+            });
+        }
+        
+        // Mettre à jour les statistiques
+        function mettreAJourStatistiques() {
+            let stats = {
+                total: candidatsComplets.length,
+                superuser: 0,
+                sans_role: 0,
+                groupes: {}
+            };
+            
+            // Initialiser les compteurs de groupes
+            groupesList.forEach(g => {
+                stats.groupes[g.name] = 0;
+            });
+            
+            candidatsComplets.forEach(c => {
+                if (c.est_superuser) {
+                    stats.superuser++;
+                }
+                if (c.groupes.length === 0 && !c.est_superuser) {
+                    stats.sans_role++;
+                }
+                c.groupes.forEach(g => {
+                    if (stats.groupes[g] !== undefined) {
+                        stats.groupes[g]++;
+                    }
+                });
+            });
+            
+            $('#totalCandidats').text(stats.total);
+            $('#totalSuperuser').text(stats.superuser);
+            $('#totalSansRole').text(stats.sans_role);
+            
+            // Mettre à jour les compteurs par groupe
+            for (const [groupe, count] of Object.entries(stats.groupes)) {
+                $(`#totalGroupe_${groupe}`).text(count);
+            }
+        }
+        
+        // Filtrer par rôle
+        function filtrerParRole() {
+            const role = $('#filtreRole').val();
+            filtreActuel = role;
+            
+            if (role === 'tous') {
+                candidatsFiltres = candidatsComplets;
+            } else if (role === 'superuser') {
+                candidatsFiltres = candidatsComplets.filter(c => c.est_superuser === true);
+            } else if (role === 'sans_role') {
+                candidatsFiltres = candidatsComplets.filter(c => c.groupes.length === 0 && !c.est_superuser);
+            } else {
+                candidatsFiltres = candidatsComplets.filter(c => c.groupes.includes(role));
+            }
+            
+            afficherCandidats(candidatsFiltres);
+            
+            Swal.fire({
+                icon: 'info',
+                title: 'Filtre appliqué',
+                text: `${candidatsFiltres.length} candidat(s) trouvé(s)`,
+                timer: 1500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        }
+        
+        // Afficher tous les candidats
+        function afficherTous() {
+            $('#filtreRole').val('tous');
+            filtreActuel = 'tous';
+            candidatsFiltres = candidatsComplets;
+            afficherCandidats(candidatsFiltres);
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Tous les candidats',
+                text: `${candidatsComplets.length} candidat(s) au total`,
+                timer: 1500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        }
+        
+        function afficherCandidats(candidats) {
+            const tbody = $('#candidatsTableBody');
+            tbody.empty();
+            
+            if (!candidats || candidats.length === 0) {
+                tbody.html(`
+                    <tr><td colspan="10"><div class="empty-state-custom">
+                        <i class="fas fa-folder-open"></i>
+                        <p>Aucun candidat trouvé pour ce filtre</p>
+                    </div><\/div><\/td><\/tr>
+                `);
+                return;
+            }
+            
+            candidats.forEach(candidat => {
+                // Avatar
+                const avatar = `<div class="avatar">${(candidat.prenom.charAt(0) + candidat.nom.charAt(0)).toUpperCase()}</div>`;
+                
+                // Badges des rôles - Couleurs dynamiques
+                let rolesHtml = '';
+                if (candidat.est_superuser) {
+                    rolesHtml += '<span class="badge-superuser"><i class="fas fa-crown"></i> Superuser</span><br>';
+                }
+                candidat.groupes.forEach(g => {
+                    const bgColor = stringToColor(g);
+                    rolesHtml += `<span class="badge-role" style="background:${bgColor};">${g}</span> `;
+                });
+                if (rolesHtml === '') {
+                    rolesHtml = '<span class="text-muted">Aucun rôle</span>';
+                }
+                
+                const row = `
+                    <tr class="fade-in">
+                        <td style="text-align: center;"><strong style="color: #667eea;">#${candidat.id}</strong><\/td>
+                        <td style="text-align: center;">${avatar}<\/td>
+                        <td style="text-align: left;"><strong>${escapeHtml(candidat.nom)} ${escapeHtml(candidat.postnom)} ${escapeHtml(candidat.prenom)}</strong><\/td>
+                        <td style="text-align: center;">${candidat.sexe === 'Masculin' ? '<i class="fas fa-mars" style="color:#3498db;"></i>' : '<i class="fas fa-venus" style="color:#e91e63;"></i>'}<\/td>
+                        <td style="text-align: center;">${escapeHtml(candidat.numeroTelephone)}<\/td>
+                        <td style="text-align: center;">${escapeHtml(candidat.email || '-')}<\/td>
+                        <td style="text-align: center;">${escapeHtml(candidat.username || '-')}<\/td>
+                        <td style="text-align: center;">${rolesHtml}<\/td>
+                        <td style="text-align: center;">${candidat.date_inscription}<\/td>
+                        <td style="text-align: center;">
+                            <button class="btn-action btn-changer-role" onclick="ouvrirModalChangerRole(${candidat.id}, '${escapeHtml(candidat.nom)} ${escapeHtml(candidat.prenom)}')">
+                                <i class="fas fa-exchange-alt"></i> Changer rôle
+                            </button>
+                            <button class="btn-action btn-supprimer" onclick="ouvrirModalSupprimer(${candidat.id}, '${escapeHtml(candidat.nom)} ${escapeHtml(candidat.prenom)}')">
+                                <i class="fas fa-trash-alt"></i> Supprimer
+                            </button>
+                        <\/td>
+                    <\/tr>
+                `;
+                tbody.append(row);
+            });
+        }
+        
+        function ouvrirModalChangerRole(candidatId, candidatNom) {
+            $('#changerRoleCandidatId').val(candidatId);
+            $('#modalCandidatNom').text(candidatNom);
+            $('#roleSelect').val('');
+            $('#changerRoleModal').modal('show');
+        }
+        
+        function changerRole() {
+            const candidatId = $('#changerRoleCandidatId').val();
+            const groupeId = $('#roleSelect').val();
+            
+            if (!groupeId) {
+                showError('Veuillez sélectionner un rôle');
+                return;
+            }
+            
+            showLoading();
+            
+            $.ajax({
+                url: '/api/candidats/changer-role/',
+                method: 'POST',
+                data: JSON.stringify({
+                    candidat_id: candidatId,
+                    groupe_id: groupeId
+                }),
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'Content-Type': 'application/json'
+                },
+                success: function(response) {
+                    hideLoading();
+                    if (response.success) {
+                        showSuccess(response.message);
+                        $('#changerRoleModal').modal('hide');
+                        chargerCandidats();
+                    } else {
+                        showError(response.message);
+                    }
+                },
+                error: function(xhr) {
+                    hideLoading();
+                    const message = xhr.responseJSON?.message || 'Erreur lors du changement de rôle';
+                    showError(message);
+                }
+            });
+        }
+        
+        function ouvrirModalSupprimer(candidatId, candidatNom) {
+            $('#supprimerCandidatId').val(candidatId);
+            $('#supprimerModal').modal('show');
+        }
+        
+        function supprimerCandidat() {
+            const candidatId = $('#supprimerCandidatId').val();
+            
+            showLoading();
+            
+            $.ajax({
+                url: `/api/candidats/supprimer/${candidatId}/`,
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                success: function(response) {
+                    hideLoading();
+                    if (response.success) {
+                        showSuccess(response.message);
+                        $('#supprimerModal').modal('hide');
+                        chargerCandidats();
+                    } else {
+                        showError(response.message);
+                    }
+                },
+                error: function(xhr) {
+                    hideLoading();
+                    const message = xhr.responseJSON?.message || 'Erreur lors de la suppression';
+                    showError(message);
+                }
+            });
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        $(document).ready(function() {
+            chargerGroupes();
+            chargerCandidats();
+        });
+    </script>
+</body>
+</html>

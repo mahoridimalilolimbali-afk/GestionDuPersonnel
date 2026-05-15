@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ONEM - Office National de l'Emploi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+        }
+        
+        /* Thème clair (par défaut) */
+        body.light-mode {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            color: #2c3e50;
+        }
+        
+        /* Thème sombre */
+        body.dark-mode {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #eee;
+        }
+        
+        body.dark-mode .card {
+            background: #2d3436;
+            color: #eee;
+        }
+        
+        body.dark-mode .navbar {
+            background: #1a1a2e !important;
+        }
+        
+        body.dark-mode .offre-card {
+            background: #2d3436;
+            border-color: #444;
+        }
+        
+        body.dark-mode .modal-content {
+            background: #2d3436;
+            color: #eee;
+        }
+        
+        /* Navbar */
+        .navbar {
+            background: white;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            padding: 15px 0;
+            transition: all 0.3s;
+        }
+        
+        body.dark-mode .navbar {
+            background: #1a1a2e;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+        }
+        
+        .navbar-brand {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .btn-outline-custom {
+            border-radius: 30px;
+            padding: 8px 25px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .btn-login {
+            border: 2px solid #667eea;
+            color: #667eea;
+            background: transparent;
+        }
+        
+        .btn-login:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-register {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+        }
+        
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 80px 0 50px;
+        }
+        
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .hero p {
+            font-size: 18px;
+            opacity: 0.8;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        /* Cartes offres */
+        .offres-section {
+            padding: 50px 0;
+        }
+        
+        .section-title {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .section-title h2 {
+            font-size: 32px;
+            font-weight: 700;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .section-title h2:after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 3px;
+        }
+        
+        .offre-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border: 1px solid #e1e8ed;
+        }
+        
+        .offre-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.15);
+        }
+        
+        .offre-card h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #667eea;
+            cursor: pointer;
+        }
+        
+        .offre-card h3:hover {
+            text-decoration: underline;
+        }
+        
+        .offre-card .badge-domaine {
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+            color: #667eea;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .offre-card .badge-expiration {
+            background: #f39c12;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .offre-card .badge-actif {
+            background: #27ae60;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .offre-card .btn-postuler {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 30px;
+            font-weight: 600;
+            margin-top: 15px;
+            transition: all 0.3s;
+        }
+        
+        .offre-card .btn-postuler:hover {
+            transform: translateX(5px);
+        }
+        
+        /* Détails offre */
+        .offre-details {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e1e8ed;
+            display: none;
+        }
+        
+        body.dark-mode .offre-details {
+            border-top-color: #444;
+        }
+        
+        .offre-details.show {
+            display: block;
+        }
+        
+        /* Theme toggle */
+        .theme-toggle {
+            cursor: pointer;
+            font-size: 20px;
+            margin-left: 15px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #f0f2f5;
+            transition: all 0.3s;
+        }
+        
+        body.dark-mode .theme-toggle {
+            background: #2d3436;
+        }
+        
+        .theme-toggle:hover {
+            transform: rotate(15deg);
+        }
+        
+        /* Loading spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Modal */
+        .modal-content {
+            border-radius: 20px;
+            border: none;
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px 20px 0 0;
+        }
+        
+        .btn-choix {
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-choix-connecter {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+        
+        .btn-choix-creer {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+        }
+        
+        .btn-choix:hover {
+            transform: translateY(-2px);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 30px;
+            margin-top: 50px;
+            border-top: 1px solid #e1e8ed;
+        }
+        
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 32px; }
+            .navbar-brand { font-size: 18px; }
+            .btn-outline-custom { padding: 5px 15px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body class="light-mode">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-building"></i> GRH ENGENEERING
+            </a>
+            
+            <div class="ms-auto d-flex align-items-center">
+                <a href="/Appl/login/" class="btn btn-outline-custom btn-login me-2">
+                    <i class="fas fa-sign-in-alt"></i> Connexion
+                </a>
+                <a href="/Appl/Candidat" class="btn btn-outline-custom btn-register">
+                    <i class="fas fa-user-plus"></i> Créer compte
+                </a>
+                <div class="theme-toggle" onclick="toggleTheme()">
+                    <i class="fas fa-moon" id="themeIcon"></i>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Hero Section -->
+    <div class="container" style="margin-top: 100px;">
+        <div class="hero">
+            <h1><i class="fas fa-hand-peace"></i> Bienvenue à l'entreprise GRH ENGENEERING</h1>
+            <p>Entreprise d'ingénièrie base sur les constructions de batiment privé et public - GRH ENGENEERING votre partenaire d'emploi en République Démocratique du Congo</p>
+        </div>
+        
+        <!-- Offres Section -->
+        <div class="offres-section">
+            <div class="section-title">
+                <h2>Offres d'emploi disponibles</h2>
+            </div>
+            <div id="offresContainer">
+                <div class="text-center py-5">
+                    <div class="loading-spinner"></div>
+                    <p class="mt-3">Chargement des offres...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>&copy; 2026 GRH ENGENEERING. Tous droits réservés.</p>
+    </footer>
+    
+    <!-- Modal Postuler -->
+    <div class="modal fade" id="postulerModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-paper-plane"></i> Postuler à l'offre</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <i class="fas fa-question-circle" style="font-size: 60px; color: #667eea; margin-bottom: 20px;"></i>
+                    <h4 class="mb-3">Avez-vous un compte ?</h4>
+                    <p class="mb-4">Pour postuler à cette offre, vous devez avoir un compte candidat.</p>
+                    <div class="d-flex gap-3 justify-content-center">
+                        <a href="/Appl/login/" class="btn btn-choix btn-choix-connecter">
+                            <i class="fas fa-sign-in-alt"></i> Oui, me connecter
+                        </a>
+                        <a href="/Appl/Candidat" class="btn btn-choix btn-choix-creer">
+                            <i class="fas fa-user-plus"></i> Non, créer un compte
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Thème (sombre/clair)
+        function toggleTheme() {
+            const body = document.body;
+            const icon = document.getElementById('themeIcon');
+            
+            if (body.classList.contains('light-mode')) {
+                body.classList.remove('light-mode');
+                body.classList.add('dark-mode');
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.classList.remove('dark-mode');
+                body.classList.add('light-mode');
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+                localStorage.setItem('theme', 'light');
+            }
+        }
+        
+        // Charger le thème sauvegardé
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.body.classList.remove('light-mode');
+            document.body.classList.add('dark-mode');
+            document.getElementById('themeIcon').classList.remove('fa-moon');
+            document.getElementById('themeIcon').classList.add('fa-sun');
+        }
+        
+        // Fonction pour ouvrir le fichier (comme dans ONEM)
+        function ouvrirFichier(offreId) {
+            const url = `/api/onem/ouvrir-fichier/${offreId}/`;
+            window.open(url, '_blank');
+        }
+        
+        // Charger les offres
+        async function chargerOffres() {
+            try {
+                const response = await fetch('/api/offres-accueil/');
+                const data = await response.json();
+                
+                if (data.success && data.offres.length > 0) {
+                    afficherOffres(data.offres);
+                } else {
+                    document.getElementById('offresContainer').innerHTML = `
+                        <div class="text-center py-5">
+                            <i class="fas fa-folder-open" style="font-size: 48px; color: #ccc;"></i>
+                            <p class="mt-3">Aucune offre disponible pour le moment</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                document.getElementById('offresContainer').innerHTML = `
+                    <div class="text-center py-5 text-danger">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px;"></i>
+                        <p class="mt-3">Erreur de chargement des offres</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function afficherOffres(offres) {
+            const container = document.getElementById('offresContainer');
+            container.innerHTML = '';
+            
+            offres.forEach(offre => {
+                // Déterminer le badge d'état
+                let badgeEtat = '';
+                if (offre.type_etat === 'Actif') {
+                    badgeEtat = '<span class="badge-actif"><i class="fas fa-check-circle"></i> Active</span>';
+                } else if (offre.type_etat === 'Renouveler') {
+                    badgeEtat = '<span class="badge-renouveler" style="background:#3498db;color:white;padding:5px 12px;border-radius:20px;font-size:12px;"><i class="fas fa-sync-alt"></i> Renouvelée</span>';
+                }
+                
+                // Badge date d'expiration
+                let badgeExpiration = '';
+                if (offre.date_expiration) {
+                    badgeExpiration = `<span class="badge-expiration ms-2"><i class="fas fa-calendar-times"></i> Expire le ${offre.date_expiration}</span>`;
+                }
+                
+                const card = document.createElement('div');
+                card.className = 'offre-card';
+                card.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h3 onclick="ouvrirFichier(${offre.id})">
+                                <i class="fas fa-briefcase"></i> ${offre.titre}
+                            </h3>
+                            <div class="mt-2">
+                                <span class="badge-domaine"><i class="fas fa-tag"></i> ${offre.domaine}</span>
+                                <span class="badge-domaine ms-2"><i class="fas fa-calendar"></i> Publiée le ${offre.date_publication}</span>
+                                ${badgeEtat}
+                                ${badgeExpiration}
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-down" style="color: #667eea; cursor: pointer;" onclick="toggleDetails(this)"></i>
+                    </div>
+                    <div class="offre-details">
+                        <p><strong>Description :</strong><br>${offre.description || 'Veuillez consulter le fichier joint pour plus de détails.'}</p>
+                        <button class="btn-postuler" onclick="ouvrirModalPostuler('${offre.titre}')">
+                            <i class="fas fa-paper-plane"></i> Postuler
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+        
+        function toggleDetails(element) {
+            const details = element.closest('.offre-card').querySelector('.offre-details');
+            details.classList.toggle('show');
+            element.classList.toggle('fa-chevron-down');
+            element.classList.toggle('fa-chevron-up');
+        }
+        
+        function ouvrirModalPostuler(titre) {
+            document.getElementById('postulerModal').querySelector('.modal-title').innerHTML = `<i class="fas fa-paper-plane"></i> Postuler à "${titre}"`;
+            new bootstrap.Modal(document.getElementById('postulerModal')).show();
+        }
+        
+        // Initialiser
+        document.addEventListener('DOMContentLoaded', chargerOffres);
+    </script>
+</body>
+</html>

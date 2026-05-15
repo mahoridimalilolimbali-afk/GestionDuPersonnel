@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>Gestion des Tests - ONEM</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { max-width: 1400px; margin: auto; }
+        .main-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .card-header-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px 35px;
+            color: white;
+        }
+        .header-title {
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .header-title i { font-size: 32px; margin-right: 12px; }
+        .badge-stats {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 18px;
+            border-radius: 50px;
+            font-size: 14px;
+        }
+        .card-body-custom { padding: 35px; background: #f8f9fa; }
+        
+        /* Tableau stylisé */
+        .table-custom {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            width: 100%;
+            margin-bottom: 0;
+        }
+        .table-custom thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .table-custom thead th {
+            color: white;
+            font-weight: 600;
+            padding: 18px 15px;
+            border: none;
+            font-size: 14px;
+            text-align: center;
+        }
+        .table-custom tbody tr {
+            transition: all 0.3s ease;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .table-custom tbody tr:hover {
+            background: #f8f9ff;
+            transform: scale(1.01);
+        }
+        .table-custom tbody td {
+            padding: 16px 15px;
+            vertical-align: middle;
+            text-align: center;
+        }
+        
+        /* Boutons */
+        .btn-action {
+            padding: 8px 18px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 12px;
+            margin: 0 4px;
+            border: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-programmer {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+        }
+        .btn-voir {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+        .btn-supprimer {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+        .btn-detail {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+        }
+        .btn-action:hover { transform: translateY(-2px); color: white; }
+        
+        /* Badges */
+        .badge-domaine {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .badge-test {
+            background: #27ae60;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .badge-aucun-test {
+            background: #e74c3c;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .titre-offre {
+            cursor: pointer;
+            color: #667eea;
+            font-weight: 600;
+            text-align: left;
+            display: inline-block;
+        }
+        .titre-offre:hover { color: #764ba2; text-decoration: underline; }
+        
+        /* Modals */
+        .modal-content-custom {
+            border-radius: 25px;
+            border: none;
+            overflow: hidden;
+        }
+        .modal-header-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 25px;
+            border: none;
+        }
+        .modal-header-custom h5 { font-weight: 700; }
+        .modal-header-custom i { margin-right: 10px; }
+        .modal-body-custom { padding: 30px; background: #f8f9fa; }
+        .modal-footer-custom {
+            padding: 20px 25px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        /* Formulaires */
+        .form-group-custom { margin-bottom: 25px; }
+        .form-label-custom {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .form-label-custom i { margin-right: 6px; color: #667eea; }
+        .form-control-custom, .form-select-custom, textarea.form-control-custom {
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            padding: 12px 15px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        .form-control-custom:focus, .form-select-custom:focus, textarea.form-control-custom:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            outline: none;
+        }
+        
+        .btn-cancel {
+            background: #e9ecef;
+            color: #6c757d;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        
+        .empty-state-custom {
+            text-align: center;
+            padding: 80px 20px;
+            background: white;
+            border-radius: 20px;
+        }
+        .empty-state-custom i {
+            font-size: 80px;
+            color: #667eea;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .loading-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .file-input {
+            border: 2px dashed #e1e8ed;
+            border-radius: 12px;
+            padding: 15px;
+            background: #f8f9fa;
+        }
+        .file-input input {
+            border: none;
+            background: transparent;
+            padding: 5px 0;
+        }
+        
+        /* Sous-tableau pour les tests */
+        .sub-table {
+            background: #f8f9fa;
+            margin: 10px 0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .sub-table th {
+            background: #e9ecef;
+            color: #2c3e50;
+            font-size: 12px;
+            padding: 10px;
+        }
+        .sub-table td {
+            padding: 10px;
+            font-size: 12px;
+        }
+        
+        @media (max-width: 768px) {
+            .card-header-custom { padding: 20px; }
+            .header-title { font-size: 20px; flex-direction: column; text-align: center; }
+            .card-body-custom { padding: 20px; }
+            .btn-action { padding: 5px 10px; font-size: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Traitement en cours...</p>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="main-card">
+            <div class="card-header-custom">
+                <div class="header-title">
+                    <div>
+                        <i class="fas fa-file-alt"></i>
+                        Gestion des Tests
+                    </div>
+                    <div class="badge-stats">
+                        <i class="fas fa-chart-line"></i>
+                        Programmation des tests
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-body-custom">
+                <!-- Tableau des offres acceptées -->
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th style="width: 5%; text-align: center;"><i class="fas fa-hashtag"></i> ID</th>
+                                <th style="width: 30%; text-align: left;"><i class="fas fa-tag"></i> Titre de l'offre</th>
+                                <th style="width: 15%; text-align: center;"><i class="fas fa-layer-group"></i> Domaine</th>
+                                <th style="width: 15%; text-align: center;"><i class="fas fa-calendar-check"></i> Date validation</th>
+                                <th style="width: 15%; text-align: center;"><i class="fas fa-file-alt"></i> Statut test</th>
+                                <th style="width: 20%; text-align: center;"><i class="fas fa-cogs"></i> Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="offresTableBody">
+                            <tr>
+                                <td colspan="6" class="text-center py-5">
+                                    <div class="loading-spinner" style="margin: 0 auto;"></div>
+                                    <p class="mt-3">Chargement des offres...</p>
+                                 </div>
+                             '</div>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Programmer Test -->
+    <div class="modal fade" id="programmerModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title"><i class="fas fa-calendar-plus"></i> Programmer un test</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body modal-body-custom">
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle"></i> <strong>Offre :</strong> <span id="modalOffreTitre"></span>
+                    </div>
+                    <form id="programmerForm" enctype="multipart/form-data">
+                        <input type="hidden" id="programmerOffreId">
+                        <div class="form-group-custom">
+                            <label class="form-label-custom"><i class="fas fa-file-pdf"></i> Fichier du test <span class="text-danger">*</span></label>
+                            <div class="file-input">
+                                <input type="file" class="form-control-custom" id="testFichier" name="fichier_test" accept=".pdf,.doc,.docx,.txt" required>
+                                <small class="text-muted">Formats acceptés: PDF, DOC, DOCX, TXT (Max 10MB)</small>
+                            </div>
+                        </div>
+                        <div class="form-group-custom">
+                            <label class="form-label-custom"><i class="fas fa-calendar"></i> Date du test <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control-custom" id="testDate" name="date_test" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer modal-footer-custom">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn-submit" onclick="programmerTest()">Programmer le test</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Détail Tests -->
+    <div class="modal fade" id="detailTestsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title"><i class="fas fa-list"></i> Tests programmés</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body modal-body-custom">
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle"></i> <strong>Offre :</strong> <span id="detailOffreTitre"></span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-custom" style="box-shadow: none;">
+                            <thead>
+                                <tr>
+                                    <th><i class="fas fa-hashtag"></i> ID</th>
+                                    <th><i class="fas fa-file"></i> Fichier</th>
+                                    <th><i class="fas fa-calendar"></i> Date du test</th>
+                                    <th><i class="fas fa-cogs"></i> Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailTestsBody">
+                                <tr><td colspan="4" class="text-center py-5">Chargement...</td><td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer modal-footer-custom">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script>
+        let offresData = [];
+        
+        function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
+        function showLoading() { $('#loadingOverlay').fadeIn(300); }
+        function hideLoading() { $('#loadingOverlay').fadeOut(300); }
+        
+        function showSuccess(message) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Succès !',
+                text: message,
+                timer: 2500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        }
+        
+        function showError(message) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Erreur',
+                text: message,
+                confirmButtonColor: '#e74c3c'
+            });
+        }
+        
+        function ouvrirFichierOffre(url) {
+            if (url) window.open(url, '_blank');
+        }
+        
+        function ouvrirFichierTest(idTest) {
+            window.open(`/api/tests/ouvrir-fichier/${idTest}/`, '_blank');
+        }
+        
+        function chargerOffres() {
+            showLoading();
+            
+            $.ajax({
+                url: '/api/tests/offres-acceptees/',
+                method: 'GET',
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                success: function(response) {
+                    hideLoading();
+                    
+                    if (response.success) {
+                        offresData = response.offres;
+                        afficherOffres(response.offres);
+                    } else {
+                        $('#offresTableBody').html(`
+                            <tr><td colspan="6"><div class="empty-state-custom">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <p>Erreur: ${response.error || 'Impossible de charger les offres'}</p>
+                            </div><\/div><\/td><\/tr>
+                        `);
+                    }
+                },
+                error: function() {
+                    hideLoading();
+                    $('#offresTableBody').html(`
+                        <tr><td colspan="6"><div class="empty-state-custom">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>Erreur de connexion au serveur</p>
+                        </div><\/div><\/td><\/tr>
+                    `);
+                }
+            });
+        }
+        
+        function afficherOffres(offres) {
+            const tbody = $('#offresTableBody');
+            tbody.empty();
+            
+            if (!offres || offres.length === 0) {
+                tbody.html(`
+                    <tr><td colspan="6"><div class="empty-state-custom">
+                        <i class="fas fa-folder-open"></i>
+                        <p>Aucune offre acceptée disponible</p>
+                        <small>Les offres validées par l'ONEM apparaîtront ici</small>
+                    </div><\/div><\/td><\/tr>
+                `);
+                return;
+            }
+            
+            offres.forEach(offre => {
+                const statutHtml = offre.a_deja_test ? 
+                    `<span class="badge-test"><i class="fas fa-check-circle"></i> ${offre.nb_tests} test(s) programmé(s)</span>` :
+                    `<span class="badge-aucun-test"><i class="fas fa-clock"></i> Aucun test programmé</span>`;
+                
+                const row = `
+                    <tr class="fade-in">
+                        <td style="text-align: center;"><strong style="color: #667eea;">#${offre.id}</strong><\/div>
+                        <td style="text-align: left;">
+                            <span class="titre-offre" onclick="ouvrirFichierOffre('${offre.fichier_url}')">
+                                <i class="fas fa-file-pdf"></i> ${escapeHtml(offre.titre)}
+                            </span>
+                        <\/div>
+                        <td style="text-align: center;"><span class="badge-domaine">${escapeHtml(offre.domaine_nom)}</span><\/div>
+                        <td style="text-align: center;"><i class="fas fa-calendar-check"></i> ${offre.date_validation}<\/div>
+                        <td style="text-align: center;">${statutHtml}<\/div>
+                        <td style="text-align: center;">
+                            <button class="btn-action btn-detail" onclick="voirDetailsTests(${offre.id})">
+                                <i class="fas fa-list"></i> Voir tests
+                            </button>
+                            <button class="btn-action btn-programmer" onclick="ouvrirModalProgrammer(${offre.id}, '${escapeHtml(offre.titre)}')">
+                                <i class="fas fa-calendar-plus"></i> Programmer
+                            </button>
+                        <\/div>
+                    <\/tr>
+                `;
+                tbody.append(row);
+            });
+        }
+        
+        function ouvrirModalProgrammer(offreId, titre) {
+            $('#programmerOffreId').val(offreId);
+            $('#modalOffreTitre').text(titre);
+            $('#testFichier').val('');
+            $('#testDate').val('');
+            $('#programmerModal').modal('show');
+        }
+        
+        function programmerTest() {
+            const offreId = $('#programmerOffreId').val();
+            const fichier = $('#testFichier')[0].files[0];
+            const dateTest = $('#testDate').val();
+            
+            if (!fichier) {
+                showError('Veuillez importer le fichier du test');
+                return;
+            }
+            
+            if (!dateTest) {
+                showError('Veuillez sélectionner la date du test');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('offre_id', offreId);
+            formData.append('fichier_test', fichier);
+            formData.append('date_test', dateTest);
+            
+            showLoading();
+            
+            $.ajax({
+                url: '/api/tests/ajouter/',
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                success: function(response) {
+                    hideLoading();
+                    if (response.success) {
+                        showSuccess(response.message);
+                        $('#programmerModal').modal('hide');
+                        chargerOffres();
+                    } else {
+                        showError(response.message);
+                    }
+                },
+                error: function(xhr) {
+                    hideLoading();
+                    const message = xhr.responseJSON?.message || 'Erreur lors de la programmation';
+                    showError(message);
+                }
+            });
+        }
+        
+        function voirDetailsTests(offreId) {
+            const offre = offresData.find(o => o.id === offreId);
+            if (offre) {
+                $('#detailOffreTitre').text(offre.titre);
+                chargerTestsOffre(offreId);
+                $('#detailTestsModal').modal('show');
+            }
+        }
+        
+        function chargerTestsOffre(offreId) {
+            $('#detailTestsBody').html(`
+                <td><td colspan="4" class="text-center py-5">
+                    <div class="loading-spinner" style="width: 30px; height: 30px;"></div>
+                    <p class="mt-2">Chargement des tests...</p>
+                 <\/div><\/tr>
+            `);
+            
+            $.ajax({
+                url: `/api/tests/offre/${offreId}/`,
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        afficherTests(response.tests);
+                    } else {
+                        $('#detailTestsBody').html(`
+                            <td><td colspan="4" class="text-center text-danger py-5">
+                                Erreur: ${response.error}
+                             <\/div><\/tr>
+                        `);
+                    }
+                },
+                error: function() {
+                    $('#detailTestsBody').html(`
+                        <td><td colspan="4" class="text-center text-danger py-5">
+                            Erreur de chargement
+                         <\/div><\/tr>
+                    `);
+                }
+            });
+        }
+        
+        function afficherTests(tests) {
+            const tbody = $('#detailTestsBody');
+            tbody.empty();
+            
+            if (!tests || tests.length === 0) {
+                tbody.html(`
+                    <td><td colspan="4"><div class="empty-state-custom" style="padding: 40px;">
+                        <i class="fas fa-folder-open"></i>
+                        <p>Aucun test programmé pour cette offre</p>
+                    </div><\/div><\/tr>
+                `);
+                return;
+            }
+            
+            tests.forEach(test => {
+                const row = `
+                    <tr>
+                        <td><strong>#${test.id}</strong><\/div>
+                        <td class="titre-offre" onclick="ouvrirFichierTest(${test.id})">
+                            <i class="fas fa-file-pdf"></i> ${escapeHtml(test.nom_fichier)}
+                        <\/div>
+                        <td><i class="fas fa-calendar"></i> ${test.date_test}<\/div>
+                        <td>
+                            <button class="btn-action btn-supprimer" onclick="supprimerTest(${test.id})">
+                                <i class="fas fa-trash-alt"></i> Supprimer
+                            </button>
+                        <\/div>
+                    <\/tr>
+                `;
+                tbody.append(row);
+            });
+        }
+        
+        function supprimerTest(idTest) {
+            Swal.fire({
+                title: 'Confirmation',
+                text: 'Êtes-vous sûr de vouloir supprimer ce test ?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e74c3c',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Oui, supprimer',
+                cancelButtonText: 'Annuler'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    showLoading();
+                    
+                    $.ajax({
+                        url: `/api/tests/supprimer/${idTest}/`,
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': getCSRFToken() },
+                        success: function(response) {
+                            hideLoading();
+                            if (response.success) {
+                                showSuccess(response.message);
+                                // Recharger la liste des offres et le détail
+                                chargerOffres();
+                                const offreId = $('#programmerOffreId').val();
+                                if (offreId) chargerTestsOffre(offreId);
+                                $('#detailTestsModal').modal('hide');
+                            } else {
+                                showError(response.message);
+                            }
+                        },
+                        error: function(xhr) {
+                            hideLoading();
+                            showError(xhr.responseJSON?.message || 'Erreur lors de la suppression');
+                        }
+                    });
+                }
+            });
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        $(document).ready(function() {
+            chargerOffres();
+        });
+    </script>
+</body>
+</html>

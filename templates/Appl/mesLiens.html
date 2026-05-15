@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accueil Administrateur - Gestion Commerciale</title>
+    
+    <!-- Bootstrap 4 CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fb 0%, #e9ecef 100%);
+            min-height: 100vh;
+        }
+        
+        .navbar-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 0.8rem 2rem;
+        }
+        
+        .navbar-custom .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white !important;
+        }
+        
+        .navbar-custom .navbar-brand i {
+            margin-right: 10px;
+        }
+        
+        .navbar-custom .nav-link {
+            color: rgba(255,255,255,0.9) !important;
+            font-weight: 500;
+            margin: 0 5px;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            padding: 8px 16px !important;
+        }
+        
+        .navbar-custom .nav-link:hover {
+            background: rgba(255,255,255,0.2);
+            color: white !important;
+        }
+        
+        .navbar-custom .nav-link.active {
+            background: rgba(255,255,255,0.25);
+            color: white !important;
+        }
+        
+        .navbar-custom .dropdown-menu {
+            background: white;
+            border: none;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            border-radius: 12px;
+            margin-top: 10px;
+        }
+        
+        .navbar-custom .dropdown-item {
+            padding: 10px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar-custom .dropdown-item:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .navbar-custom .dropdown-item i {
+            margin-right: 10px;
+        }
+        
+        .navbar-custom .btn-outline-success {
+            color: white;
+            border-color: rgba(255,255,255,0.5);
+        }
+        
+        .navbar-custom .btn-outline-success:hover {
+            background: white;
+            color: #667eea;
+            border-color: white;
+        }
+        
+        .navbar-custom .form-control {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            border-radius: 25px;
+        }
+        
+        .navbar-custom .form-control::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+        
+        .navbar-custom .form-control:focus {
+            background: rgba(255,255,255,0.25);
+            border-color: white;
+            box-shadow: none;
+            color: white;
+        }
+        
+        /* Hero Section */
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 30px;
+            padding: 50px 40px;
+            margin: 30px 20px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 500px;
+            height: 500px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+        }
+        
+        .hero-section::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -10%;
+            width: 300px;
+            height: 300px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 50%;
+        }
+        
+        .hero-section h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hero-section p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            margin-bottom: 0;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hero-section i {
+            font-size: 4rem;
+            position: absolute;
+            bottom: 20px;
+            right: 40px;
+            opacity: 0.2;
+            z-index: 0;
+        }
+        
+        /* Cards Section */
+        .cards-section {
+            padding: 20px;
+        }
+        
+        .menu-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            height: 100%;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .menu-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+        
+        .menu-card .card-icon {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        
+        .menu-card h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .menu-card p {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-bottom: 0;
+        }
+        
+        .menu-card .arrow {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            opacity: 0;
+            transition: all 0.3s ease;
+            color: #667eea;
+        }
+        
+        .menu-card:hover .arrow {
+            opacity: 1;
+            transform: translateX(5px);
+        }
+        
+        /* Card colors */
+        .menu-card.blue .card-icon { color: #3498db; }
+        .menu-card.green .card-icon { color: #27ae60; }
+        .menu-card.orange .card-icon { color: #f39c12; }
+        .menu-card.purple .card-icon { color: #9b59b6; }
+        .menu-card.red .card-icon { color: #e74c3c; }
+        .menu-card.teal .card-icon { color: #1abc9c; }
+        
+        /* Footer */
+        .footer {
+            background: white;
+            padding: 30px;
+            margin-top: 50px;
+            text-align: center;
+            border-top: 1px solid #e0e0e0;
+            color: #7f8c8d;
+        }
+        
+        .footer i {
+            color: #e74c3c;
+        }
+        
+        @media (max-width: 992px) {
+            .navbar-custom {
+                padding: 1rem;
+            }
+            
+            .hero-section {
+                margin: 20px 15px;
+                padding: 30px 25px;
+            }
+            
+            .hero-section h1 {
+                font-size: 1.8rem;
+            }
+            
+            .menu-card {
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-custom navbar-expand-lg sticky-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-store"></i>
+            Deconnecter
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" 
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="/Appl/Domaine">
+                        <i class="fas fa-users"></i> Domaine
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/Appl/Agents">
+                        <i class="fas fa-users"></i> Agent
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/Appl/Test">
+                        <i class="fas fa-users"></i> Test
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/Appl/Evaluation">
+                        <i class="fas fa-users"></i> Evaluation
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/Appl/DemandeConge">
+                        <i class="fas fa-users"></i> Demande conge
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/Appl/TypeConge">
+                        <i class="fas fa-users"></i> TypeConge
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="/Appl/OffreEmploi">
+                        <i class="fas fa-box"></i> Offre d'emploie
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/Appl/DecisionOnem">
+                        <i class="fas fa-shopping-cart"></i> Decision onem
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/Appl/Onem">
+                        <i class="fas fa-dollar-sign"></i> Onem
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/Appl/Decision">
+                        <i class="fas fa-dollar-sign"></i> Decision
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/Appl/Candidat">
+                        <i class="fas fa-dollar-sign"></i> Candidat
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin">
+                        <i class="fas fa-dollar-sign"></i> Utilisateur
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/Appl/logins">
+                        <i class="fas fa-dollar-sign"></i> login
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/Appl/TypeDecision">
+                        <i class="fas fa-dollar-sign"></i> Type decisin candidature
+                    </a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-chart-bar"></i> Rapports
+                    </a>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item" href="#">
+                            <i class="fas fa-chart-pie"></i> Situation globale
+                        </a>
+                        <a class="dropdown-item" href="#">
+                            <i class="fas fa-list-alt"></i> Situation détaillée
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="#">
+                            <i class="fas fa-chart-line"></i> Statistiques
+                        </a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin">
+                        <i class="fas fa-user-shield"></i> Administration
+                    </a>
+                </li>
+            </ul>
+            
+           
+        </div>
+    </div>
+</nav>
+        </div>
+    </div>
+</div>
+
+
+
+</body>
+</html>

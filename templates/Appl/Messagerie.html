@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>Messagerie Interne - GRH</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { max-width: 1400px; margin: auto; }
+        .main-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .card-header-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px 30px;
+            color: white;
+        }
+        .header-title {
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .header-title i { font-size: 28px; margin-right: 10px; }
+        .badge-stats {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 12px;
+            border-radius: 50px;
+            font-size: 12px;
+        }
+        .card-body-custom { padding: 0; background: #f8f9fa; }
+        
+        .messagerie-container {
+            display: flex;
+            height: 70vh;
+            min-height: 500px;
+        }
+        .conversations-sidebar {
+            width: 320px;
+            background: white;
+            border-right: 1px solid #e1e8ed;
+            overflow-y: auto;
+        }
+        .messages-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+        .messages-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e1e8ed;
+            background: white;
+        }
+        .messages-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .message-input-area {
+            padding: 15px 20px;
+            border-top: 1px solid #e1e8ed;
+            background: white;
+        }
+        
+        .conversation-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e1e8ed;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .conversation-item:hover { background: #f8f9ff; }
+        .conversation-item.active {
+            background: linear-gradient(135deg, #667eea10 0%, #764ba220 100%);
+            border-left: 3px solid #667eea;
+        }
+        .conversation-nom { font-weight: 600; margin-bottom: 5px; }
+        .conversation-groupe {
+            font-size: 10px;
+            color: white;
+            background: #667eea;
+            padding: 2px 8px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+        .conversation-last-msg {
+            font-size: 12px;
+            color: #6c757d;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .badge-non-lu {
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        
+        .message-bubble {
+            max-width: 70%;
+            margin-bottom: 15px;
+            display: flex;
+        }
+        .message-moi { justify-content: flex-end; }
+        .message-autre { justify-content: flex-start; }
+        .message-content {
+            padding: 10px 15px;
+            border-radius: 18px;
+            position: relative;
+        }
+        .message-moi .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .message-autre .message-content {
+            background: #e9ecef;
+            color: #2c3e50;
+        }
+        .message-sujet {
+            font-weight: 600;
+            font-size: 11px;
+            margin-bottom: 5px;
+            opacity: 0.8;
+        }
+        .message-texte { font-size: 14px; word-wrap: break-word; }
+        .message-date { font-size: 10px; margin-top: 5px; opacity: 0.7; text-align: right; }
+        .message-modifie { font-size: 9px; font-style: italic; opacity: 0.6; margin-top: 3px; }
+        .message-pieces {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .piece-jointe {
+            background: rgba(0,0,0,0.1);
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: 11px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+        .piece-jointe:hover { background: rgba(0,0,0,0.2); }
+        .message-actions {
+            position: absolute;
+            right: -40px;
+            top: 5px;
+            display: none;
+            gap: 5px;
+        }
+        .message-bubble:hover .message-actions { display: flex; }
+        .btn-action-msg {
+            background: #e9ecef;
+            border: none;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-action-msg:hover { background: #667eea; color: white; }
+        
+        .input-message {
+            border: 2px solid #e1e8ed;
+            border-radius: 25px;
+            padding: 12px 20px;
+            width: 100%;
+            resize: none;
+            font-size: 14px;
+        }
+        .input-message:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        .btn-envoyer {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 25px;
+            font-weight: 600;
+        }
+        .btn-upload {
+            background: #e9ecef;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 20px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-upload:hover { background: #667eea; color: white; }
+        
+        .loading-spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .file-preview-item {
+            background: #e9ecef;
+            border-radius: 8px;
+            padding: 5px 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+        
+        @media (max-width: 768px) {
+            .conversations-sidebar { width: 250px; }
+            .message-bubble { max-width: 85%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-card">
+            <div class="card-header-custom">
+                <div class="header-title">
+                    <div><i class="fas fa-envelope"></i> Messagerie Interne</div>
+                    <div class="badge-stats"><i class="fas fa-users"></i> Communication sécurisée</div>
+                </div>
+            </div>
+            
+            <div class="card-body-custom">
+                <div class="messagerie-container">
+                    <div class="conversations-sidebar" id="conversationsSidebar">
+                        <div class="p-3 border-bottom">
+                            <button class="btn btn-primary w-100" onclick="ouvrirModalNouveauMessage()">
+                                <i class="fas fa-plus"></i> Nouveau message
+                            </button>
+                        </div>
+                        <div id="conversationsList">
+                            <div class="text-center py-5"><div class="loading-spinner"></div><p class="mt-2">Chargement...</p></div>
+                        </div>
+                    </div>
+                    
+                    <div class="messages-area">
+                        <div class="messages-header" id="messagesHeader">
+                            <div class="text-center py-5 text-muted">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <p>Sélectionnez une conversation</p>
+                            </div>
+                        </div>
+                        <div class="messages-list" id="messagesList"></div>
+                        <div class="message-input-area" id="messageInputArea" style="display: none;">
+                            <div class="row g-2">
+                                <div class="col-auto">
+                                    <button class="btn-upload" onclick="uploadFichier()">
+                                        <i class="fas fa-paperclip"></i>
+                                    </button>
+                                    <input type="file" id="fileInput" style="display: none;" onchange="envoyerFichier()" multiple>
+                                </div>
+                                <div class="col">
+                                    <textarea class="input-message" id="nouveauMessage" rows="2" placeholder="Écrivez votre message..."></textarea>
+                                </div>
+                                <div class="col-auto">
+                                    <button class="btn-envoyer h-100" onclick="envoyerMessage()">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-12">
+                                    <div id="filesPreview" class="d-flex flex-wrap gap-2"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Nouveau Message -->
+    <div class="modal fade" id="nouveauMessageModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-paper-plane"></i> Nouveau message</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="nouveauMessageForm">
+                        <div class="mb-3">
+                            <label class="form-label">Destinataire *</label>
+                            <select class="form-select" id="destinataireSelect" required>
+                                <option value="">-- Sélectionnez un destinataire --</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Sujet</label>
+                            <input type="text" class="form-control" id="messageSujet" placeholder="Objet du message">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Message *</label>
+                            <textarea class="form-control" id="messageContenu" rows="5" placeholder="Votre message..." required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" onclick="envoyerNouveauMessage()">Envoyer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Supprimer Conversation -->
+    <div class="modal fade" id="supprimerConversationModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="fas fa-trash-alt"></i> Supprimer la conversation</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Êtes-vous sûr de vouloir supprimer TOUS les messages de cette conversation ?</p>
+                    <p class="text-danger small">Cette action est irréversible.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmerSuppression">Supprimer tout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script>
+        let conversationActuelle = null;
+        let fichiersEnAttente = [];
+        
+        function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
+        
+        function showSuccess(msg) { Swal.fire({ icon: 'success', title: 'Succès', text: msg, timer: 2000, showConfirmButton: false, toast: true, position: 'top-end' }); }
+        function showError(msg) { Swal.fire({ icon: 'error', title: 'Erreur', text: msg, confirmButtonColor: '#e74c3c' }); }
+        
+        // ==================== CONVERSATIONS ====================
+        
+        function chargerConversations() {
+            $.ajax({
+                url: '/api/messagerie/conversations/',
+                method: 'GET',
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                success: function(response) {
+                    if (response.success) afficherConversations(response.conversations);
+                }
+            });
+        }
+        
+        function afficherConversations(conversations) {
+            const container = $('#conversationsList');
+            container.empty();
+            if (conversations.length === 0) {
+                container.html('<div class="text-center py-5 text-muted"><i class="fas fa-inbox fa-3x mb-3"></i><p>Aucune conversation</p></div>');
+                return;
+            }
+            conversations.forEach(conv => {
+                const badgeNonLu = conv.non_lus > 0 ? `<span class="badge-non-lu ms-2">${conv.non_lus}</span>` : '';
+                let groupeColor = '#667eea';
+                if (conv.participant_groups[0] === 'CANDIDAT') groupeColor = '#27ae60';
+                if (conv.participant_groups[0] === 'AGENT') groupeColor = '#3498db';
+                if (conv.participant_groups[0] === 'ONEM') groupeColor = '#e74c3c';
+                const item = `
+                    <div class="conversation-item" onclick="chargerMessages(${conv.participant_id})" data-user-id="${conv.participant_id}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="conversation-nom"><i class="fas fa-user-circle"></i> ${escapeHtml(conv.participant_nom)} ${badgeNonLu}</div>
+                            <div class="conversation-date">${conv.dernier_message_date}</div>
+                        </div>
+                        <div><span class="conversation-groupe" style="background: ${groupeColor};">${conv.participant_groups[0] || 'AUCUN'}</span></div>
+                        <div class="conversation-last-msg mt-1">${escapeHtml(conv.dernier_message)}...</div>
+                    </div>
+                `;
+                container.append(item);
+            });
+        }
+        
+        // ==================== MESSAGES ====================
+        
+        function chargerMessages(userId) {
+            conversationActuelle = userId;
+            $('.conversation-item').removeClass('active');
+            $(`.conversation-item[data-user-id="${userId}"]`).addClass('active');
+            $.ajax({
+                url: `/api/messagerie/messages/${userId}/`,
+                method: 'GET',
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                success: function(response) {
+                    if (response.success) {
+                        afficherMessages(response);
+                        $('#messageInputArea').show();
+                        chargerConversations();
+                    }
+                },
+                error: function(xhr) { showError(xhr.responseJSON?.message || 'Erreur'); $('#messageInputArea').hide(); }
+            });
+        }
+        
+        function afficherMessages(data) {
+            let groupeColor = '#667eea';
+            if (data.autre_user.groups[0] === 'CANDIDAT') groupeColor = '#27ae60';
+            if (data.autre_user.groups[0] === 'AGENT') groupeColor = '#3498db';
+            if (data.autre_user.groups[0] === 'ONEM') groupeColor = '#e74c3c';
+            
+            $('#messagesHeader').html(`
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0"><i class="fas fa-user-circle"></i> ${escapeHtml(data.autre_user.nom)}</h5>
+                        <span class="conversation-groupe" style="background: ${groupeColor};">${data.autre_user.groups[0] || 'AUCUN'}</span>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-outline-danger me-2" onclick="ouvrirModalSupprimerConversation()"><i class="fas fa-trash-alt"></i> Supprimer tout</button>
+                        <small class="text-muted"><i class="fas fa-envelope"></i> ${data.messages.length} messages</small>
+                    </div>
+                </div>
+            `);
+            
+            const container = $('#messagesList');
+            container.empty();
+            if (data.messages.length === 0) {
+                container.html('<div class="text-center py-5 text-muted"><i class="fas fa-comment fa-3x mb-3"></i><p>Commencez la conversation !</p></div>');
+                return;
+            }
+            
+            data.messages.forEach(msg => {
+                const bubbleClass = msg.est_moi ? 'message-moi' : 'message-autre';
+                const modifieBadge = msg.est_modifie ? '<div class="message-modifie"><i class="fas fa-edit"></i> Modifié</div>' : '';
+                
+                let piecesHtml = '';
+                if (msg.pieces_jointes && msg.pieces_jointes.length > 0) {
+                    piecesHtml = '<div class="message-pieces">';
+                    msg.pieces_jointes.forEach(pj => {
+                        let icon = 'fa-file';
+                        if (pj.type === 'image') icon = 'fa-image';
+                        if (pj.type === 'pdf') icon = 'fa-file-pdf';
+                        let taille = '';
+                        if (pj.taille > 1024 * 1024) taille = (pj.taille / (1024 * 1024)).toFixed(1) + ' MB';
+                        else if (pj.taille > 1024) taille = (pj.taille / 1024).toFixed(1) + ' KB';
+                        else taille = pj.taille + ' B';
+                        piecesHtml += `<div class="piece-jointe" onclick="telechargerFichier(${pj.id})"><i class="fas ${icon}"></i> ${pj.nom.substring(0, 25)} (${taille})</div>`;
+                    });
+                    piecesHtml += '</div>';
+                }
+                
+                const actionsHtml = msg.est_moi ? `
+                    <div class="message-actions">
+                        <button class="btn-action-msg" onclick="modifierMessage(${msg.id})"><i class="fas fa-edit"></i></button>
+                        <button class="btn-action-msg" onclick="supprimerMessage(${msg.id})"><i class="fas fa-trash"></i></button>
+                    </div>
+                ` : '';
+                
+                const messageHtml = `
+                    <div class="message-bubble ${bubbleClass}">
+                        <div class="message-content">
+                            ${msg.sujet ? `<div class="message-sujet">📌 ${escapeHtml(msg.sujet)}</div>` : ''}
+                            <div class="message-texte">${escapeHtml(msg.contenu)}</div>
+                            ${piecesHtml}
+                            <div class="message-date">${msg.date_envoi}${modifieBadge}</div>
+                            ${actionsHtml}
+                        </div>
+                    </div>
+                `;
+                container.append(messageHtml);
+            });
+            container.scrollTop(container[0].scrollHeight);
+        }
+        
+        // ==================== ACTIONS MESSAGES ====================
+        
+        function envoyerMessage() {
+            const contenu = $('#nouveauMessage').val().trim();
+            if (!contenu && fichiersEnAttente.length === 0) { showError('Message vide'); return; }
+            if (!contenu) { showError('Veuillez écrire un message'); return; }
+            if (!conversationActuelle) { showError('Aucune conversation'); return; }
+            
+            $.ajax({
+                url: '/api/messagerie/envoyer/',
+                method: 'POST',
+                data: JSON.stringify({ destinataire_id: conversationActuelle, sujet: '', contenu: contenu }),
+                headers: { 'X-CSRFToken': getCSRFToken(), 'Content-Type': 'application/json' },
+                success: function(response) {
+                    if (response.success) {
+                        const messageId = response.message_id;
+                        if (fichiersEnAttente.length > 0) {
+                            envoyerFichiersApresMessage(messageId);
+                        } else {
+                            $('#nouveauMessage').val('');
+                            chargerMessages(conversationActuelle);
+                            chargerConversations();
+                        }
+                    } else showError(response.message);
+                },
+                error: function(xhr) { showError(xhr.responseJSON?.message || 'Erreur'); }
+            });
+        }
+        
+        function modifierMessage(messageId) {
+            Swal.fire({
+                title: 'Modifier le message',
+                input: 'textarea',
+                inputLabel: 'Nouveau contenu',
+                inputValue: '',
+                showCancelButton: true,
+                confirmButtonText: 'Modifier',
+                cancelButtonText: 'Annuler'
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    $.ajax({
+                        url: `/api/messagerie/modifier/${messageId}/`,
+                        method: 'POST',
+                        data: JSON.stringify({ contenu: result.value }),
+                        headers: { 'X-CSRFToken': getCSRFToken(), 'Content-Type': 'application/json' },
+                        success: function(response) {
+                            if (response.success) { showSuccess('Message modifié'); chargerMessages(conversationActuelle); }
+                            else showError(response.message);
+                        }
+                    });
+                }
+            });
+        }
+        
+        function supprimerMessage(messageId) {
+            Swal.fire({ title: 'Supprimer', text: 'Supprimer ce message pour vous ?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#e74c3c', confirmButtonText: 'Supprimer' }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `/api/messagerie/supprimer/${messageId}/`,
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': getCSRFToken() },
+                        success: function(response) {
+                            if (response.success) { showSuccess('Message supprimé'); chargerMessages(conversationActuelle); }
+                            else showError(response.message);
+                        }
+                    });
+                }
+            });
+        }
+        
+        function supprimerTousMessages() {
+            if (!conversationActuelle) return;
+            $.ajax({
+                url: `/api/messagerie/supprimer-tous/${conversationActuelle}/`,
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                success: function(response) {
+                    if (response.success) {
+                        showSuccess('Conversation supprimée');
+                        $('#messagesHeader').html('<div class="text-center py-5 text-muted"><i class="fas fa-inbox fa-3x mb-3"></i><p>Sélectionnez une conversation</p></div>');
+                        $('#messagesList').empty();
+                        $('#messageInputArea').hide();
+                        chargerConversations();
+                        conversationActuelle = null;
+                    } else showError(response.message);
+                }
+            });
+        }
+        
+        function ouvrirModalSupprimerConversation() {
+            $('#supprimerConversationModal').modal('show');
+            $('#btnConfirmerSuppression').off('click').on('click', function() { supprimerTousMessages(); $('#supprimerConversationModal').modal('hide'); });
+        }
+        
+        // ==================== FICHIERS ====================
+        
+        function uploadFichier() { $('#fileInput').click(); }
+        
+        function envoyerFichier() {
+            const files = $('#fileInput')[0].files;
+            for (let i = 0; i < files.length; i++) {
+                fichiersEnAttente.push(files[i]);
+            }
+            afficherFichiersEnAttente();
+            $('#fileInput').val('');
+        }
+        
+        function afficherFichiersEnAttente() {
+            const container = $('#filesPreview');
+            container.empty();
+            fichiersEnAttente.forEach((file, index) => {
+                const fileSize = (file.size / 1024).toFixed(1);
+                const fileIcon = file.type.startsWith('image/') ? 'fa-image' : 'fa-file';
+                container.append(`
+                    <div class="file-preview-item" data-index="${index}">
+                        <i class="fas ${fileIcon}"></i>
+                        <span>${file.name.substring(0, 20)} (${fileSize} KB)</span>
+                        <i class="fas fa-times-circle" style="cursor: pointer; color: #e74c3c;" onclick="retirerFichier(${index})"></i>
+                    </div>
+                `);
+            });
+        }
+        
+        function retirerFichier(index) {
+            fichiersEnAttente.splice(index, 1);
+            afficherFichiersEnAttente();
+        }
+        
+        function envoyerFichiersApresMessage(messageId) {
+            let fichiersEnvoyes = 0;
+            const totalFichiers = fichiersEnAttente.length;
+            
+            Swal.fire({ title: 'Envoi en cours...', text: `Envoi des fichiers (0/${totalFichiers})`, allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            
+            fichiersEnAttente.forEach((file) => {
+                const formData = new FormData();
+                formData.append('fichier', file);
+                
+                $.ajax({
+                    url: `/api/messagerie/upload/${messageId}/`,
+                    method: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    headers: { 'X-CSRFToken': getCSRFToken() },
+                    success: function(response) {
+                        fichiersEnvoyes++;
+                        Swal.update({ html: `Envoi des fichiers (${fichiersEnvoyes}/${totalFichiers})` });
+                        if (fichiersEnvoyes === totalFichiers) {
+                            Swal.close();
+                            showSuccess('Message et fichiers envoyés');
+                            $('#nouveauMessage').val('');
+                            fichiersEnAttente = [];
+                            $('#filesPreview').empty();
+                            chargerMessages(conversationActuelle);
+                            chargerConversations();
+                        }
+                    },
+                    error: function(xhr) {
+                        Swal.close();
+                        showError(`Erreur lors de l'envoi du fichier`);
+                    }
+                });
+            });
+        }
+        
+        function telechargerFichier(pieceId) {
+            window.open(`/api/messagerie/telecharger/${pieceId}/`, '_blank');
+        }
+        
+        // ==================== NOUVEAU MESSAGE ====================
+        
+        function ouvrirModalNouveauMessage() {
+            chargerDestinataires();
+            $('#nouveauMessageModal').modal('show');
+        }
+        
+        function chargerDestinataires() {
+            $.ajax({
+                url: '/api/messagerie/destinataires/',
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        const select = $('#destinataireSelect');
+                        select.empty();
+                        select.append('<option value="">-- Sélectionnez un destinataire --</option>');
+                        response.destinataires.forEach(d => {
+                            const groupe = d.groups[0] || 'AUCUN';
+                            select.append(`<option value="${d.id}">${d.nom} (${groupe})</option>`);
+                        });
+                    }
+                }
+            });
+        }
+        
+        function envoyerNouveauMessage() {
+            const destinataireId = $('#destinataireSelect').val();
+            const sujet = $('#messageSujet').val();
+            const contenu = $('#messageContenu').val().trim();
+            if (!destinataireId || !contenu) { showError('Veuillez remplir tous les champs'); return; }
+            $.ajax({
+                url: '/api/messagerie/envoyer/',
+                method: 'POST',
+                data: JSON.stringify({ destinataire_id: destinataireId, sujet: sujet || 'Message', contenu: contenu }),
+                headers: { 'X-CSRFToken': getCSRFToken(), 'Content-Type': 'application/json' },
+                success: function(response) {
+                    if (response.success) {
+                        showSuccess('Message envoyé');
+                        $('#nouveauMessageModal').modal('hide');
+                        $('#nouveauMessageForm')[0].reset();
+                        chargerConversations();
+                        chargerMessages(parseInt(destinataireId));
+                    } else showError(response.message);
+                }
+            });
+        }
+        
+        function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+        
+        // Rafraîchissement périodique
+        setInterval(() => { chargerConversations(); if (conversationActuelle) chargerMessages(conversationActuelle); }, 30000);
+        
+        $(document).ready(function() { chargerConversations(); });
+    </script>
+</body>
+</html>

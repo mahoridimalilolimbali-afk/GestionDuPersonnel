@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>ONEM - Analyse des Offres</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { max-width: 1400px; margin: auto; }
+        .main-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .card-header-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px 35px;
+            color: white;
+        }
+        .header-title {
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .header-title i { font-size: 32px; margin-right: 12px; }
+        .badge-stats {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 18px;
+            border-radius: 50px;
+            font-size: 14px;
+        }
+        .nav-tabs-custom {
+            border-bottom: 2px solid #e1e8ed;
+            padding: 0 35px;
+            background: white;
+        }
+        .nav-tabs-custom .nav-link {
+            border: none;
+            padding: 15px 25px;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s;
+        }
+        .nav-tabs-custom .nav-link:hover { color: #667eea; }
+        .nav-tabs-custom .nav-link.active {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            background: transparent;
+        }
+        .card-body-custom { padding: 35px; background: #f8f9fa; }
+        .table-custom {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        }
+        .table-custom thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .table-custom thead th {
+            color: white;
+            font-weight: 600;
+            padding: 18px 15px;
+            border: none;
+            font-size: 14px;
+            text-align: center;
+        }
+        .table-custom tbody tr {
+            transition: all 0.3s ease;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .table-custom tbody tr:hover {
+            background: #f8f9ff;
+            transform: scale(1.01);
+        }
+        .table-custom tbody td { padding: 16px 15px; vertical-align: middle; text-align: center; }
+        
+        .btn-action {
+            padding: 8px 18px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 12px;
+            margin: 0 4px;
+            border: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-analyser {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+        }
+        .btn-modifier {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+        }
+        .btn-voir {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+        .btn-action:hover { transform: translateY(-2px); color: white; }
+        
+        .badge-attente {
+            background: #f39c12;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-valide {
+            background: #27ae60;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-refuse {
+            background: #e74c3c;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .titre-cliquable {
+            cursor: pointer;
+            color: #667eea;
+            font-weight: 600;
+            text-align: left;
+        }
+        .titre-cliquable:hover { color: #764ba2; text-decoration: underline; }
+        
+        .modal-content-custom {
+            border-radius: 25px;
+            border: none;
+            overflow: hidden;
+        }
+        .modal-header-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 25px;
+            border: none;
+        }
+        .modal-body-custom { padding: 30px; background: #f8f9fa; }
+        .modal-footer-custom {
+            padding: 20px 25px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+        }
+        .form-group-custom { margin-bottom: 25px; }
+        .form-label-custom {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: block;
+            font-size: 14px;
+        }
+        .form-label-custom i { margin-right: 6px; color: #667eea; }
+        .form-control-custom, .form-select-custom, textarea.form-control-custom {
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            padding: 12px 15px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        textarea.form-control-custom { resize: vertical; min-height: 100px; }
+        .btn-cancel {
+            background: #e9ecef;
+            color: #6c757d;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        .empty-state-custom {
+            text-align: center;
+            padding: 80px 20px;
+            background: white;
+            border-radius: 20px;
+        }
+        .empty-state-custom i {
+            font-size: 80px;
+            color: #667eea;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .loading-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 768px) {
+            .card-header-custom { padding: 20px; }
+            .header-title { font-size: 20px; flex-direction: column; text-align: center; }
+            .card-body-custom { padding: 20px; }
+            .btn-action { padding: 5px 12px; font-size: 10px; }
+            .table-custom thead th, .table-custom tbody td { padding: 10px 8px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Traitement en cours...</p>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="main-card">
+            <div class="card-header-custom">
+                <div class="header-title">
+                    <div>
+                        <i class="fas fa-building"></i>
+                        ONEM - Analyse des Offres
+                    </div>
+                    <div class="badge-stats">
+                        <i class="fas fa-chart-line"></i>
+                        Gestion des analyses
+                    </div>
+                </div>
+            </div>
+            
+            <ul class="nav nav-tabs nav-tabs-custom" id="analyseTab" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active" id="non-analysees-tab" data-bs-toggle="tab" data-bs-target="#non-analysees" type="button">
+                        <i class="fas fa-clock"></i> Offres non analysées <span id="nonAnalyseesCount" class="badge bg-warning ms-2">0</span>
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="analysees-tab" data-bs-toggle="tab" data-bs-target="#analysees" type="button">
+                        <i class="fas fa-check-circle"></i> Offres analysées <span id="analyseesCount" class="badge bg-success ms-2">0</span>
+                    </button>
+                </li>
+            </ul>
+            
+            <div class="card-body-custom">
+                <div class="tab-content">
+                    <!-- Tab: Offres non analysées -->
+                    <div class="tab-pane fade show active" id="non-analysees" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-custom">
+                                <thead>
+                                    <tr>
+                                        <th style="width:5%">ID</th>
+                                        <th style="width:30%">Titre</th>
+                                        <th style="width:15%">Domaine</th>
+                                        <th style="width:20%">Date publication</th>
+                                        <th style="width:15%">Document</th>
+                                        <th style="width:15%">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="nonAnalyseesBody">
+                                    <tr><td colspan="6" class="text-center py-5"><div class="loading-spinner"></div><p class="mt-3">Chargement...</p></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Tab: Offres analysées -->
+                    <div class="tab-pane fade" id="analysees" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-custom">
+                                <thead>
+                                    <tr>
+                                        <th style="width:5%">ID Offre</th>
+                                        <th style="width:30%">Titre</th>
+                                        <th style="width:15%">Domaine</th>
+                                        <th style="width:20%">Décision</th>
+                                        <th style="width:15%">Date analyse</th>
+                                        <th style="width:15%">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="analyseesBody">
+                                    <tr><td colspan="6" class="text-center py-5"><div class="loading-spinner"></div><p class="mt-3">Chargement...</p></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Analyse -->
+    <div class="modal fade" id="analyseModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title"><i class="fas fa-gavel"></i> Analyser l'offre</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body modal-body-custom">
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle"></i> <strong>Offre :</strong> <span id="modalOffreTitre"></span>
+                    </div>
+                    <form id="analyseForm" onsubmit="return false;">
+                        <input type="hidden" id="analyseOffreId">
+                        <div class="form-group-custom">
+                            <label class="form-label-custom"><i class="fas fa-gavel"></i> Décision <span class="text-danger">*</span></label>
+                            <select class="form-select-custom" id="decisionSelect" required>
+                                <option value="">-- Chargement des décisions... --</option>
+                            </select>
+                        </div>
+                        <div class="form-group-custom">
+                            <label class="form-label-custom"><i class="fas fa-comment"></i> Observation</label>
+                            <textarea class="form-control-custom" id="observationText" rows="3" placeholder="Observations..."></textarea>
+                        </div>
+                        <div class="form-group-custom">
+                            <label class="form-label-custom"><i class="fas fa-file-alt"></i> Motif</label>
+                            <textarea class="form-control-custom" id="motifText" rows="3" placeholder="Motif de la décision..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer modal-footer-custom">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn-submit" onclick="enregistrerAnalyse()">Enregistrer l'analyse</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Modification -->
+    <div class="modal fade" id="modifierAnalyseModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title"><i class="fas fa-edit"></i> Modifier l'analyse</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body modal-body-custom">
+                    <form id="modifierAnalyseForm" onsubmit="return false;">
+                        <input type="hidden" id="modifierAnalyseId">
+                        <div class="form-group-custom">
+                            <label class="form-label-custom"><i class="fas fa-gavel"></i> Décision</label>
+                            <select class="form-select-custom" id="modifierDecisionSelect">
+                                <option value="">-- Chargement des décisions... --</option>
+                            </select>
+                        </div>
+                        <div class="form-group-custom">
+                            <label class="form-label-custom"><i class="fas fa-comment"></i> Observation</label>
+                            <textarea class="form-control-custom" id="modifierObservationText" rows="3"></textarea>
+                        </div>
+                        <div class="form-group-custom">
+                            <label class="form-label-custom"><i class="fas fa-file-alt"></i> Motif</label>
+                            <textarea class="form-control-custom" id="modifierMotifText" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer modal-footer-custom">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn-submit" onclick="updateAnalyse()">Mettre à jour</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script>
+        let analysesExistantes = [];
+        
+        function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
+        function showLoading() { $('#loadingOverlay').fadeIn(300); }
+        function hideLoading() { $('#loadingOverlay').fadeOut(300); }
+        function showSuccess(m) { Swal.fire({ icon: 'success', title: 'Succès !', text: m, timer: 2500, showConfirmButton: false, toast: true, position: 'top-end' }); }
+        function showError(m) { Swal.fire({ icon: 'error', title: 'Erreur', text: m, confirmButtonColor: '#e74c3c' }); }
+        
+        function ouvrirFichier(offreId) { window.open(`/api/analyse-onem/ouvrir-fichier/${offreId}/`, '_blank'); }
+        
+        // Charger les décisions
+        function chargerDecisions() {
+            $.ajax({
+                url: '/api/decisions/',
+                method: 'GET',
+                success: function(response) {
+                    if (response.success && response.decisions) {
+                        var select = $('#decisionSelect');
+                        var selectModifier = $('#modifierDecisionSelect');
+                        select.empty();
+                        selectModifier.empty();
+                        select.append('<option value="">-- Sélectionnez une décision --</option>');
+                        selectModifier.append('<option value="">-- Sélectionnez une décision --</option>');
+                        response.decisions.forEach(function(decision) {
+                            select.append('<option value="' + decision.id + '">' + decision.Description + '</option>');
+                            selectModifier.append('<option value="' + decision.id + '">' + decision.Description + '</option>');
+                        });
+                    }
+                }
+            });
+        }
+        
+        // Charger les offres non analysées
+        function chargerOffresNonAnalysees() {
+            $.ajax({
+                url: '/api/analyse-onem/offres-non-analysees/',
+                method: 'GET',
+                success: function(r) {
+                    if (r.success) {
+                        const tbody = $('#nonAnalyseesBody');
+                        tbody.empty();
+                        if (r.offres.length === 0) {
+                            tbody.html(`<tr><td colspan="6"><div class="empty-state-custom"><i class="fas fa-check-circle"></i><p>Toutes les offres ont été analysées !</p></div></td></tr>`);
+                        } else {
+                            r.offres.forEach(o => {
+                                tbody.append(`<tr class="fade-in">
+                                    <td><strong>#${o.id}</strong></td>
+                                    <td class="titre-cliquable" onclick="ouvrirFichier(${o.id})"><i class="fas fa-file-pdf"></i> ${escapeHtml(o.titre)}</td>
+                                    <td><span class="badge-attente">${escapeHtml(o.domaine_nom)}</span></td>
+                                    <td><i class="fas fa-calendar"></i> ${o.date_publication}</td>
+                                    <td>${o.a_fichier ? `<button class="btn-action btn-voir" onclick="ouvrirFichier(${o.id})"><i class="fas fa-eye"></i> Lire l'offre</button>` : '<span class="text-muted">Aucun fichier</span>'}</td>
+                                    <td><button class="btn-action btn-analyser" onclick="ouvrirModalAnalyse(${o.id}, '${escapeHtml(o.titre)}')"><i class="fas fa-gavel"></i> Analyser</button></td>
+                                </tr>`);
+                            });
+                        }
+                        $('#nonAnalyseesCount').text(r.total);
+                    }
+                }
+            });
+        }
+        
+        // Charger les offres analysées
+        function chargerOffresAnalysees() {
+            $.ajax({
+                url: '/api/analyse-onem/offres-analysees/',
+                method: 'GET',
+                success: function(r) {
+                    if (r.success) {
+                        analysesExistantes = r.traitements;
+                        const tbody = $('#analyseesBody');
+                        tbody.empty();
+                        if (r.traitements.length === 0) {
+                            tbody.html(`<tr><td colspan="6"><div class="empty-state-custom"><i class="fas fa-folder-open"></i><p>Aucune analyse enregistrée</p></div></td></tr>`);
+                        } else {
+                            r.traitements.forEach(t => {
+                                let badgeClass = 'badge-attente';
+                                if (t.decision === 'Accepter') badgeClass = 'badge-valide';
+                                else if (t.decision === 'Rejeter') badgeClass = 'badge-refuse';
+                                tbody.append(`<tr class="fade-in">
+                                    <td><strong>#${t.offre_id}</strong></td>
+                                    <td class="titre-cliquable" onclick="ouvrirFichier(${t.offre_id})"><i class="fas fa-file-pdf"></i> ${escapeHtml(t.titre)}</td>
+                                    <td><span class="badge-attente">${escapeHtml(t.domaine_nom)}</span></td>
+                                    <td><span class="${badgeClass}">${escapeHtml(t.decision)}</span></td>
+                                    <td><i class="fas fa-calendar"></i> ${t.date_verification}</td>
+                                    <td><button class="btn-action btn-modifier" onclick="ouvrirModalModifierAnalyse(${t.id})"><i class="fas fa-edit"></i> Modifier</button></td>
+                                </tr>`);
+                            });
+                        }
+                        $('#analyseesCount').text(r.total);
+                    }
+                }
+            });
+        }
+        
+        function ouvrirModalAnalyse(offreId, titre) {
+            $('#analyseOffreId').val(offreId);
+            $('#modalOffreTitre').text(titre);
+            $('#decisionSelect').val('');
+            $('#observationText').val('');
+            $('#motifText').val('');
+            $('#analyseModal').modal('show');
+        }
+        
+        function enregistrerAnalyse() {
+            const offreId = $('#analyseOffreId').val();
+            const decisionId = $('#decisionSelect').val();
+            const observation = $('#observationText').val();
+            const motif = $('#motifText').val();
+            
+            if (!decisionId) { showError('Veuillez sélectionner une décision'); return; }
+            
+            showLoading();
+            $.ajax({
+                url: '/api/analyse-onem/enregistrer/',
+                method: 'POST',
+                data: JSON.stringify({ offre_id: offreId, decision_id: decisionId, observation: observation, motif: motif }),
+                headers: { 'X-CSRFToken': getCSRFToken(), 'Content-Type': 'application/json' },
+                success: function(r) {
+                    hideLoading();
+                    if (r.success) {
+                        showSuccess(r.message);
+                        $('#analyseModal').modal('hide');
+                        chargerOffresNonAnalysees();
+                        chargerOffresAnalysees();
+                    } else { showError(r.message); }
+                },
+                error: function(xhr) { hideLoading(); showError(xhr.responseJSON?.message || 'Erreur'); }
+            });
+        }
+        
+        function ouvrirModalModifierAnalyse(analyseId) {
+            const analyse = analysesExistantes.find(a => a.id === analyseId);
+            if (analyse) {
+                $('#modifierAnalyseId').val(analyseId);
+                $('#modifierDecisionSelect').val(analyse.decision_id || '');
+                $('#modifierObservationText').val(analyse.observation || '');
+                $('#modifierMotifText').val(analyse.motif || '');
+                $('#modifierAnalyseModal').modal('show');
+            }
+        }
+        
+        function updateAnalyse() {
+            const analyseId = $('#modifierAnalyseId').val();
+            const decisionId = $('#modifierDecisionSelect').val();
+            const observation = $('#modifierObservationText').val();
+            const motif = $('#modifierMotifText').val();
+            
+            showLoading();
+            $.ajax({
+                url: `/api/analyse-onem/modifier/${analyseId}/`,
+                method: 'POST',
+                data: JSON.stringify({ decision_id: decisionId, observation: observation, motif: motif }),
+                headers: { 'X-CSRFToken': getCSRFToken(), 'Content-Type': 'application/json' },
+                success: function(r) {
+                    hideLoading();
+                    if (r.success) {
+                        showSuccess(r.message);
+                        $('#modifierAnalyseModal').modal('hide');
+                        chargerOffresAnalysees();
+                    } else { showError(r.message); }
+                },
+                error: function(xhr) { hideLoading(); showError(xhr.responseJSON?.message || 'Erreur'); }
+            });
+        }
+        
+        function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+        
+        $('#analyseTab button').on('shown.bs.tab', function(e) {
+            if (e.target.id === 'non-analysees-tab') chargerOffresNonAnalysees();
+            else if (e.target.id === 'analysees-tab') chargerOffresAnalysees();
+        });
+        
+        $(document).ready(function() { chargerDecisions(); chargerOffresNonAnalysees(); chargerOffresAnalysees(); });
+    </script>
+</body>
+</html>
