@@ -368,10 +368,10 @@
         }
         
         function genererUrlValidation(agent) {
-            // URL qui serait scannée par le QR code
-            const baseUrl = window.location.origin;
-            return `${baseUrl}/api/agents/valider/${agent.id}/`;
-        }
+    // Utilisez l'URL de votre site hébergé
+    const baseUrl = 'https://mahoridi.pythonanywhere.com/';  // ← Remplacez par votre URL
+    return `${baseUrl}/api/agents/valider/${agent.id}/`;
+}
         
         async function voirRecu(agentId) {
             // Récupérer les informations de l'agent
