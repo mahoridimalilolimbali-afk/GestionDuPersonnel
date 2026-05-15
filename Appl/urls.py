@@ -351,6 +351,12 @@ urlpatterns = [
     path('api/messagerie/telecharger/<int:id_piece>/', views.telecharger_fichier_message, name='telecharger_fichier_message'),
     path('api/messagerie/non-lus/', views.get_non_lus_count, name='get_non_lus_count'),
 
+
+    #QRCode
+
+    # Dans votre urls.py, ajoutez :
+    path('api/agents/valider/<int:id_agent>/', views.valider_agent_qrcode, name='valider_agent_qrcode'),
+
 ]
 # Servir les fichiers média en développement
 if settings.DEBUG:

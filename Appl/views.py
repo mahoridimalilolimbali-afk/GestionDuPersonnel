@@ -4761,3 +4761,104 @@ def get_non_lus_count(request):
         return JsonResponse({'success': True, 'non_lus': count})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+
+
+
+from django.http import JsonResponse, HttpResponse
+from django.shortcuts import get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from .models import Agent, Candidat
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def valider_agent_qrcode(request, id_agent):
+    """API pour valider un agent via QR code (scanné depuis l'attestation)"""
+    try:
+        agent = get_object_or_404(Agent, id=id_agent)
+        candidat = agent.candidat
+        
+        # Générer une page HTML simple pour l'affichage (visible sur mobile)
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Validation Agent - ONEM</title>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    min-height: 100vh;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    margin: 0;
+                    padding: 20px;
+                }}
+                .card {{
+                    background: white;
+                    border-radius: 20px;
+                    padding: 30px;
+                    max-width: 400px;
+                    text-align: center;
+                    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                }}
+                .success-icon {{
+                    font-size: 80px;
+                    color: #27ae60;
+                    margin-bottom: 20px;
+                }}
+                .info {{
+                    text-align: left;
+                    margin: 20px 0;
+                    padding: 15px;
+                    background: #f8f9fa;
+                    border-radius: 10px;
+                }}
+                .badge {{
+                    background: #27ae60;
+                    color: white;
+                    padding: 5px 15px;
+                    border-radius: 20px;
+                    display: inline-block;
+                    font-size: 12px;
+                }}
+                h2 {{ color: #2c3e50; margin: 0 0 10px 0; }}
+                hr {{ margin: 20px 0; }}
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <div class="success-icon">✅</div>
+                <h2>Agent ONEM - Valide</h2>
+                <div class="badge">Agent certifié</div>
+                <div class="info">
+                    <p><strong>👤 Nom :</strong> {candidat.nom} {candidat.postnom}</p>
+                    <p><strong>📛 Prénom :</strong> {candidat.prenom}</p>
+                    <p><strong>📅 Date d'enregistrement :</strong> {agent.date_retenu.strftime('%d/%m/%Y')}</p>
+                    <p><strong>🏷️ Statut :</strong> <span style="color:#27ae60;">{agent.statut}</span></p>
+                </div>
+                <hr>
+                <p style="color: #666; font-size: 12px;">Cette attestation est délivrée par l'Office National de l'Emploi (ONEM)</p>
+                <p style="color: #999; font-size: 10px;">ID: {agent.id} | Scanné le {datetime.now().strftime('%d/%m/%Y à %H:%M')}</p>
+            </div>
+        </body>
+        </html>
+        """
+        return HttpResponse(html)
+    except Exception as e:
+        return HttpResponse(f"""
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="UTF-8"><title>Erreur</title></head>
+        <body style="font-family: Arial; text-align: center; padding: 50px;">
+            <h1 style="color: #e74c3c;">❌ Agent non trouvé</h1>
+            <p>Le QR code scanné n'est pas valide ou l'agent n'existe plus.</p>
+            <p>Veuillez contacter l'administrateur.</p>
+        </body>
+        </html>
+        """, status=404)
