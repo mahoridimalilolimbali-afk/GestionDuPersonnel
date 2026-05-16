@@ -98,7 +98,10 @@
         }
         .modal-header-custom h5 { font-weight: 700; font-size: 22px; }
         .modal-header-custom i { margin-right: 10px; }
-        .modal-body-custom { padding: 20px; background: #1a1a2e; }
+        .modal-body-custom { 
+            padding: 20px; 
+            background: #f0f2f5;
+        }
         .modal-footer-custom {
             padding: 20px 25px;
             background: white;
@@ -121,16 +124,16 @@
             font-weight: 600;
         }
         
-        /* Carte d'agent style carte de crédit */
+        /* ========== CARTE AGENT CORRIGÉE ========== */
+        /* Structure: gauche (infos) + droite (QR + dates) */
         .carte-agent {
-            max-width: 550px;
+            max-width: 600px;
             margin: 0 auto;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             border-radius: 20px;
             overflow: hidden;
             box-shadow: 0 20px 40px rgba(0,0,0,0.3);
             color: white;
-            position: relative;
         }
         .carte-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -146,92 +149,142 @@
             font-size: 10px;
             opacity: 0.8;
         }
+        
+        /* NOUVEAU: layout à 2 colonnes */
         .carte-body {
             padding: 20px;
             display: flex;
-            gap: 20px;
+            gap: 25px;
+            flex-wrap: wrap;
         }
+        
+        /* COLONNE GAUCHE: photo + informations */
+        .carte-left {
+            flex: 2;
+            min-width: 200px;
+        }
+        
         .carte-photo {
-            flex-shrink: 0;
+            text-align: center;
+            margin-bottom: 15px;
         }
         .carte-photo img {
-            width: 100px;
-            height: 100px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
             object-fit: cover;
             border: 3px solid #667eea;
             background: white;
         }
         .carte-photo .no-photo {
-            width: 100px;
-            height: 100px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 40px;
+            font-size: 36px;
             font-weight: bold;
             color: white;
+            margin: 0 auto;
         }
+        
         .carte-info {
-            flex: 1;
+            text-align: left;
         }
         .carte-info .nom {
             font-size: 16px;
             font-weight: 700;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             border-bottom: 1px solid rgba(255,255,255,0.2);
             padding-bottom: 6px;
         }
         .carte-info .info-row {
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             font-size: 11px;
         }
         .carte-info .info-label {
             display: inline-block;
-            width: 70px;
+            width: 75px;
             opacity: 0.7;
+            font-size: 10px;
         }
         .carte-info .info-value {
             font-weight: 500;
+            font-size: 11px;
         }
-        .carte-footer {
-            background: rgba(0,0,0,0.3);
-            padding: 12px 20px;
+        
+        /* COLONNE DROITE: QR code + dates */
+        .carte-right {
+            flex: 1.2;
+            min-width: 130px;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
             align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 12px;
         }
-        .carte-footer .badge {
+        
+        .qr-code-wrapper {
+            background: white;
+            padding: 8px;
+            border-radius: 14px;
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+        .qr-code-wrapper #qrcode canvas,
+        .qr-code-wrapper #qrcode img {
+            width: 100px !important;
+            height: 100px !important;
+            display: block;
+        }
+        
+        .dates-wrapper {
+            text-align: center;
+            width: 100%;
+        }
+        .date-item {
+            font-size: 9px;
+            margin: 6px 0;
+            background: rgba(0,0,0,0.4);
+            padding: 4px 8px;
+            border-radius: 20px;
+        }
+        .date-item i {
+            margin-right: 4px;
+            font-size: 8px;
+        }
+        .badge-status {
             background: #27ae60;
             padding: 3px 12px;
             border-radius: 20px;
-            font-size: 10px;
-        }
-        .carte-footer .date-info {
             font-size: 9px;
-            opacity: 0.7;
-        }
-        .qr-code-wrapper {
-            background: white;
-            padding: 5px;
-            border-radius: 10px;
+            margin-top: 8px;
             display: inline-block;
-        }
-        #qrcode canvas, #qrcode img {
-            width: 60px !important;
-            height: 60px !important;
+            font-weight: 600;
         }
         
-        @media (max-width: 576px) {
+        .carte-footer {
+            background: rgba(0,0,0,0.3);
+            padding: 10px 20px;
+            text-align: center;
+            font-size: 9px;
+        }
+        
+        @media (max-width: 500px) {
             .carte-body {
                 flex-direction: column;
-                align-items: center;
-                text-align: center;
             }
-            .carte-info .info-label {
-                width: auto;
+            .carte-right {
+                flex-direction: row;
+                gap: 15px;
+                justify-content: space-around;
+            }
+            .dates-wrapper {
+                text-align: left;
             }
         }
     </style>
@@ -303,6 +356,7 @@
     
     <script>
         let currentAgent = null;
+        let qrcodeInstance = null; // Pour éviter les doublons
         
         function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
         
@@ -313,11 +367,11 @@
                 if (data.success) {
                     afficherAgents(data.agents);
                 } else {
-                    document.getElementById('agentsTableBody').innerHTML = `<tr><td colspan="8" class="text-center py-5 text-danger"><i class="fas fa-exclamation-triangle"></i> Erreur de chargement</div></tr>`;
+                    document.getElementById('agentsTableBody').innerHTML = `<tr><td colspan="8" class="text-center py-5 text-danger"><i class="fas fa-exclamation-triangle"></i> Erreur de chargement</td></tr>`;
                 }
             } catch (error) {
                 console.error('Erreur:', error);
-                document.getElementById('agentsTableBody').innerHTML = `<tr><td colspan="8" class="text-center py-5 text-danger"><i class="fas fa-exclamation-triangle"></i> Erreur de connexion</div></tr>`;
+                document.getElementById('agentsTableBody').innerHTML = `<tr><td colspan="8" class="text-center py-5 text-danger"><i class="fas fa-exclamation-triangle"></i> Erreur de connexion</td></tr>`;
             }
         }
         
@@ -325,20 +379,20 @@
             const tbody = document.getElementById('agentsTableBody');
             tbody.innerHTML = '';
             if (agents.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5"><i class="fas fa-users-slash fa-3x text-muted"></i><p class="mt-2">Aucun agent enregistré</p></div></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5"><i class="fas fa-users-slash fa-3x text-muted"></i><p class="mt-2">Aucun agent enregistré</p></td></tr>`;
                 return;
             }
             agents.forEach(agent => {
                 const row = `
                     <tr>
                         <td><strong>#${agent.id}</strong></td>
-                        <td><div class="avatar">${agent.prenom.charAt(0)}${agent.nom.charAt(0)}</div></div>
+                        <td><div class="avatar">${agent.prenom.charAt(0)}${agent.nom.charAt(0)}</div></td>
                         <td><strong>${agent.nom} ${agent.postnom} ${agent.prenom}</strong></td>
-                        <td>${agent.sexe === 'Masculin' ? '<i class="fas fa-mars" style="color:#3498db;"></i> M' : '<i class="fas fa-venus" style="color:#e91e63;"></i> F'}</div>
-                        <td><i class="fas fa-phone-alt"></i> ${agent.telephone}</div>
-                        <td><i class="fas fa-calendar"></i> ${agent.date_retenu}</div>
-                        <td><span class="badge-actif"><i class="fas fa-check-circle"></i> Actif</span></div>
-                        <td><button class="btn-recu" onclick="voirRecu(${agent.id})"><i class="fas fa-id-card"></i> Voir carte</button></div>
+                        <td>${agent.sexe === 'Masculin' ? '<i class="fas fa-mars" style="color:#3498db;"></i> M' : '<i class="fas fa-venus" style="color:#e91e63;"></i> F'}</td>
+                        <td><i class="fas fa-phone-alt"></i> ${agent.telephone}</td>
+                        <td><i class="fas fa-calendar"></i> ${agent.date_retenu}</td>
+                        <td><span class="badge-actif"><i class="fas fa-check-circle"></i> Actif</span></td>
+                        <td><button class="btn-recu" onclick="voirRecu(${agent.id})"><i class="fas fa-id-card"></i> Voir carte</button></td>
                     </tr>
                 `;
                 tbody.innerHTML += row;
@@ -352,6 +406,7 @@
         
         function genererUrlValidation(agent) {
             const baseUrl = window.location.origin;
+            // URL fonctionnelle pour la validation (à adapter selon vos routes)
             return `${baseUrl}/api/agents/valider/${agent.id}/`;
         }
         
@@ -367,36 +422,49 @@
                         const photoResponse = await fetch(`/api/candidat/agent/${agentId}/photo/`);
                         const photoData = await photoResponse.json();
                         photoUrl = photoData.photo_url;
-                    } catch(e) {}
+                    } catch(e) {
+                        console.log("Photo non disponible");
+                    }
                     
                     const html = genererCarteAgent(agent, photoUrl);
                     document.getElementById('recuContent').innerHTML = html;
                     $('#recuModal').modal('show');
                     
-                    const urlValidation = genererUrlValidation(agent);
-                    const qrContainer = document.getElementById('qrcode');
-                    if (qrContainer) {
-                        qrContainer.innerHTML = '';
-                        new QRCode(qrContainer, {
-                            text: urlValidation,
-                            width: 70,
-                            height: 70,
-                            colorDark: "#000000",
-                            colorLight: "#ffffff",
-                            correctLevel: QRCode.CorrectLevel.H
-                        });
-                    }
+                    // Générer le QR code APRÈS que le DOM soit prêt
+                    setTimeout(() => {
+                        const urlValidation = genererUrlValidation(agent);
+                        const qrContainer = document.getElementById('qrcode-container');
+                        if (qrContainer) {
+                            qrContainer.innerHTML = ''; // Nettoyer
+                            // Utilisation correcte de QRCode.js
+                            new QRCode(qrContainer, {
+                                text: urlValidation,
+                                width: 100,
+                                height: 100,
+                                colorDark: "#000000",
+                                colorLight: "#ffffff",
+                                correctLevel: QRCode.CorrectLevel.H
+                            });
+                        }
+                    }, 100);
                 }
             }
         }
         
         function genererCarteAgent(agent, photoUrl) {
             const dateActuelle = new Date().toLocaleDateString('fr-FR');
+            // Date d'expiration : 1 an après la date de recrutement ou 1 an après aujourd'hui
+            let expiryDate = new Date(agent.date_retenu);
+            if (isNaN(expiryDate.getTime())) {
+                expiryDate = new Date();
+            }
+            expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+            const dateExpiration = expiryDate.toLocaleDateString('fr-FR');
             const codeValidation = genererCodeValidation(agent);
             
             const photoHtml = photoUrl ? 
-                `<img src="${photoUrl}" alt="Photo">` : 
-                `<div class="no-photo">${agent.prenom.charAt(0)}${agent.nom.charAt(0)}</div>`;
+                `<img src="${photoUrl}" alt="Photo de ${agent.prenom}">` : 
+                `<div class="no-photo">${agent.prenom ? agent.prenom.charAt(0).toUpperCase() : 'A'}${agent.nom ? agent.nom.charAt(0).toUpperCase() : 'G'}</div>`;
             
             return `
                 <div class="carte-agent" id="attestationPrintArea">
@@ -405,37 +473,55 @@
                         <small>RDC - Goma - N°${agent.id}</small>
                     </div>
                     <div class="carte-body">
-                        <div class="carte-photo">
-                            ${photoHtml}
+                        <!-- COLONNE GAUCHE : photo + infos -->
+                        <div class="carte-left">
+                            <div class="carte-photo">
+                                ${photoHtml}
+                            </div>
+                            <div class="carte-info">
+                                <div class="nom">${agent.nom} ${agent.postnom || ''} ${agent.prenom}</div>
+                                <div class="info-row"><span class="info-label"><i class="fas fa-venus-mars"></i> Sexe :</span> <span class="info-value">${agent.sexe}</span></div>
+                                <div class="info-row"><span class="info-label"><i class="fas fa-phone"></i> Tél :</span> <span class="info-value">${agent.telephone}</span></div>
+                                <div class="info-row"><span class="info-label"><i class="fas fa-calendar"></i> Recruté le :</span> <span class="info-value">${agent.date_retenu}</span></div>
+                                <div class="info-row"><span class="info-label"><i class="fas fa-id-card"></i> Matricule :</span> <span class="info-value">${codeValidation}</span></div>
+                            </div>
                         </div>
-                        <div class="carte-info">
-                            <div class="nom">${agent.nom} ${agent.postnom} ${agent.prenom}</div>
-                            <div class="info-row"><span class="info-label"><i class="fas fa-venus-mars"></i> Sexe :</span> <span class="info-value">${agent.sexe}</span></div>
-                            <div class="info-row"><span class="info-label"><i class="fas fa-phone"></i> Tél :</span> <span class="info-value">${agent.telephone}</span></div>
-                            <div class="info-row"><span class="info-label"><i class="fas fa-calendar"></i> Recruté le :</span> <span class="info-value">${agent.date_retenu}</span></div>
-                            <div class="info-row"><span class="info-label"><i class="fas fa-id-card"></i> Matricule :</span> <span class="info-value">${codeValidation}</span></div>
+                        
+                        <!-- COLONNE DROITE : QR code + dates -->
+                        <div class="carte-right">
+                            <div class="qr-code-wrapper">
+                                <div id="qrcode-container"></div>
+                            </div>
+                            <div class="dates-wrapper">
+                                <div class="date-item">
+                                    <i class="fas fa-calendar-alt"></i> <strong>Émis le :</strong> ${dateActuelle}
+                                </div>
+                                <div class="date-item">
+                                    <i class="fas fa-hourglass-half"></i> <strong>Actif jusqu'au :</strong> ${dateExpiration}
+                                </div>
+                                <div class="badge-status">
+                                    <i class="fas fa-check-circle"></i> ACTIF
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="carte-footer">
-                        <div class="date-info">
-                            <i class="fas fa-calendar-alt"></i> Émis le ${dateActuelle}
-                        </div>
-                        <div class="qr-code-wrapper" id="qrcode"></div>
-                        <div>
-                            <span class="badge"><i class="fas fa-check-circle"></i> Actif</span>
-                        </div>
+                        <i class="fas fa-shield-alt"></i> Document certifié - Vérifiable par QR code
                     </div>
                 </div>
             `;
         }
         
         function telechargerRecu() {
-            const element = document.getElementById('recuContent');
+            if (!currentAgent) return;
+            const element = document.getElementById('attestationPrintArea');
+            if (!element) return;
+            
             const opt = {
                 margin: [0.5, 0.5, 0.5, 0.5],
-                filename: `carte_agent_${currentAgent?.nom}_${currentAgent?.prenom}.pdf`,
+                filename: `carte_agent_${currentAgent.nom}_${currentAgent.prenom}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, letterRendering: true },
+                html2canvas: { scale: 2, letterRendering: true, useCORS: true },
                 jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
             };
             html2pdf().set(opt).from(element).save();
