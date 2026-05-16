@@ -30,7 +30,12 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 # ==================== CONFIGURATION EMAIL ====================
 
 print(f"EMAIL_HOST_USER: {os.getenv('EMAIL_HOST_USER')}")  # Debug - vérifie dans le terminal
-print(f"SENDGRID_API_KEY: {os.getenv('SENDGRID_API_KEY')[:10]}...")  # Debug
+# Remplace la ligne 33 par ceci :
+sendgrid_key = os.getenv('SENDGRID_API_KEY')
+if sendgrid_key:
+    print(f"SENDGRID_API_KEY: {sendgrid_key[:10]}...")
+else:
+    print("SENDGRID_API_KEY non trouvée dans les variables d'environnement")
 
 # settings.py
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
