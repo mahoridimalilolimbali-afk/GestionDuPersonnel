@@ -98,7 +98,7 @@
         }
         .modal-header-custom h5 { font-weight: 700; font-size: 22px; }
         .modal-header-custom i { margin-right: 10px; }
-        .modal-body-custom { padding: 30px; background: #f8f9fa; }
+        .modal-body-custom { padding: 20px; background: #1a1a2e; }
         .modal-footer-custom {
             padding: 20px 25px;
             background: white;
@@ -121,7 +121,7 @@
             font-weight: 600;
         }
         
-        /* Carte d'agent (comme une carte de service) */
+        /* Carte d'agent style carte de crédit */
         .carte-agent {
             max-width: 550px;
             margin: 0 auto;
@@ -130,19 +130,24 @@
             overflow: hidden;
             box-shadow: 0 20px 40px rgba(0,0,0,0.3);
             color: white;
+            position: relative;
         }
         .carte-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px;
+            padding: 15px 20px;
             text-align: center;
         }
         .carte-header h3 {
             margin: 0;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
         }
+        .carte-header small {
+            font-size: 10px;
+            opacity: 0.8;
+        }
         .carte-body {
-            padding: 25px;
+            padding: 20px;
             display: flex;
             gap: 20px;
         }
@@ -150,22 +155,22 @@
             flex-shrink: 0;
         }
         .carte-photo img {
-            width: 120px;
-            height: 120px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
             object-fit: cover;
             border: 3px solid #667eea;
             background: white;
         }
         .carte-photo .no-photo {
-            width: 120px;
-            height: 120px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 48px;
+            font-size: 40px;
             font-weight: bold;
             color: white;
         }
@@ -173,19 +178,19 @@
             flex: 1;
         }
         .carte-info .nom {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: 700;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             border-bottom: 1px solid rgba(255,255,255,0.2);
-            padding-bottom: 8px;
+            padding-bottom: 6px;
         }
         .carte-info .info-row {
-            margin-bottom: 10px;
-            font-size: 13px;
+            margin-bottom: 6px;
+            font-size: 11px;
         }
         .carte-info .info-label {
             display: inline-block;
-            width: 85px;
+            width: 70px;
             opacity: 0.7;
         }
         .carte-info .info-value {
@@ -193,23 +198,30 @@
         }
         .carte-footer {
             background: rgba(0,0,0,0.3);
-            padding: 15px 25px;
+            padding: 12px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 11px;
         }
         .carte-footer .badge {
             background: #27ae60;
-            padding: 3px 10px;
+            padding: 3px 12px;
             border-radius: 20px;
+            font-size: 10px;
         }
-        
-        /* Style pour l'attestation (carte) dans le modal */
-        .attestation-container {
-            background: #1a1a2e;
-            border-radius: 20px;
-            overflow: hidden;
+        .carte-footer .date-info {
+            font-size: 9px;
+            opacity: 0.7;
+        }
+        .qr-code-wrapper {
+            background: white;
+            padding: 5px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+        #qrcode canvas, #qrcode img {
+            width: 60px !important;
+            height: 60px !important;
         }
         
         @media (max-width: 576px) {
@@ -262,7 +274,7 @@
     
     <!-- Modal Carte d'Agent -->
     <div class="modal fade" id="recuModal" tabindex="-1" data-bs-backdrop="static">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content modal-content-custom">
                 <div class="modal-header modal-header-custom">
                     <h5 class="modal-title">
@@ -270,7 +282,7 @@
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body modal-body-custom" id="recuContent" style="background: #1a1a2e;">
+                <div class="modal-body modal-body-custom" id="recuContent">
                     <!-- Le contenu de la carte sera chargé dynamiquement -->
                 </div>
                 <div class="modal-footer modal-footer-custom">
@@ -294,71 +306,39 @@
         
         function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
         
-        // Charger les agents via l'API
         async function chargerAgents() {
             try {
                 const response = await fetch('/api/agents/');
                 const data = await response.json();
-                
                 if (data.success) {
                     afficherAgents(data.agents);
                 } else {
-                    document.getElementById('agentsTableBody').innerHTML = `
-                        <tr><td colspan="8" class="text-center py-5 text-danger">
-                            <i class="fas fa-exclamation-triangle"></i> Erreur de chargement
-                         </div>
-                        </tr>
-                    `;
+                    document.getElementById('agentsTableBody').innerHTML = `<tr><td colspan="8" class="text-center py-5 text-danger"><i class="fas fa-exclamation-triangle"></i> Erreur de chargement</div></tr>`;
                 }
             } catch (error) {
                 console.error('Erreur:', error);
-                document.getElementById('agentsTableBody').innerHTML = `
-                    <tr><td colspan="8" class="text-center py-5 text-danger">
-                        <i class="fas fa-exclamation-triangle"></i> Erreur de connexion
-                     </div>
-                    </td>
-                `;
+                document.getElementById('agentsTableBody').innerHTML = `<tr><td colspan="8" class="text-center py-5 text-danger"><i class="fas fa-exclamation-triangle"></i> Erreur de connexion</div></tr>`;
             }
         }
         
         function afficherAgents(agents) {
             const tbody = document.getElementById('agentsTableBody');
             tbody.innerHTML = '';
-            
             if (agents.length === 0) {
-                tbody.innerHTML = `
-                    <tr><td colspan="8" class="text-center py-5">
-                        <i class="fas fa-users-slash fa-3x text-muted"></i>
-                        <p class="mt-2">Aucun agent enregistré</p>
-                     </div>
-                    </tr>
-                `;
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5"><i class="fas fa-users-slash fa-3x text-muted"></i><p class="mt-2">Aucun agent enregistré</p></div></tr>`;
                 return;
             }
-            
             agents.forEach(agent => {
                 const row = `
                     <tr>
                         <td><strong>#${agent.id}</strong></td>
-                        <td>
-                            <div class="avatar">
-                                ${agent.prenom.charAt(0)}${agent.nom.charAt(0)}
-                            </div>
-                         </div>
+                        <td><div class="avatar">${agent.prenom.charAt(0)}${agent.nom.charAt(0)}</div></div>
                         <td><strong>${agent.nom} ${agent.postnom} ${agent.prenom}</strong></td>
-                        <td>
-                            ${agent.sexe === 'Masculin' ? 
-                                '<i class="fas fa-mars" style="color:#3498db;"></i> M' : 
-                                '<i class="fas fa-venus" style="color:#e91e63;"></i> F'}
-                         </div>
-                        <td><i class="fas fa-phone-alt"></i> ${agent.telephone} </div>
+                        <td>${agent.sexe === 'Masculin' ? '<i class="fas fa-mars" style="color:#3498db;"></i> M' : '<i class="fas fa-venus" style="color:#e91e63;"></i> F'}</div>
+                        <td><i class="fas fa-phone-alt"></i> ${agent.telephone}</div>
                         <td><i class="fas fa-calendar"></i> ${agent.date_retenu}</div>
                         <td><span class="badge-actif"><i class="fas fa-check-circle"></i> Actif</span></div>
-                        <td>
-                            <button class="btn-recu" onclick="voirRecu(${agent.id})">
-                                <i class="fas fa-id-card"></i> Voir carte
-                            </button>
-                         </div>
+                        <td><button class="btn-recu" onclick="voirRecu(${agent.id})"><i class="fas fa-id-card"></i> Voir carte</button></div>
                     </tr>
                 `;
                 tbody.innerHTML += row;
@@ -367,8 +347,7 @@
         
         function genererCodeValidation(agent) {
             const date = new Date();
-            const code = `GRH-${agent.id}-${date.getFullYear()}${(date.getMonth()+1).toString().padStart(2,'0')}${date.getDate().toString().padStart(2,'0')}`;
-            return code;
+            return `GRH-${agent.id}-${date.getFullYear()}${(date.getMonth()+1).toString().padStart(2,'0')}${date.getDate().toString().padStart(2,'0')}`;
         }
         
         function genererUrlValidation(agent) {
@@ -376,50 +355,33 @@
             return `${baseUrl}/api/agents/valider/${agent.id}/`;
         }
         
-        // Récupérer la photo du candidat via l'API
-        async function getPhotoCandidat(agent) {
-            try {
-                const response = await fetch(`/api/candidat/${agent.id}/photo/`);
-                const data = await response.json();
-                return data.photo_url;
-            } catch (error) {
-                return null;
-            }
-        }
-        
         async function voirRecu(agentId) {
             const response = await fetch('/api/agents/');
             const data = await response.json();
-            
             if (data.success) {
                 const agent = data.agents.find(a => a.id === agentId);
                 if (agent) {
                     currentAgent = agent;
-                    
-                    // Récupérer la photo
                     let photoUrl = null;
                     try {
                         const photoResponse = await fetch(`/api/candidat/agent/${agentId}/photo/`);
                         const photoData = await photoResponse.json();
                         photoUrl = photoData.photo_url;
-                    } catch(e) {
-                        console.log("Photo non disponible");
-                    }
+                    } catch(e) {}
                     
-                    const html = await genererCarteAgent(agent, photoUrl);
+                    const html = genererCarteAgent(agent, photoUrl);
                     document.getElementById('recuContent').innerHTML = html;
                     $('#recuModal').modal('show');
                     
-                    // Générer le QR code
                     const urlValidation = genererUrlValidation(agent);
                     const qrContainer = document.getElementById('qrcode');
                     if (qrContainer) {
                         qrContainer.innerHTML = '';
                         new QRCode(qrContainer, {
                             text: urlValidation,
-                            width: 100,
-                            height: 100,
-                            colorDark: "#667eea",
+                            width: 70,
+                            height: 70,
+                            colorDark: "#000000",
                             colorLight: "#ffffff",
                             correctLevel: QRCode.CorrectLevel.H
                         });
@@ -428,7 +390,7 @@
             }
         }
         
-        async function genererCarteAgent(agent, photoUrl) {
+        function genererCarteAgent(agent, photoUrl) {
             const dateActuelle = new Date().toLocaleDateString('fr-FR');
             const codeValidation = genererCodeValidation(agent);
             
@@ -440,7 +402,7 @@
                 <div class="carte-agent" id="attestationPrintArea">
                     <div class="carte-header">
                         <h3><i class="fas fa-building"></i> GRH ENGENNERING SARL</h3>
-                        <small>RDC - Goma</small>
+                        <small>RDC - Goma - N°${agent.id}</small>
                     </div>
                     <div class="carte-body">
                         <div class="carte-photo">
@@ -448,31 +410,19 @@
                         </div>
                         <div class="carte-info">
                             <div class="nom">${agent.nom} ${agent.postnom} ${agent.prenom}</div>
-                            <div class="info-row">
-                                <span class="info-label"><i class="fas fa-venus-mars"></i> Sexe :</span>
-                                <span class="info-value">${agent.sexe}</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label"><i class="fas fa-phone"></i> Téléphone :</span>
-                                <span class="info-value">${agent.telephone}</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label"><i class="fas fa-calendar"></i> Recrutement :</span>
-                                <span class="info-value">${agent.date_retenu}</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label"><i class="fas fa-id-card"></i> Matricule :</span>
-                                <span class="info-value">${codeValidation}</span>
-                            </div>
+                            <div class="info-row"><span class="info-label"><i class="fas fa-venus-mars"></i> Sexe :</span> <span class="info-value">${agent.sexe}</span></div>
+                            <div class="info-row"><span class="info-label"><i class="fas fa-phone"></i> Tél :</span> <span class="info-value">${agent.telephone}</span></div>
+                            <div class="info-row"><span class="info-label"><i class="fas fa-calendar"></i> Recruté le :</span> <span class="info-value">${agent.date_retenu}</span></div>
+                            <div class="info-row"><span class="info-label"><i class="fas fa-id-card"></i> Matricule :</span> <span class="info-value">${codeValidation}</span></div>
                         </div>
                     </div>
                     <div class="carte-footer">
-                        <div class="qr-code-container" style="margin:0; padding:0;">
-                            <div id="qrcode" style="display: inline-block;"></div>
+                        <div class="date-info">
+                            <i class="fas fa-calendar-alt"></i> Émis le ${dateActuelle}
                         </div>
+                        <div class="qr-code-wrapper" id="qrcode"></div>
                         <div>
-                            <span class="badge"><i class="fas fa-check-circle"></i> Agent actif</span>
-                            <div style="font-size: 9px; margin-top: 5px;">Émis le ${dateActuelle}</div>
+                            <span class="badge"><i class="fas fa-check-circle"></i> Actif</span>
                         </div>
                     </div>
                 </div>

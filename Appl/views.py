@@ -4775,13 +4775,13 @@ from .models import Agent, Candidat
 @csrf_exempt
 @require_http_methods(["GET"])
 def valider_agent_qrcode(request, id_agent):
-    """API pour valider un agent via QR code - Retourne une page avec la carte complète"""
+    """API pour valider un agent via QR code - Retourne la carte d'agent"""
     try:
         agent = get_object_or_404(Agent, id=id_agent)
         candidat = agent.candidat
         
-        # Récupérer la photo
-        photo_url = candidat.photo.url if candidat.photo else None
+        photo_url = candidat.photo.url if candidat.photo and hasattr(candidat.photo, 'url') else None
+        code_validation = f"GRH-{agent.id}"
         
         html = f"""
         <!DOCTYPE html>
@@ -4812,40 +4812,32 @@ def valider_agent_qrcode(request, id_agent):
                 }}
                 .carte-header {{
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    padding: 20px;
+                    padding: 15px 20px;
                     text-align: center;
                 }}
-                .carte-header h3 {{ margin: 0; font-size: 18px; }}
-                .carte-body {{
-                    padding: 25px;
-                    display: flex;
-                    gap: 20px;
-                }}
+                .carte-header h3 {{ margin: 0; font-size: 16px; }}
+                .carte-header small {{ font-size: 10px; opacity: 0.8; }}
+                .carte-body {{ padding: 20px; display: flex; gap: 20px; }}
                 .carte-photo img {{
-                    width: 120px;
-                    height: 120px;
-                    border-radius: 50%;
-                    object-fit: cover;
-                    border: 3px solid #667eea;
+                    width: 100px; height: 100px; border-radius: 50%;
+                    object-fit: cover; border: 3px solid #667eea;
                 }}
                 .carte-photo .no-photo {{
-                    width: 120px;
-                    height: 120px;
-                    border-radius: 50%;
+                    width: 100px; height: 100px; border-radius: 50%;
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 48px;
-                    font-weight: bold;
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: 40px; font-weight: bold;
                 }}
                 .carte-info {{ flex: 1; }}
-                .carte-info .nom {{ font-size: 20px; font-weight: 700; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 8px; }}
-                .carte-info .info-row {{ margin-bottom: 10px; font-size: 13px; }}
-                .carte-info .info-label {{ display: inline-block; width: 85px; opacity: 0.7; }}
-                .carte-info .info-value {{ font-weight: 500; }}
-                .carte-footer {{ background: rgba(0,0,0,0.3); padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; }}
-                .carte-footer .badge {{ background: #27ae60; padding: 3px 10px; border-radius: 20px; }}
+                .carte-info .nom {{ font-size: 16px; font-weight: 700; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 6px; }}
+                .carte-info .info-row {{ margin-bottom: 6px; font-size: 11px; }}
+                .carte-info .info-label {{ display: inline-block; width: 70px; opacity: 0.7; }}
+                .carte-footer {{
+                    background: rgba(0,0,0,0.3); padding: 12px 20px;
+                    display: flex; justify-content: space-between; align-items: center;
+                }}
+                .carte-footer .badge {{ background: #27ae60; padding: 3px 12px; border-radius: 20px; font-size: 10px; }}
+                .carte-footer .date-info {{ font-size: 9px; opacity: 0.7; }}
                 @media (max-width: 576px) {{
                     .carte-body {{ flex-direction: column; align-items: center; text-align: center; }}
                     .carte-info .info-label {{ width: auto; }}
@@ -4856,7 +4848,7 @@ def valider_agent_qrcode(request, id_agent):
             <div class="carte-agent">
                 <div class="carte-header">
                     <h3><i class="fas fa-building"></i> GRH ENGENNERING SARL</h3>
-                    <small>RDC - Goma</small>
+                    <small>RDC - Goma - N°{agent.id}</small>
                 </div>
                 <div class="carte-body">
                     <div class="carte-photo">
@@ -4864,14 +4856,14 @@ def valider_agent_qrcode(request, id_agent):
                     </div>
                     <div class="carte-info">
                         <div class="nom">{candidat.nom} {candidat.postnom} {candidat.prenom}</div>
-                        <div class="info-row"><span class="info-label"><i class="fas fa-venus-mars"></i> Sexe :</span> <span class="info-value">{candidat.sexe}</span></div>
-                        <div class="info-row"><span class="info-label"><i class="fas fa-phone"></i> Téléphone :</span> <span class="info-value">{candidat.numeroTelephone}</span></div>
-                        <div class="info-row"><span class="info-label"><i class="fas fa-calendar"></i> Agent depuis :</span> <span class="info-value">{agent.date_retenu.strftime('%d/%m/%Y')}</span></div>
-                        <div class="info-row"><span class="info-label"><i class="fas fa-id-card"></i> Matricule :</span> <span class="info-value">GRH-{agent.id}</span></div>
+                        <div class="info-row"><span class="info-label">Sexe :</span> <span class="info-value">{candidat.sexe}</span></div>
+                        <div class="info-row"><span class="info-label">Tél :</span> <span class="info-value">{candidat.numeroTelephone}</span></div>
+                        <div class="info-row"><span class="info-label">Recruté le :</span> <span class="info-value">{agent.date_retenu.strftime('%d/%m/%Y')}</span></div>
+                        <div class="info-row"><span class="info-label">Matricule :</span> <span class="info-value">{code_validation}</span></div>
                     </div>
                 </div>
                 <div class="carte-footer">
-                    <div><i class="fas fa-qrcode"></i> Scan validé</div>
+                    <div class="date-info"><i class="fas fa-calendar-alt"></i> Scan validé</div>
                     <div><span class="badge"><i class="fas fa-check-circle"></i> Agent actif</span></div>
                 </div>
             </div>
@@ -4880,16 +4872,7 @@ def valider_agent_qrcode(request, id_agent):
         """
         return HttpResponse(html)
     except Exception as e:
-        return HttpResponse(f"""
-        <!DOCTYPE html>
-        <html>
-        <head><meta charset="UTF-8"><title>Erreur</title></head>
-        <body style="font-family: Arial; text-align: center; padding: 50px;">
-            <h1 style="color: #e74c3c;">❌ Agent non trouvé</h1>
-            <p>Ce QR code n'est pas valide.</p>
-        </body>
-        </html>
-        """, status=404)
+        return HttpResponse("<h1>❌ Agent non trouvé</h1>", status=404)
 
 
 
