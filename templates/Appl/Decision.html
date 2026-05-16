@@ -254,13 +254,6 @@
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .cv-info {
-            background: #e8f0fe;
-            padding: 5px 10px;
-            border-radius: 10px;
-            font-size: 11px;
-            display: inline-block;
-        }
         @media (max-width: 768px) {
             .card-header-custom { padding: 20px; }
             .header-title { font-size: 20px; flex-direction: column; text-align: center; }
@@ -381,7 +374,7 @@
                             <select class="form-select-custom" id="typeDecisionSelect" required>
                                 <option value="">-- Sélectionnez un type --</option>
                                 {% for type in types_decision %}
-                                    <option value="{{ type.id }}" data-description="{{ type.Description }}">{{ type.Description }}</option>
+                                    <option value="{{ type.id }}">{{ type.Description }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -438,13 +431,17 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-    let currentDecisions = [];
-    // URL de votre application hébergée (à modifier selon votre domaine)
-    const APP_URL = "https://votre-domaine.com"; // ← REMPLACEZ PAR VOTRE URL
+    function getCSRFToken() { 
+        return document.querySelector('[name=csrf-token]').getAttribute('content'); 
+    }
     
-    function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
-    function showLoading() { $('#loadingOverlay').fadeIn(300); }
-    function hideLoading() { $('#loadingOverlay').fadeOut(300); }
+    function showLoading() { 
+        $('#loadingOverlay').fadeIn(300); 
+    }
+    
+    function hideLoading() { 
+        $('#loadingOverlay').fadeOut(300); 
+    }
     
     function showSuccess(message) {
         Swal.fire({
@@ -468,7 +465,7 @@
     }
     
     function ouvrirCV(idCandidature) {
-        window.open(`/api/decisions/ouvrir-cv/${idCandidature}/`, '_blank');
+        window.open(`/candidature/ouvrir-cv/${idCandidature}/`, '_blank');
     }
     
     function chargerTypesDecision() {
@@ -488,7 +485,7 @@
                     selectModifier.append('<option value="">-- Sélectionnez un type --</option>');
                     
                     response.type_decisions.forEach(function(type) {
-                        select.append('<option value="' + type.id + '" data-description="' + type.Description + '">' + type.Description + '</option>');
+                        select.append('<option value="' + type.id + '">' + type.Description + '</option>');
                         selectModifier.append('<option value="' + type.id + '">' + type.Description + '</option>');
                     });
                 }
@@ -524,6 +521,10 @@
                     }
                     $('#aTraiterCount').text(response.total);
                 }
+            },
+            error: function(xhr) {
+                console.error("Erreur chargement candidatures:", xhr);
+                $('#aTraiterBody').html(`<tr><td colspan="7" class="text-center text-danger">Erreur de chargement</td></tr>`);
             }
         });
     }
@@ -534,7 +535,6 @@
             method: 'GET',
             success: function(response) {
                 if (response.success) {
-                    currentDecisions = response.decisions;
                     const tbody = $('#traiteesBody');
                     tbody.empty();
                     if (response.decisions.length === 0) {
@@ -542,8 +542,12 @@
                     } else {
                         response.decisions.forEach(d => {
                             let badgeClass = 'badge-attente';
-                            if (d.type_decision.toLowerCase().includes('valid') || d.type_decision.toLowerCase().includes('accept')) badgeClass = 'badge-valide';
-                            else if (d.type_decision.toLowerCase().includes('refus') || d.type_decision.toLowerCase().includes('rejet')) badgeClass = 'badge-refuse';
+                            const decisionLower = d.type_decision.toLowerCase();
+                            if (decisionLower.includes('valid') || decisionLower.includes('accept') || decisionLower.includes('accepté')) {
+                                badgeClass = 'badge-valide';
+                            } else if (decisionLower.includes('refus') || decisionLower.includes('rejet')) {
+                                badgeClass = 'badge-refuse';
+                            }
                             
                             tbody.append(`<tr class="fade-in">
                                 <td><strong>#${d.candidature_id}</strong></td>
@@ -552,12 +556,16 @@
                                 <td><span class="${badgeClass}">${escapeHtml(d.type_decision)}</span></td>
                                 <td>${escapeHtml(d.motif ? d.motif.substring(0, 50) : '')}${d.motif && d.motif.length > 50 ? '...' : ''}</td>
                                 <td><i class="fas fa-calendar"></i> ${d.date_decision}</td>
-                                <td><button class="btn-action btn-modifier" onclick="ouvrirModalModifierDecision(${d.id}, ${d.type_decision_id || 'null'}, '${escapeHtml(d.motif || '')}')"><i class="fas fa-edit"></i> Modifier</button></td>
+                                <td><button class="btn-action btn-modifier" onclick="ouvrirModalModifierDecision(${d.id}, ${d.type_decision_id || 'null'}, '${escapeHtml(d.motif || '').replace(/'/g, "\\'")}')"><i class="fas fa-edit"></i> Modifier</button></td>
                             </tr>`);
                         });
                     }
                     $('#traiteesCount').text(response.total);
                 }
+            },
+            error: function(xhr) {
+                console.error("Erreur chargement décisions:", xhr);
+                $('#traiteesBody').html(`<tr><td colspan="7" class="text-center text-danger">Erreur de chargement</td></tr>`);
             }
         });
     }
@@ -587,7 +595,6 @@
             return;
         }
         
-        // Récupérer la description du type de décision
         const typeDecisionText = $('#typeDecisionSelect option:selected').text();
         
         showLoading();
@@ -596,37 +603,37 @@
             url: '/api/decisions/enregistrer/',
             method: 'POST',
             data: JSON.stringify({
-                candidature_id: candidatureId,
-                type_decision_id: typeDecisionId,
+                candidature_id: parseInt(candidatureId),
+                type_decision_id: parseInt(typeDecisionId),
                 motif: motif,
-                // On envoie aussi les infos pour l'email
                 envoyer_email: true,
                 candidat_email: candidatEmail,
                 candidat_nom: candidatNom,
                 offre_titre: offreTitre,
                 type_decision: typeDecisionText
             }),
-            headers: { 'X-CSRFToken': getCSRFToken(), 'Content-Type': 'application/json' },
+            headers: { 
+                'X-CSRFToken': getCSRFToken(), 
+                'Content-Type': 'application/json' 
+            },
             success: function(response) {
                 hideLoading();
                 if (response.success) {
-                    // Afficher un message personnalisé selon l'envoi d'email
                     let message = response.message;
                     if (response.email_envoye) {
-                        message += `\nUn email a été envoyé à ${candidatEmail}`;
                         Swal.fire({
                             icon: 'success',
                             title: 'Succès !',
-                            html: message,
-                            timer: 3000,
-                            showConfirmButton: false,
-                            toast: false
+                            html: `${message}<br><br>📧 Un email a été envoyé à ${candidatEmail}`,
+                            timer: 4000,
+                            showConfirmButton: true,
+                            confirmButtonColor: '#27ae60'
                         });
                     } else if (response.email_erreur) {
                         Swal.fire({
                             icon: 'warning',
                             title: 'Attention',
-                            html: `${response.message}<br>⚠️ ${response.email_erreur}`,
+                            html: `${message}<br><br>⚠️ L'email n'a pas pu être envoyé: ${response.email_erreur}`,
                             confirmButtonColor: '#f39c12'
                         });
                     } else {
@@ -649,7 +656,11 @@
     
     function ouvrirModalModifierDecision(decisionId, typeDecisionId, motif) {
         $('#modifierDecisionId').val(decisionId);
-        $('#modifierTypeDecisionSelect').val(typeDecisionId);
+        if (typeDecisionId && typeDecisionId !== 'null') {
+            $('#modifierTypeDecisionSelect').val(typeDecisionId);
+        } else {
+            $('#modifierTypeDecisionSelect').val('');
+        }
         $('#modifierMotifText').val(motif);
         $('#modifierDecisionModal').modal('show');
     }
@@ -659,29 +670,45 @@
         const typeDecisionId = $('#modifierTypeDecisionSelect').val();
         const motif = $('#modifierMotifText').val();
         
+        if (!typeDecisionId) {
+            showError('Veuillez sélectionner un type de décision');
+            return;
+        }
+        
         showLoading();
         
         $.ajax({
             url: `/api/decisions/modifier/${decisionId}/`,
             method: 'POST',
             data: JSON.stringify({
-                type_decision_id: typeDecisionId,
+                type_decision_id: parseInt(typeDecisionId),
                 motif: motif
             }),
-            headers: { 'X-CSRFToken': getCSRFToken(), 'Content-Type': 'application/json' },
+            headers: { 
+                'X-CSRFToken': getCSRFToken(), 
+                'Content-Type': 'application/json' 
+            },
             success: function(response) {
                 hideLoading();
                 if (response.success) {
-                    showSuccess(response.message);
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Succès !',
+                        html: response.message,
+                        timer: 3000,
+                        showConfirmButton: false
+                    });
                     $('#modifierDecisionModal').modal('hide');
                     chargerCandidaturesTraitees();
+                    chargerCandidaturesATraiter();
                 } else {
                     showError(response.message);
                 }
             },
             error: function(xhr) {
                 hideLoading();
-                showError(xhr.responseJSON?.message || 'Erreur lors de la modification');
+                const errorMsg = xhr.responseJSON?.message || 'Erreur lors de la modification';
+                showError(errorMsg);
             }
         });
     }
