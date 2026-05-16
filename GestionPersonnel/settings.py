@@ -29,22 +29,7 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 # ==================== CONFIGURATION EMAIL ====================
 
-print(f"EMAIL_HOST_USER: {os.getenv('EMAIL_HOST_USER')}")  # Debug - vérifie dans le terminal
-# Remplace la ligne 33 par ceci :
-sendgrid_key = os.getenv('SENDGRID_API_KEY')
-if sendgrid_key:
-    print(f"SENDGRID_API_KEY: {sendgrid_key[:10]}...")
-else:
-    print("SENDGRID_API_KEY non trouvée dans les variables d'environnement")
 
-# settings.py
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.sendgrid.net'
-EMAIL_PORT = 2525  # ← Changement : 587 → 2525
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'apikey'
-EMAIL_HOST_PASSWORD = os.getenv('SENDGRID_API_KEY')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
