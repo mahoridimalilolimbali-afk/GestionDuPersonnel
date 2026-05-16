@@ -1203,8 +1203,6 @@ def liste_decisions_candidature(request):
 # ==================== API CANDIDATURES ====================
 
 
-
-
 @require_http_methods(["GET"])
 def ouvrir_cv_candidat(request, id_candidature):
     """Ouvrir le CV d'un candidat"""
@@ -1229,27 +1227,6 @@ def ouvrir_cv_candidat(request, id_candidature):
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
 
-from .utils import notifier_candidat_decision
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1263,7 +1240,7 @@ import json
 
 # Vue pour récupérer les candidatures à traiter
 @csrf_exempt
-def get_candidatures_a_traiter(request):
+def candidatures_a_traiter(request):
     try:
         # Récupérer les candidatures sans décision
         candidatures = Candidature.objects.filter(
@@ -1295,7 +1272,7 @@ def get_candidatures_a_traiter(request):
 
 # Vue pour récupérer les candidatures traitées
 @csrf_exempt
-def get_candidatures_traitees(request):
+def candidatures_traitees(request):
     try:
         decisions = Decision.objects.all().select_related(
             'candidature', 
@@ -1513,16 +1490,46 @@ def enregistrer_decision(request):
 
 
 
+    
 
-
-
-
-
-
-
-
-
-
+@csrf_exempt
+@require_http_methods(["POST"])
+def modifier_decision(request, id_decision):
+    """Modifier une décision existante et notifier le candidat"""
+    try:
+        decision = get_object_or_404(Decision, id=id_decision)
+        data = json.loads(request.body)
+        
+        type_decision_id = data.get('type_decision_id')
+        motif = data.get('motif', '').strip()
+        
+        if type_decision_id:
+            type_decision = get_object_or_404(TypeDecision, id=type_decision_id)
+            decision.type_decision = type_decision
+        
+        decision.motif = motif
+        decision.save()
+        
+        # ========== NOTIFIER LE CANDIDAT DE LA MODIFICATION ==========
+        try:
+            from .utils import notifier_candidat_decision
+            notifier_candidat_decision(decision.candidature, decision.type_decision.Description, motif)
+        except Exception as e:
+            print(f"⚠️ Erreur lors de l'envoi de l'email: {e}")
+        # ===========================================================
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Décision modifiée avec succès. Le candidat a été notifié par email.',
+            'decision': {
+                'id': decision.id,
+                'type_decision': decision.type_decision.Description if decision.type_decision else 'Non spécifié',
+                'motif': decision.motif,
+                'date_decision': decision.date_decision.strftime('%d/%m/%Y à %H:%M')
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
 
 

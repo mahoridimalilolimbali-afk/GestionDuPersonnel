@@ -150,8 +150,8 @@ urlpatterns = [
     path('decisions-candidature/', views.liste_decisions_candidature, name='liste_decisions_candidature'),
     
     # API Décisions
-    path('api/decisions/candidatures-a-traiter/', views.get_candidatures_a_traiter, name='get_candidatures_a_traiter'),
-    path('api/decisions/candidatures-traitees/', views.get_candidatures_traitees, name='get_candidatures_traitees'),
+    path('api/decisions/candidatures-a-traiter/', views.candidatures_a_traiter, name='candidatures_a_traiter'),
+    path('api/decisions/candidatures-traitees/', views.candidatures_traitees, name='candidatures_traitees'),
     path('api/decisions/ouvrir-cv/<int:id_candidature>/', views.ouvrir_cv_candidat, name='ouvrir_cv_candidat'),
     path('api/decisions/enregistrer/', views.enregistrer_decision, name='enregistrer_decision'),
     path('api/decisions/modifier/<int:id_decision>/', views.modifier_decision, name='modifier_decision'),
