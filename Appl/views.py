@@ -1346,7 +1346,7 @@ def enregistrer_decision(request):
             )
             
             # ========== ENVOYER L'EMAIL AU CANDIDAT ==========
-            from .utils import notifier_acceptation_candidature, notifier_refus_candidature
+            from .utils import notifier_acceptation_candidature, notifier_refus_candidature, notifier_promotion_agent
             base_url = "https://mahoridi.pythonanywhere.com"  # Remplacez par votre URL en production
             
             email_envoye = False
