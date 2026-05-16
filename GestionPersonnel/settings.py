@@ -29,8 +29,6 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 # ==================== CONFIGURATION EMAIL ====================
 
-print(f"EMAIL_HOST_USER: {os.getenv('EMAIL_HOST_USER')}")  # Debug - vérifie dans le terminal
-print(f"SENDGRID_API_KEY: {os.getenv('SENDGRID_API_KEY')[:10]}...")  # Debug
 
 # settings.py
 # Configuration Email (Gmail)
