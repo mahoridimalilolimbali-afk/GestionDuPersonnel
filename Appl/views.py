@@ -1202,6 +1202,72 @@ def liste_decisions_candidature(request):
 
 # ==================== API CANDIDATURES ====================
 
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_candidatures_a_traiter(request):
+    """API pour récupérer les candidatures non encore décidées"""
+    try:
+        # Récupérer les IDs des candidatures qui ont déjà une décision
+        candidatures_avec_decision = Decision.objects.values_list('candidature_id', flat=True)
+        
+        # Récupérer les candidatures sans décision
+        candidatures = Candidature.objects.exclude(
+            id__in=candidatures_avec_decision
+        ).select_related('candidat', 'offre', 'offre__domaine').order_by('-date_soumission')
+        
+        data = []
+        for c in candidatures:
+            data.append({
+                'id': c.id,
+                'candidat_nom': f"{c.candidat.nom} {c.candidat.postnom} {c.candidat.prenom}",
+                'offre_titre': c.offre.titre,
+                'offre_domaine': c.offre.domaine.NomDomaine,
+                'cv_url': c.cv.url if c.cv else None,
+                'nom_fichier': c.cv.name.split('/')[-1] if c.cv else None,
+                'date_soumission': c.date_soumission.strftime('%d/%m/%Y à %H:%M')
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'candidatures': data,
+            'total': len(data)
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_candidatures_traitees(request):
+    """API pour récupérer les candidatures avec décision"""
+    try:
+        decisions = Decision.objects.select_related(
+            'candidature', 'candidature__candidat', 'candidature__offre', 'type_decision'
+        ).all().order_by('-date_decision')
+        
+        data = []
+        for d in decisions:
+            data.append({
+                'id': d.id,
+                'candidature_id': d.candidature.id,
+                'candidat_nom': f"{d.candidature.candidat.nom} {d.candidature.candidat.postnom} {d.candidature.candidat.prenom}",
+                'offre_titre': d.candidature.offre.titre,
+                'offre_domaine': d.candidature.offre.domaine.NomDomaine,
+                'type_decision': d.type_decision.Description if d.type_decision else 'Non spécifié',
+                'type_decision_id': d.type_decision.id if d.type_decision else None,
+                'motif': d.motif or '',
+                'cv_url': d.candidature.cv.url if d.candidature.cv else None,
+                'date_decision': d.date_decision.strftime('%d/%m/%Y à %H:%M')
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'decisions': data,
+            'total': len(data)
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
 
 @require_http_methods(["GET"])
 def ouvrir_cv_candidat(request, id_candidature):
@@ -1227,6 +1293,22 @@ def ouvrir_cv_candidat(request, id_candidature):
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
 
+from .utils import notifier_candidat_decision
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1238,74 +1320,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 import json
 
-# Vue pour récupérer les candidatures à traiter
-@csrf_exempt
-def candidatures_a_traiter(request):
-    try:
-        # Récupérer les candidatures sans décision
-        candidatures = Candidature.objects.filter(
-            decision__isnull=True
-        ).select_related('candidat', 'candidat__user', 'offre')
-        
-        candidatures_data = []
-        for c in candidatures:
-            candidatures_data.append({
-                'id': c.id,
-                'candidat_nom': f"{c.candidat.user.last_name} {c.candidat.user.first_name}",
-                'candidat_email': c.candidat.user.email,  # Email depuis l'utilisateur
-                'offre_titre': c.offre.titre,
-                'offre_domaine': c.offre.domaine.nom if c.offre.domaine else 'Non défini',
-                'date_soumission': c.date_soumission.strftime('%d/%m/%Y')
-            })
-        
-        return JsonResponse({
-            'success': True,
-            'candidatures': candidatures_data,
-            'total': len(candidatures_data)
-        })
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'message': str(e)
-        }, status=500)
 
 
-# Vue pour récupérer les candidatures traitées
-@csrf_exempt
-def candidatures_traitees(request):
-    try:
-        decisions = Decision.objects.all().select_related(
-            'candidature', 
-            'candidature__candidat',
-            'candidature__candidat__user',
-            'candidature__offre',
-            'type_decision'
-        ).order_by('-date_decision')
-        
-        decisions_data = []
-        for d in decisions:
-            decisions_data.append({
-                'id': d.id,
-                'candidature_id': d.candidature.id,
-                'candidat_nom': f"{d.candidature.candidat.user.last_name} {d.candidature.candidat.user.first_name}",
-                'candidat_email': d.candidature.candidat.user.email,  # Email depuis l'utilisateur
-                'offre_titre': d.candidature.offre.titre,
-                'type_decision': d.type_decision.Description,
-                'type_decision_id': d.type_decision.id,
-                'motif': d.motif or '',
-                'date_decision': d.date_decision.strftime('%d/%m/%Y %H:%M')
-            })
-        
-        return JsonResponse({
-            'success': True,
-            'decisions': decisions_data,
-            'total': len(decisions_data)
-        })
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'message': str(e)
-        }, status=500)
 
 
 # Vue pour enregistrer une décision et envoyer l'email
@@ -1490,7 +1506,9 @@ def enregistrer_decision(request):
 
 
 
-    
+
+
+
 
 @csrf_exempt
 @require_http_methods(["POST"])
