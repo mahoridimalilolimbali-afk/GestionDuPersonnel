@@ -111,22 +111,8 @@ def ChargerMessagerie(request):
 
 def ConnectUtilisateur(request):
     if request.method == 'POST':
-        login_input = request.POST.get("txtUt")  # Peut être email ou nom d'utilisateur
+        username = request.POST.get("txtUt")
         password = request.POST.get("txtPas")
-        
-        # Déterminer si c'est un email ou un nom d'utilisateur
-        if '@' in login_input:
-            # C'est un email, chercher l'utilisateur correspondant
-            try:
-                user_obj = User.objects.get(email=login_input)
-                username = user_obj.username
-            except User.DoesNotExist:
-                username = login_input
-        else:
-            # C'est un nom d'utilisateur
-            username = login_input
-        
-        # Authentifier avec le nom d'utilisateur trouvé
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
@@ -134,13 +120,13 @@ def ConnectUtilisateur(request):
             
             # Vérifier si l'utilisateur est superutilisateur
             if user.is_superuser:
-                return redirect("/Appl/dashboardAdmin")
+                return redirect("/Appl/dashboardAdmin")  # Redirection vers Accueil.html pour superuser
             
-            # Vérifier si l'utilisateur appartient au groupe CANDIDAT
+            # Vérifier si l'utilisateur appartient au groupe CLIENT
             if user.groups.filter(name='CANDIDAT').exists():
-                return redirect("/Appl/dashboardCandidat")
+                return redirect("/Appl/dashboardCandidat")  # Redirection vers AccueilClient.html pour les clients
             
-            # Vérifier d'autres groupes
+            # Vérifier d'autres groupes si nécessaire
             if user.groups.filter(name='ONEM').exists():
                 return redirect("/Appl/dashboardOnem")
             
@@ -150,11 +136,11 @@ def ConnectUtilisateur(request):
             if user.groups.filter(name='AGENT').exists():
                 return redirect("/Appl/dashboardAgent")
             
-            # Redirection par défaut
+            # Redirection par défaut si aucun rôle spécifique n'est trouvé
             return redirect("/Appl/Attrib")
             
         else:
-            messages.error(request, "Email/Nom d'utilisateur ou mot de passe incorrect")
+            messages.error(request, "Le compte est inexistant ou les identifiants sont incorrects")
             return redirect("/Appl/logins")
     
     return redirect("/Appl/logins")
@@ -785,15 +771,13 @@ def inscriptionCandidat(request):
             numeroTelephone = request.POST.get('numeroTelephone')
             quartier = request.POST.get('quartier')
             avenue = request.POST.get('avenue')
-            email = request.POST.get('email')  # ← NOUVEAU : email réel
             username = request.POST.get('username')
             password = request.POST.get('password')
             confirm_password = request.POST.get('confirm_password')
-            photo = request.FILES.get('photo')  # ← NOUVEAU : photo
             
             # Vérification des champs obligatoires
             if not all([nom, postnom, prenom, sexe, nationalite, lieuNaissance, ville, 
-                       dateNaissance, numeroTelephone, quartier, email, username, password]):
+                       dateNaissance, numeroTelephone, quartier, username, password]):
                 messages.error(request, 'Tous les champs sont requis')
                 return redirect('inscriptionCandidat')
             
@@ -805,11 +789,6 @@ def inscriptionCandidat(request):
             # Vérification si username existe déjà
             if User.objects.filter(username=username).exists():
                 messages.error(request, 'Ce nom d\'utilisateur existe déjà')
-                return redirect('inscriptionCandidat')
-            
-            # Vérification si email existe déjà
-            if User.objects.filter(email=email).exists():
-                messages.error(request, 'Cet email est déjà utilisé')
                 return redirect('inscriptionCandidat')
             
             # Vérification si téléphone existe déjà
@@ -825,21 +804,21 @@ def inscriptionCandidat(request):
                 messages.error(request, 'Vous devez avoir au moins 18 ans pour vous inscrire')
                 return redirect('inscriptionCandidat')
             
-            # Création de l'utilisateur Django avec LE VRAI EMAIL
+            # Création de l'utilisateur Django
             user = User.objects.create_user(
                 username=username,
                 password=password,
                 first_name=prenom,
                 last_name=f"{nom} {postnom}",
-                email=email  # ← Utilisation du vrai email saisi par l'utilisateur
+                email=f"{username}@candidat.com"
             )
             
             # Ajout au groupe CANDIDAT
             groupe_candidat, _ = Group.objects.get_or_create(name='CANDIDAT')
             user.groups.add(groupe_candidat)
             
-            # Création du profil candidat avec photo
-            candidat = Candidat.objects.create(
+            # Création du profil candidat
+            Candidat.objects.create(
                 user=user,
                 nom=nom,
                 postnom=postnom,
@@ -851,8 +830,7 @@ def inscriptionCandidat(request):
                 dateNaissance=dateNaissance,
                 numeroTelephone=numeroTelephone,
                 quartier=quartier,
-                avenue=avenue if avenue else "",
-                photo=photo  # ← Sauvegarde de la photo
+                avenue=avenue if avenue else ""
             )
             
             messages.success(request, f'Bienvenue {prenom} ! Votre compte a été créé avec succès. Veuillez vous connecter.')
@@ -860,9 +838,10 @@ def inscriptionCandidat(request):
             
         except Exception as e:
             messages.error(request, f'Erreur: {str(e)}')
-            return redirect('Appl/Candidat.html')
+            return redirect('inscriptionCandidat')
     
     return render(request, "Appl/Candidat.html")
+
 
 
 
@@ -1293,227 +1272,53 @@ def ouvrir_cv_candidat(request, id_candidature):
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
 
-from .utils import notifier_candidat_decision
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-from django.core.mail import send_mail
-from django.conf import settings
-from django.template.loader import render_to_string
-from django.contrib.auth.models import User
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-import json
-
-
-
-
-
-# Vue pour enregistrer une décision et envoyer l'email
 @csrf_exempt
+@require_http_methods(["POST"])
 def enregistrer_decision(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            candidature_id = data.get('candidature_id')
-            type_decision_id = data.get('type_decision_id')
-            motif = data.get('motif', '')
-            envoyer_email = data.get('envoyer_email', True)
-            
-            # Récupérer la candidature avec toutes les relations
-            candidature = Candidature.objects.select_related(
-                'candidat',
-                'candidat__user',
-                'offre'
-            ).get(id=candidature_id)
-            
-            type_decision = TypeDecision.objects.get(id=type_decision_id)
-            
-            # Créer la décision
-            decision = Decision.objects.create(
-                candidature=candidature,
-                type_decision=type_decision,
-                motif=motif
-            )
-            
-            email_envoye = False
-            email_erreur = None
-            
-            # Envoyer l'email si demandé
-            if envoyer_email:
-                # Récupérer l'email depuis l'utilisateur Django
-                candidat_user = candidature.candidat.user
-                candidat_email = candidat_user.email
-                candidat_nom = f"{candidat_user.first_name} {candidat_user.last_name}"
-                offre_titre = candidature.offre.titre
-                type_decision_text = type_decision.Description
-                
-                # URL de votre application (à modifier)
-                app_url = "https://mahoridi.pythonanywhere.com"
-                
-                # Vérifier si l'email existe
-                if candidat_email:
-                    try:
-                        if "Accept" in type_decision_text or "Valid" in type_decision_text or "accept" in type_decision_text.lower():
-                            # Email d'acceptation
-                            sujet = f"✅ Votre candidature pour {offre_titre} - GRH ENGINEERING"
-                            message_html = f"""
-                            <!DOCTYPE html>
-                            <html>
-                            <head>
-                                <meta charset="UTF-8">
-                                <title>Acceptation de candidature</title>
-                            </head>
-                            <body style="font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4;">
-                                <div style="max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
-                                    <div style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); padding: 30px; text-align: center;">
-                                        <h1 style="color: white; margin: 0;">🎉 Félicitations !</h1>
-                                    </div>
-                                    <div style="padding: 30px;">
-                                        <h2 style="color: #2c3e50; margin-top: 0;">Bonjour {candidat_nom},</h2>
-                                        <p style="color: #34495e; font-size: 16px; line-height: 1.6;">
-                                            Votre candidature pour le poste <strong style="color: #27ae60;">"{offre_titre}"</strong> 
-                                            a été <strong style="color: #27ae60;">ACCEPTÉE</strong>.
-                                        </p>
-                                        <p style="color: #34495e; font-size: 16px; line-height: 1.6;">
-                                            Nous avons été impressionnés par votre profil et nous souhaitons poursuivre 
-                                            le processus de recrutement avec vous.
-                                        </p>
-                                        <div style="text-align: center; margin: 35px 0;">
-                                            <a href="{app_url}" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); color: white; padding: 14px 35px; text-decoration: none; border-radius: 50px; font-weight: bold; display: inline-block;">
-                                                📋 Cliquez ici pour continuer
-                                            </a>
-                                        </div>
-                                        <p style="color: #34495e; font-size: 14px;">
-                                            Notre équipe vous contactera très prochainement pour la suite du processus.
-                                        </p>
-                                        <hr style="margin: 25px 0; border: none; border-top: 1px solid #ecf0f1;">
-                                        <p style="color: #7f8c8d; font-size: 12px; text-align: center;">
-                                            GRH ENGINEERING SARL - RDC, Goma<br>
-                                            Cet email est généré automatiquement, merci de ne pas y répondre.
-                                        </p>
-                                    </div>
-                                </div>
-                            </body>
-                            </html>
-                            """
-                        else:
-                            # Email de refus
-                            sujet = f"📋 Suite de votre candidature pour {offre_titre} - GRH ENGINEERING"
-                            message_html = f"""
-                            <!DOCTYPE html>
-                            <html>
-                            <head>
-                                <meta charset="UTF-8">
-                                <title>Résultat de candidature</title>
-                            </head>
-                            <body style="font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4;">
-                                <div style="max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
-                                    <div style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); padding: 30px; text-align: center;">
-                                        <h1 style="color: white; margin: 0;">📢 Suite de votre candidature</h1>
-                                    </div>
-                                    <div style="padding: 30px;">
-                                        <h2 style="color: #2c3e50; margin-top: 0;">Bonjour {candidat_nom},</h2>
-                                        <p style="color: #34495e; font-size: 16px; line-height: 1.6;">
-                                            Nous vous remercions d'avoir postulé au poste <strong style="color: #e74c3c;">"{offre_titre}"</strong> 
-                                            au sein de GRH ENGINEERING SARL.
-                                        </p>
-                                        <p style="color: #34495e; font-size: 16px; line-height: 1.6;">
-                                            Après examen attentif de votre candidature, nous avons le regret de vous informer que 
-                                            <strong style="color: #e74c3c;">votre candidature n'a pas été retenue</strong> pour cette offre.
-                                        </p>
-                                        <div style="text-align: center; margin: 35px 0;">
-                                            <a href="{app_url}" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; padding: 14px 35px; text-decoration: none; border-radius: 50px; font-weight: bold; display: inline-block;">
-                                                🔍 Voir nos offres
-                                            </a>
-                                        </div>
-                                        <p style="color: #34495e; font-size: 14px;">
-                                            Nous vous encourageons vivement à consulter régulièrement nos offres d'emploi. 
-                                            Votre profil pourrait parfaitement correspondre à une autre opportunité.
-                                        </p>
-                                        <hr style="margin: 25px 0; border: none; border-top: 1px solid #ecf0f1;">
-                                        <p style="color: #7f8c8d; font-size: 12px; text-align: center;">
-                                            GRH ENGINEERING SARL - RDC, Goma<br>
-                                            Cet email est généré automatiquement, merci de ne pas y répondre.
-                                        </p>
-                                    </div>
-                                </div>
-                            </body>
-                            </html>
-                            """
-                        
-                        # Envoi de l'email
-                        send_mail(
-                            sujet,
-                            "",  # Message texte (optionnel)
-                            settings.DEFAULT_FROM_EMAIL,
-                            [candidat_email],
-                            html_message=message_html,
-                            fail_silently=False
-                        )
-                        email_envoye = True
-                        
-                    except Exception as e:
-                        email_envoye = False
-                        email_erreur = str(e)
-                else:
-                    email_erreur = "Le candidat n'a pas d'adresse email enregistrée"
-            
-            return JsonResponse({
-                'success': True,
-                'message': 'Décision enregistrée avec succès',
-                'decision_id': decision.id,
-                'email_envoye': email_envoye,
-                'email_erreur': email_erreur
-            })
-            
-        except Candidature.DoesNotExist:
-            return JsonResponse({
-                'success': False,
-                'message': 'Candidature introuvable'
-            }, status=404)
-        except TypeDecision.DoesNotExist:
-            return JsonResponse({
-                'success': False,
-                'message': 'Type de décision introuvable'
-            }, status=404)
-        except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'message': f'Erreur: {str(e)}'
-            }, status=500)
-    
-    return JsonResponse({
-        'success': False,
-        'message': 'Méthode non autorisée'
-    }, status=405)
-
-
-
-
-
-
+    """Enregistrer une décision pour une candidature"""
+    try:
+        data = json.loads(request.body)
+        candidature_id = data.get('candidature_id')
+        type_decision_id = data.get('type_decision_id')
+        motif = data.get('motif', '').strip()
+        
+        if not candidature_id:
+            return JsonResponse({'success': False, 'message': 'Candidature non spécifiée'}, status=400)
+        
+        if not type_decision_id:
+            return JsonResponse({'success': False, 'message': 'Veuillez sélectionner un type de décision'}, status=400)
+        
+        candidature = get_object_or_404(Candidature, id=candidature_id)
+        type_decision = get_object_or_404(TypeDecision, id=type_decision_id)
+        
+        # Vérifier si une décision existe déjà
+        if Decision.objects.filter(candidature=candidature).exists():
+            return JsonResponse({'success': False, 'message': 'Une décision existe déjà pour cette candidature'}, status=400)
+        
+        decision = Decision.objects.create(
+            candidature=candidature,
+            type_decision=type_decision,
+            motif=motif
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Décision "{type_decision.Description}" enregistrée avec succès',
+            'decision': {
+                'id': decision.id,
+                'type_decision': type_decision.Description,
+                'motif': motif,
+                'date_decision': decision.date_decision.strftime('%d/%m/%Y à %H:%M')
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
 
 @csrf_exempt
 @require_http_methods(["POST"])
 def modifier_decision(request, id_decision):
-    """Modifier une décision existante et notifier le candidat"""
+    """Modifier une décision existante"""
     try:
         decision = get_object_or_404(Decision, id=id_decision)
         data = json.loads(request.body)
@@ -1528,17 +1333,9 @@ def modifier_decision(request, id_decision):
         decision.motif = motif
         decision.save()
         
-        # ========== NOTIFIER LE CANDIDAT DE LA MODIFICATION ==========
-        try:
-            from .utils import notifier_candidat_decision
-            notifier_candidat_decision(decision.candidature, decision.type_decision.Description, motif)
-        except Exception as e:
-            print(f"⚠️ Erreur lors de l'envoi de l'email: {e}")
-        # ===========================================================
-        
         return JsonResponse({
             'success': True,
-            'message': f'Décision modifiée avec succès. Le candidat a été notifié par email.',
+            'message': 'Décision modifiée avec succès',
             'decision': {
                 'id': decision.id,
                 'type_decision': decision.type_decision.Description if decision.type_decision else 'Non spécifié',
@@ -1548,6 +1345,7 @@ def modifier_decision(request, id_decision):
         })
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
+    
 
 
 
@@ -1887,240 +1685,6 @@ def get_evaluations_by_candidature(request, id_candidature):
 
 # ==================== API ENREGISTRER EVALUATION ====================
 
-
-
-
-
-
-
-
-
-
-# CONVERSION EN AGENT
-
-
-from django.core.mail import send_mail
-from django.conf import settings
-from django.contrib.auth.models import User, Group
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
-import json
-
-# ========== FONCTION UTILITAIRE POUR CHANGER LE GROUPE ==========
-def changer_groupe_utilisateur(user, nouveau_groupe_nom):
-    """
-    Change le groupe d'un utilisateur Django.
-    Retire tous ses groupes existants et ajoute le nouveau groupe.
-    """
-    try:
-        # Récupérer ou créer le groupe
-        nouveau_groupe, created = Group.objects.get_or_create(name=nouveau_groupe_nom)
-        
-        # Retirer tous les groupes existants
-        user.groups.clear()
-        
-        # Ajouter au nouveau groupe
-        user.groups.add(nouveau_groupe)
-        
-        # Mettre à jour le statut is_staff si nécessaire (pour les agents)
-        if nouveau_groupe_nom.upper() == 'AGENT':
-            user.is_staff = True
-        else:
-            user.is_staff = False
-        
-        user.save()
-        
-        return True, f"Utilisateur ajouté au groupe {nouveau_groupe_nom}"
-    except Exception as e:
-        return False, str(e)
-
-
-# ========== FONCTION POUR VÉRIFIER ET CHANGER LE STATUT AGENT ==========
-def verifier_et_promouvoir_agent(candidature):
-    """
-    Vérifie si tous les tests de l'offre sont évalués et si la moyenne >= 70%.
-    Si oui, promeut le candidat en Agent (change son groupe Django et crée l'enregistrement Agent).
-    Retourne un message indiquant ce qui s'est passé.
-    """
-    offre = candidature.offre
-    tous_les_tests = Test.objects.filter(offre=offre)
-    nombre_tests = tous_les_tests.count()
-    
-    # S'il n'y a pas de tests définis pour cette offre, on ne fait rien
-    if nombre_tests == 0:
-        return "Aucun test défini pour cette offre."
-    
-    evaluations_existantes = Evaluation.objects.filter(candidature=candidature).count()
-    
-    # Si tous les tests ne sont pas encore évalués
-    if evaluations_existantes < nombre_tests:
-        restant = nombre_tests - evaluations_existantes
-        return f"Encore {restant} test(s) à évaluer pour cette offre."
-    
-    # Tous les tests sont évalués, calculer la moyenne
-    toutes_notes = Evaluation.objects.filter(candidature=candidature).values_list('note', flat=True)
-    moyenne = sum(toutes_notes) / len(toutes_notes)
-    
-    if moyenne >= 70:
-        # Le candidat est retenu comme AGENT
-        user = candidature.candidat.user
-        
-        # 1. Changer le groupe Django de CANDIDAT à AGENT
-        success, message_groupe = changer_groupe_utilisateur(user, 'AGENT')
-        
-        # 2. Créer ou mettre à jour l'enregistrement Agent
-        agent, created = Agent.objects.get_or_create(
-            candidat=candidature.candidat,
-            defaults={
-                'statut': 'Approuvé',
-                'matricule': f"GRH-{user.id}-{user.date_joined.strftime('%Y%m%d')}"
-            }
-        )
-        
-        if not created and agent.statut != 'Approuvé':
-            agent.statut = 'Approuvé'
-            agent.save()
-        
-        if created:
-            message_agent = "Le candidat a été promu Agent avec succès!"
-        else:
-            message_agent = "Le candidat est déjà Agent."
-        
-        if success:
-            return f"✅ Tous les tests évalués! Moyenne: {moyenne:.2f}%. {message_agent} Groupe: {message_groupe}"
-        else:
-            return f"✅ Tous les tests évalués! Moyenne: {moyenne:.2f}%. {message_agent} ⚠️ Attention: {message_groupe}"
-    
-    else:
-        # Moyenne insuffisante - s'assurer que l'utilisateur reste CANDIDAT (ou devient NON_RETENU)
-        user = candidature.candidat.user
-        
-        # Vérifier si l'utilisateur est dans le groupe AGENT, si oui le remettre en CANDIDAT
-        if user.groups.filter(name='AGENT').exists():
-            success, message_groupe = changer_groupe_utilisateur(user, 'CANDIDAT')
-            message_groupe = f" L'utilisateur a été rétrogradé en CANDIDAT."
-        else:
-            message_groupe = ""
-        
-        # Mettre à jour le statut de l'agent s'il existe
-        try:
-            agent = Agent.objects.get(candidat=candidature.candidat)
-            if agent.statut == 'Approuvé':
-                agent.statut = 'Non retenu'
-                agent.save()
-        except Agent.DoesNotExist:
-            pass
-        
-        return f"❌ Tous les tests évalués! Moyenne: {moyenne:.2f}%. Note inférieure à 70%, le candidat n'est pas retenu comme agent.{message_groupe}"
-
-#= SUPPRIMER UNE ÉVALUATION ==========
-@csrf_exempt
-@require_http_methods(["DELETE"])
-def supprimer_evaluation(request, id_evaluation):
-    """Supprimer une évaluation et recalculer le statut Agent"""
-    try:
-        evaluation = get_object_or_404(Evaluation, id=id_evaluation)
-        candidature = evaluation.candidature
-        
-        # Récupérer l'offre et le nombre de tests
-        offre = candidature.offre
-        nombre_tests = Test.objects.filter(offre=offre).count()
-        
-        # Supprimer l'évaluation
-        evaluation.delete()
-        
-        # Recompter les évaluations restantes
-        evaluations_restantes = Evaluation.objects.filter(candidature=candidature).count()
-        
-        message_promotion = ""
-        
-        # Si après suppression, il n'y a plus tous les tests d'évalués, retirer le statut Agent si nécessaire
-        if evaluations_restantes < nombre_tests:
-            # L'utilisateur n'a plus tous ses tests évalués, donc ne peut pas être Agent
-            user = candidature.candidat.user
-            
-            # Vérifier si l'utilisateur est dans le groupe AGENT, si oui le remettre en CANDIDAT
-            if user.groups.filter(name='AGENT').exists():
-                success, message_groupe = changer_groupe_utilisateur(user, 'CANDIDAT')
-                message_promotion = f"⚠️ L'utilisateur a été remis en CANDIDAT car il manque des évaluations."
-            
-            # Mettre à jour le statut de l'agent
-            try:
-                agent = Agent.objects.get(candidat=candidature.candidat)
-                if agent.statut == 'Approuvé':
-                    agent.statut = 'En cours'
-                    agent.save()
-            except Agent.DoesNotExist:
-                pass
-        else:
-            # Recalculer avec les évaluations restantes
-            message_promotion = verifier_et_promouvoir_agent(candidature)
-        
-        return JsonResponse({
-            'success': True,
-            'message': 'Évaluation supprimée avec succès.',
-            'promotion_message': message_promotion
-        })
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)}, status=400)
-
-
-# ========== FONCTION POUR OBTENIR LE STATUT D'UN CANDIDAT ==========
-@csrf_exempt
-def get_candidat_status(request, candidature_id):
-    """Obtenir le statut d'un candidat (groupes Django, évaluations, moyenne)"""
-    try:
-        candidature = get_object_or_404(Candidature, id=candidature_id)
-        user = candidature.candidat.user
-        offre = candidature.offre
-        
-        # Récupérer les groupes de l'utilisateur
-        groupes = list(user.groups.values_list('name', flat=True))
-        
-        # Récupérer les évaluations
-        evaluations = Evaluation.objects.filter(candidature=candidature).values('id', 'note', 'observation', 'date_evaluation')
-        
-        # Calculer la moyenne si toutes les évaluations sont faites
-        tous_les_tests = Test.objects.filter(offre=offre).count()
-        evaluations_count = evaluations.count()
-        moyenne = None
-        
-        if tous_les_tests > 0 and evaluations_count >= tous_les_tests:
-            notes = [e['note'] for e in evaluations]
-            moyenne = sum(notes) / len(notes)
-        
-        return JsonResponse({
-            'success': True,
-            'status': {
-                'user_id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'groupes': groupes,
-                'is_staff': user.is_staff,
-                'evaluations_count': evaluations_count,
-                'total_tests_requis': tous_les_tests,
-                'moyenne': moyenne,
-                'est_agent': 'AGENT' in groupes,
-                'evaluations': list(evaluations)
-            }
-        })
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)}, status=400)
-
-
-
-
-
-
-
-
-
-
-
-
-
 @csrf_exempt
 @require_http_methods(["POST"])
 def enregistrer_evaluation(request):
@@ -2165,10 +1729,6 @@ def enregistrer_evaluation(request):
             note=note
         )
         
-        # ========== NOUVEAU : Vérifier la promotion du candidat (changement de groupe automatique) ==========
-        message_promotion = verifier_et_promouvoir_agent(candidature)
-        # ================================================================================================
-        
         # Vérifier si tous les tests de l'offre ont été évalués
         tous_les_tests = Test.objects.filter(offre=candidature.offre)
         nombre_tests = tous_les_tests.count()
@@ -2210,8 +1770,7 @@ def enregistrer_evaluation(request):
                 'note': evaluation.note,
                 'observation': evaluation.observation,
                 'date_evaluation': evaluation.date_evaluation.strftime('%d/%m/%Y à %H:%M')
-            },
-            'promotion_message': message_promotion  # ← AJOUT DE LA LIGNE
+            }
         })
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
@@ -2222,7 +1781,7 @@ def enregistrer_evaluation(request):
 @csrf_exempt
 @require_http_methods(["POST"])
 def modifier_evaluation(request, id_evaluation):
-    """Modifier une évaluation existante et recalculer le statut Agent"""
+    """Modifier une évaluation existante"""
     try:
         evaluation = get_object_or_404(Evaluation, id=id_evaluation)
         data = json.loads(request.body)
@@ -2242,12 +1801,8 @@ def modifier_evaluation(request, id_evaluation):
         evaluation.observation = observation
         evaluation.save()
         
-        # ========== NOUVEAU : Vérifier la promotion du candidat (changement de groupe automatique) ==========
-        candidature = evaluation.candidature
-        message_promotion = verifier_et_promouvoir_agent(candidature)
-        # ================================================================================================
-        
         # Recalculer la moyenne après modification
+        candidature = evaluation.candidature
         tous_les_tests = Test.objects.filter(offre=candidature.offre)
         nombre_tests = tous_les_tests.count()
         evaluations_existantes = Evaluation.objects.filter(candidature=candidature).count()
@@ -2294,8 +1849,7 @@ def modifier_evaluation(request, id_evaluation):
                 'note': evaluation.note,
                 'observation': evaluation.observation,
                 'date_evaluation': evaluation.date_evaluation.strftime('%d/%m/%Y à %H:%M')
-            },
-            'promotion_message': message_promotion  # ← AJOUT DE LA LIGNE
+            }
         })
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
@@ -2352,38 +1906,6 @@ def get_evaluations_effectuees(request):
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 # TYPE CONGE
 
@@ -4139,6 +3661,186 @@ def get_evaluations_effectuees(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
+# ==================== API ENREGISTRER EVALUATION ====================
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def enregistrer_evaluation(request):
+    """Enregistrer une évaluation pour une candidature et un test spécifique"""
+    try:
+        data = json.loads(request.body)
+        candidature_id = data.get('candidature_id')
+        test_id = data.get('test_id')
+        observation = data.get('observation', '').strip()
+        note = data.get('note')
+        
+        if not candidature_id:
+            return JsonResponse({'success': False, 'message': 'Candidature non spécifiée'}, status=400)
+        
+        if not test_id:
+            return JsonResponse({'success': False, 'message': 'Test non spécifié'}, status=400)
+        
+        if note is None:
+            return JsonResponse({'success': False, 'message': 'La note est requise'}, status=400)
+        
+        try:
+            note = float(note)
+            if note < 0 or note > 100:
+                return JsonResponse({'success': False, 'message': 'La note doit être comprise entre 0 et 100'}, status=400)
+        except ValueError:
+            return JsonResponse({'success': False, 'message': 'Note invalide'}, status=400)
+        
+        candidature = get_object_or_404(Candidature, id=candidature_id)
+        test = get_object_or_404(Test, id=test_id)
+        
+        # Vérifier que la candidature a une décision Accepter
+        try:
+            type_decision_accepter = TypeDecision.objects.get(Description__icontains='Accepter')
+            Decision.objects.get(
+                candidature=candidature,
+                type_decision=type_decision_accepter
+            )
+        except TypeDecision.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Type de décision "Accepter" non configuré'}, status=400)
+        except Decision.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Cette candidature n\'a pas été acceptée'}, status=400)
+        
+        # Vérifier si une évaluation existe déjà pour ce test
+        if Evaluation.objects.filter(candidature=candidature, test=test).exists():
+            return JsonResponse({'success': False, 'message': 'Ce test a déjà été évalué pour cette candidature'}, status=400)
+        
+        # Créer l'évaluation
+        evaluation = Evaluation.objects.create(
+            candidature=candidature,
+            test=test,
+            observation=observation,
+            note=note
+        )
+        
+        # Vérifier si tous les tests de l'offre ont été évalués
+        tous_les_tests = Test.objects.filter(offre=candidature.offre)
+        nombre_tests = tous_les_tests.count()
+        evaluations_existantes = Evaluation.objects.filter(candidature=candidature).count()
+        
+        message_supp = ""
+        
+        # Si tous les tests sont évalués, calculer la moyenne
+        if nombre_tests > 0 and evaluations_existantes >= nombre_tests:
+            toutes_notes = Evaluation.objects.filter(candidature=candidature).values_list('note', flat=True)
+            moyenne = sum(toutes_notes) / len(toutes_notes)
+            
+            if moyenne >= 70:
+                agent, created = Agent.objects.get_or_create(
+                    candidat=candidature.candidat,
+                    defaults={'statut': 'Approuvé'}
+                )
+                if created:
+                    message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est retenu comme agent!"
+                else:
+                    if agent.statut != 'Approuvé':
+                        agent.statut = 'Approuvé'
+                        agent.save()
+                        message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est maintenant agent!"
+                    else:
+                        message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est déjà agent!"
+            else:
+                message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Note inférieure à 70%, le candidat n'est pas retenu."
+        else:
+            restant = nombre_tests - evaluations_existantes
+            message_supp = f" Évaluation enregistrée. Encore {restant} test(s) à évaluer pour cette offre."
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Évaluation du test du {test.date_test.strftime("%d/%m/%Y")} enregistrée avec succès. Note: {note}%{message_supp}',
+            'evaluation': {
+                'id': evaluation.id,
+                'note': evaluation.note,
+                'observation': evaluation.observation,
+                'date_evaluation': evaluation.date_evaluation.strftime('%d/%m/%Y à %H:%M')
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+# ==================== API MODIFIER EVALUATION ====================
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def modifier_evaluation(request, id_evaluation):
+    """Modifier une évaluation existante"""
+    try:
+        evaluation = get_object_or_404(Evaluation, id=id_evaluation)
+        data = json.loads(request.body)
+        
+        observation = data.get('observation', '').strip()
+        note = data.get('note')
+        
+        if note is not None:
+            try:
+                note = float(note)
+                if note < 0 or note > 100:
+                    return JsonResponse({'success': False, 'message': 'La note doit être comprise entre 0 et 100'}, status=400)
+                evaluation.note = note
+            except ValueError:
+                return JsonResponse({'success': False, 'message': 'Note invalide'}, status=400)
+        
+        evaluation.observation = observation
+        evaluation.save()
+        
+        # Recalculer la moyenne après modification
+        candidature = evaluation.candidature
+        tous_les_tests = Test.objects.filter(offre=candidature.offre)
+        nombre_tests = tous_les_tests.count()
+        evaluations_existantes = Evaluation.objects.filter(candidature=candidature).count()
+        
+        message_supp = ""
+        
+        if nombre_tests > 0 and evaluations_existantes >= nombre_tests:
+            toutes_notes = Evaluation.objects.filter(candidature=candidature).values_list('note', flat=True)
+            moyenne = sum(toutes_notes) / len(toutes_notes)
+            
+            if moyenne >= 70:
+                agent, created = Agent.objects.get_or_create(
+                    candidat=candidature.candidat,
+                    defaults={'statut': 'Approuvé'}
+                )
+                if created:
+                    message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est retenu comme agent!"
+                else:
+                    if agent.statut != 'Approuvé':
+                        agent.statut = 'Approuvé'
+                        agent.save()
+                        message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est maintenant agent!"
+                    else:
+                        message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est déjà agent!"
+            else:
+                try:
+                    agent = Agent.objects.get(candidat=candidature.candidat)
+                    if agent.statut == 'Approuvé':
+                        agent.statut = 'Non retenu'
+                        agent.save()
+                        message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat n'est plus retenu."
+                except Agent.DoesNotExist:
+                    message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Note inférieure à 70%."
+        else:
+            restant = nombre_tests - evaluations_existantes
+            message_supp = f" Évaluation modifiée. Encore {restant} test(s) à évaluer."
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Évaluation modifiée avec succès.{message_supp}',
+            'evaluation': {
+                'id': evaluation.id,
+                'note': evaluation.note,
+                'observation': evaluation.observation,
+                'date_evaluation': evaluation.date_evaluation.strftime('%d/%m/%Y à %H:%M')
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
 
 # ==================== API CANDIDAT - INFOS ====================
 
@@ -4817,7 +4519,7 @@ def get_destinataires_possibles(request):
         else:
             groupes = get_groupes_utilisateur(user)
             if 'CANDIDAT' in groupes:
-                destinataires = User.objects.filter(is_superuser=True)
+                destinataires = User.objects.filter(groups__name='CANDIDAT') | User.objects.filter(is_superuser=True)
             elif 'AGENT' in groupes:
                 destinataires = User.objects.filter(groups__name='AGENT') | User.objects.filter(is_superuser=True)
             elif 'ONEM' in groupes:
@@ -5024,23 +4726,17 @@ def get_non_lus_count(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
-
-
-
-from django.http import JsonResponse, HttpResponse
-from django.shortcuts import get_object_or_404
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from .models import Agent, Candidat
+# ============================================================================
+# SECTION 17: VALIDATION AGENT PAR QR CODE
+# ============================================================================
 
 @csrf_exempt
 @require_http_methods(["GET"])
 def valider_agent_qrcode(request, id_agent):
-    """API pour valider un agent via QR code - Retourne la carte d'agent"""
+    """API: Valider un agent via QR code - Affiche la carte d'agent"""
     try:
         agent = get_object_or_404(Agent, id=id_agent)
         candidat = agent.candidat
-        
         photo_url = candidat.photo.url if candidat.photo and hasattr(candidat.photo, 'url') else None
         code_validation = f"GRH-{agent.id}"
         
@@ -5050,7 +4746,7 @@ def valider_agent_qrcode(request, id_agent):
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Carte d'Agent - GRH</title>
+            <title>Carte d'Agent - GRH ENGINEERING</title>
             <style>
                 * {{ margin: 0; padding: 0; box-sizing: border-box; }}
                 body {{
@@ -5064,7 +4760,6 @@ def valider_agent_qrcode(request, id_agent):
                 }}
                 .carte-agent {{
                     max-width: 550px;
-                    margin: 0 auto;
                     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
                     border-radius: 20px;
                     overflow: hidden;
@@ -5076,9 +4771,9 @@ def valider_agent_qrcode(request, id_agent):
                     padding: 15px 20px;
                     text-align: center;
                 }}
-                .carte-header h3 {{ margin: 0; font-size: 16px; }}
+                .carte-header h3 {{ font-size: 16px; }}
                 .carte-header small {{ font-size: 10px; opacity: 0.8; }}
-                .carte-body {{ padding: 20px; display: flex; gap: 20px; }}
+                .carte-body {{ padding: 20px; display: flex; gap: 20px; flex-wrap: wrap; }}
                 .carte-photo img {{
                     width: 100px; height: 100px; border-radius: 50%;
                     object-fit: cover; border: 3px solid #667eea;
@@ -5090,35 +4785,28 @@ def valider_agent_qrcode(request, id_agent):
                     font-size: 40px; font-weight: bold;
                 }}
                 .carte-info {{ flex: 1; }}
-                .carte-info .nom {{ font-size: 16px; font-weight: 700; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 6px; }}
+                .carte-info .nom {{ font-size: 16px; font-weight: 700; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.2); }}
                 .carte-info .info-row {{ margin-bottom: 6px; font-size: 11px; }}
                 .carte-info .info-label {{ display: inline-block; width: 70px; opacity: 0.7; }}
-                .carte-footer {{
-                    background: rgba(0,0,0,0.3); padding: 12px 20px;
-                    display: flex; justify-content: space-between; align-items: center;
-                }}
+                .carte-footer {{ background: rgba(0,0,0,0.3); padding: 12px 20px; display: flex; justify-content: space-between; }}
                 .carte-footer .badge {{ background: #27ae60; padding: 3px 12px; border-radius: 20px; font-size: 10px; }}
-                .carte-footer .date-info {{ font-size: 9px; opacity: 0.7; }}
-                @media (max-width: 576px) {{
-                    .carte-body {{ flex-direction: column; align-items: center; text-align: center; }}
-                    .carte-info .info-label {{ width: auto; }}
-                }}
+                @media (max-width: 576px) {{ .carte-body {{ flex-direction: column; align-items: center; text-align: center; }} }}
             </style>
         </head>
         <body>
             <div class="carte-agent">
                 <div class="carte-header">
-                    <h3><i class="fas fa-building"></i> GRH ENGENNERING SARL</h3>
+                    <h3>🏢 GRH ENGENNERING SARL</h3>
                     <small>RDC - Goma - N°{agent.id}</small>
                 </div>
                 <div class="carte-body">
                     <div class="carte-photo">
-                        {'<img src="' + photo_url + '">' if photo_url else '<div class="no-photo">' + candidat.prenom[0] + candidat.nom[0] + '</div>'}
+                        {'<img src="' + photo_url + '">' if photo_url else '<div class="no-photo">' + (candidat.prenom[0] if candidat.prenom else 'A') + (candidat.nom[0] if candidat.nom else 'G') + '</div>'}
                     </div>
                     <div class="carte-info">
-                        <div class="nom">{candidat.nom} {candidat.postnom} {candidat.prenom}</div>
-                        <div class="info-row"><span class="info-label">Sexe :</span> <span class="info-value">{candidat.sexe}</span></div>
-                        <div class="info-row"><span class="info-label">Tél :</span> <span class="info-value">{candidat.numeroTelephone}</span></div>
+                        <div class="nom">{candidat.nom or ''} {candidat.postnom or ''} {candidat.prenom or ''}</div>
+                        <div class="info-row"><span class="info-label">Sexe :</span> <span class="info-value">{candidat.sexe or ''}</span></div>
+                        <div class="info-row"><span class="info-label">Tél :</span> <span class="info-value">{candidat.numeroTelephone or ''}</span></div>
                         <div class="info-row"><span class="info-label">Recruté le :</span> <span class="info-value">{agent.date_retenu.strftime('%d/%m/%Y')}</span></div>
                         <div class="info-row"><span class="info-label">Matricule :</span> <span class="info-value">{code_validation}</span></div>
                     </div>
@@ -5133,22 +4821,5 @@ def valider_agent_qrcode(request, id_agent):
         """
         return HttpResponse(html)
     except Exception as e:
-        return HttpResponse("<h1>❌ Agent non trouvé</h1>", status=404)
+        return HttpResponse(f"<h1>❌ Erreur: {str(e)}</h1>", status=404)
 
-
-
-
-@csrf_exempt
-@require_http_methods(["GET"])
-def get_agent_photo(request, id_agent):
-    """Récupérer la photo d'un agent (via son candidat associé)"""
-    try:
-        agent = get_object_or_404(Agent, id=id_agent)
-        candidat = agent.candidat
-        
-        if candidat.photo:
-            return JsonResponse({'success': True, 'photo_url': candidat.photo.url})
-        else:
-            return JsonResponse({'success': False, 'photo_url': None})
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
