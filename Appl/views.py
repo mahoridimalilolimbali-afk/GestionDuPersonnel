@@ -4775,76 +4775,105 @@ from .models import Agent, Candidat
 @csrf_exempt
 @require_http_methods(["GET"])
 def valider_agent_qrcode(request, id_agent):
-    """API pour valider un agent via QR code (scanné depuis l'attestation)"""
+    """API pour valider un agent via QR code - Retourne une page avec la carte complète"""
     try:
         agent = get_object_or_404(Agent, id=id_agent)
         candidat = agent.candidat
         
-        # Générer une page HTML simple pour l'affichage (visible sur mobile)
+        # Récupérer la photo
+        photo_url = candidat.photo.url if candidat.photo else None
+        
         html = f"""
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Validation Agent - ONEM</title>
+            <title>Carte d'Agent - GRH</title>
             <style>
+                * {{ margin: 0; padding: 0; box-sizing: border-box; }}
                 body {{
-                    font-family: Arial, sans-serif;
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                     min-height: 100vh;
                     display: flex;
                     justify-content: center;
                     align-items: center;
-                    margin: 0;
                     padding: 20px;
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                 }}
-                .card {{
-                    background: white;
+                .carte-agent {{
+                    max-width: 550px;
+                    margin: 0 auto;
+                    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
                     border-radius: 20px;
-                    padding: 30px;
-                    max-width: 400px;
-                    text-align: center;
-                    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-                }}
-                .success-icon {{
-                    font-size: 80px;
-                    color: #27ae60;
-                    margin-bottom: 20px;
-                }}
-                .info {{
-                    text-align: left;
-                    margin: 20px 0;
-                    padding: 15px;
-                    background: #f8f9fa;
-                    border-radius: 10px;
-                }}
-                .badge {{
-                    background: #27ae60;
+                    overflow: hidden;
+                    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
                     color: white;
-                    padding: 5px 15px;
-                    border-radius: 20px;
-                    display: inline-block;
-                    font-size: 12px;
                 }}
-                h2 {{ color: #2c3e50; margin: 0 0 10px 0; }}
-                hr {{ margin: 20px 0; }}
+                .carte-header {{
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    padding: 20px;
+                    text-align: center;
+                }}
+                .carte-header h3 {{ margin: 0; font-size: 18px; }}
+                .carte-body {{
+                    padding: 25px;
+                    display: flex;
+                    gap: 20px;
+                }}
+                .carte-photo img {{
+                    width: 120px;
+                    height: 120px;
+                    border-radius: 50%;
+                    object-fit: cover;
+                    border: 3px solid #667eea;
+                }}
+                .carte-photo .no-photo {{
+                    width: 120px;
+                    height: 120px;
+                    border-radius: 50%;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 48px;
+                    font-weight: bold;
+                }}
+                .carte-info {{ flex: 1; }}
+                .carte-info .nom {{ font-size: 20px; font-weight: 700; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 8px; }}
+                .carte-info .info-row {{ margin-bottom: 10px; font-size: 13px; }}
+                .carte-info .info-label {{ display: inline-block; width: 85px; opacity: 0.7; }}
+                .carte-info .info-value {{ font-weight: 500; }}
+                .carte-footer {{ background: rgba(0,0,0,0.3); padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; }}
+                .carte-footer .badge {{ background: #27ae60; padding: 3px 10px; border-radius: 20px; }}
+                @media (max-width: 576px) {{
+                    .carte-body {{ flex-direction: column; align-items: center; text-align: center; }}
+                    .carte-info .info-label {{ width: auto; }}
+                }}
             </style>
         </head>
         <body>
-            <div class="card">
-                <div class="success-icon">✅</div>
-                <h2>Agent ONEM - Valide</h2>
-                <div class="badge">Agent certifié</div>
-                <div class="info">
-                    <p><strong>👤 Nom :</strong> {candidat.nom} {candidat.postnom}</p>
-                    <p><strong>📛 Prénom :</strong> {candidat.prenom}</p>
-                    <p><strong>📅 Date d'enregistrement :</strong> {agent.date_retenu.strftime('%d/%m/%Y')}</p>
-                    <p><strong>🏷️ Statut :</strong> <span style="color:#27ae60;">{agent.statut}</span></p>
+            <div class="carte-agent">
+                <div class="carte-header">
+                    <h3><i class="fas fa-building"></i> GRH ENGENNERING SARL</h3>
+                    <small>RDC - Goma</small>
                 </div>
-                <hr>
-                <p style="color: #666; font-size: 12px;">Cette attestation est délivrée par l'Office National de l'Emploi (ONEM)</p>
-                <p style="color: #999; font-size: 10px;">ID: {agent.id} | Scanné le {datetime.now().strftime('%d/%m/%Y à %H:%M')}</p>
+                <div class="carte-body">
+                    <div class="carte-photo">
+                        {'<img src="' + photo_url + '">' if photo_url else '<div class="no-photo">' + candidat.prenom[0] + candidat.nom[0] + '</div>'}
+                    </div>
+                    <div class="carte-info">
+                        <div class="nom">{candidat.nom} {candidat.postnom} {candidat.prenom}</div>
+                        <div class="info-row"><span class="info-label"><i class="fas fa-venus-mars"></i> Sexe :</span> <span class="info-value">{candidat.sexe}</span></div>
+                        <div class="info-row"><span class="info-label"><i class="fas fa-phone"></i> Téléphone :</span> <span class="info-value">{candidat.numeroTelephone}</span></div>
+                        <div class="info-row"><span class="info-label"><i class="fas fa-calendar"></i> Agent depuis :</span> <span class="info-value">{agent.date_retenu.strftime('%d/%m/%Y')}</span></div>
+                        <div class="info-row"><span class="info-label"><i class="fas fa-id-card"></i> Matricule :</span> <span class="info-value">GRH-{agent.id}</span></div>
+                    </div>
+                </div>
+                <div class="carte-footer">
+                    <div><i class="fas fa-qrcode"></i> Scan validé</div>
+                    <div><span class="badge"><i class="fas fa-check-circle"></i> Agent actif</span></div>
+                </div>
             </div>
         </body>
         </html>
@@ -4857,8 +4886,25 @@ def valider_agent_qrcode(request, id_agent):
         <head><meta charset="UTF-8"><title>Erreur</title></head>
         <body style="font-family: Arial; text-align: center; padding: 50px;">
             <h1 style="color: #e74c3c;">❌ Agent non trouvé</h1>
-            <p>Le QR code scanné n'est pas valide ou l'agent n'existe plus.</p>
-            <p>Veuillez contacter l'administrateur.</p>
+            <p>Ce QR code n'est pas valide.</p>
         </body>
         </html>
         """, status=404)
+
+
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_agent_photo(request, id_agent):
+    """Récupérer la photo d'un agent (via son candidat associé)"""
+    try:
+        agent = get_object_or_404(Agent, id=id_agent)
+        candidat = agent.candidat
+        
+        if candidat.photo:
+            return JsonResponse({'success': True, 'photo_url': candidat.photo.url})
+        else:
+            return JsonResponse({'success': False, 'photo_url': None})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)

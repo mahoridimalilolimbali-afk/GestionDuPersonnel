@@ -356,6 +356,7 @@ urlpatterns = [
 
     # Dans votre urls.py, ajoutez :
     path('api/agents/valider/<int:id_agent>/', views.valider_agent_qrcode, name='valider_agent_qrcode'),
+    path('api/candidat/agent/<int:id_agent>/photo/', views.get_agent_photo, name='get_agent_photo'),
 
 ]
 # Servir les fichiers média en développement
