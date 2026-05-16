@@ -366,24 +366,27 @@
                 </div>
                 <div class="modal-body modal-body-custom">
                     <div class="alert alert-info mb-3">
-                        <i class="fas fa-info-circle"></i> <strong>Candidat :</strong> <span id="modalCandidatNom"></span>
+                        <i class="fas fa-info-circle"></i> <strong>Candidat :</strong> <span id="modalCandidatNom"></span><br>
+                        <i class="fas fa-envelope"></i> <strong>Email :</strong> <span id="modalCandidatEmail"></span>
                     </div>
                     <div class="alert alert-secondary mb-3">
                         <i class="fas fa-briefcase"></i> <strong>Offre :</strong> <span id="modalOffreTitre"></span>
                     </div>
                     <form id="decisionForm" onsubmit="return false;">
                         <input type="hidden" id="decisionCandidatureId">
+                        <input type="hidden" id="decisionCandidatEmail">
+                        <input type="hidden" id="decisionCandidatNomComplet">
                         <div class="form-group-custom">
                             <label class="form-label-custom"><i class="fas fa-tags"></i> Type de décision <span class="text-danger">*</span></label>
                             <select class="form-select-custom" id="typeDecisionSelect" required>
                                 <option value="">-- Sélectionnez un type --</option>
                                 {% for type in types_decision %}
-                                    <option value="{{ type.id }}">{{ type.Description }}</option>
+                                    <option value="{{ type.id }}" data-description="{{ type.Description }}">{{ type.Description }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="form-group-custom">
-                            <label class="form-label-custom"><i class="fas fa-comment"></i> Motif</label>
+                            <label class="form-label-custom"><i class="fas fa-comment"></i> Motif (optionnel)</label>
                             <textarea class="form-control-custom" id="motifText" rows="4" placeholder="Expliquez le motif de cette décision..."></textarea>
                         </div>
                     </form>
@@ -433,13 +436,11 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
     let currentDecisions = [];
+    // URL de votre application hébergée (à modifier selon votre domaine)
+    const APP_URL = "https://votre-domaine.com"; // ← REMPLACEZ PAR VOTRE URL
     
     function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
     function showLoading() { $('#loadingOverlay').fadeIn(300); }
@@ -470,17 +471,12 @@
         window.open(`/api/decisions/ouvrir-cv/${idCandidature}/`, '_blank');
     }
     
-    // Charger les types de décision via l'API existante
     function chargerTypesDecision() {
-        console.log("Chargement des types de décision via API...");
-        
         $.ajax({
             url: '/api/type-decisions/',
             method: 'GET',
             headers: { 'X-CSRFToken': getCSRFToken() },
             success: function(response) {
-                console.log("Réponse API types:", response);
-                
                 if (response.success && response.type_decisions) {
                     var select = $('#typeDecisionSelect');
                     var selectModifier = $('#modifierTypeDecisionSelect');
@@ -492,26 +488,17 @@
                     selectModifier.append('<option value="">-- Sélectionnez un type --</option>');
                     
                     response.type_decisions.forEach(function(type) {
-                        select.append('<option value="' + type.id + '">' + type.Description + '</option>');
+                        select.append('<option value="' + type.id + '" data-description="' + type.Description + '">' + type.Description + '</option>');
                         selectModifier.append('<option value="' + type.id + '">' + type.Description + '</option>');
                     });
-                    
-                    console.log("Types de décision chargés:", response.type_decisions.length);
-                } else {
-                    console.error("Aucun type de décision trouvé");
-                    $('#typeDecisionSelect').html('<option value="">Aucun type disponible</option>');
-                    $('#modifierTypeDecisionSelect').html('<option value="">Aucun type disponible</option>');
                 }
             },
             error: function(xhr) {
                 console.error("Erreur chargement types:", xhr);
-                $('#typeDecisionSelect').html('<option value="">Erreur de chargement</option>');
-                $('#modifierTypeDecisionSelect').html('<option value="">Erreur de chargement</option>');
             }
         });
     }
     
-    // Charger les candidatures à traiter
     function chargerCandidaturesATraiter() {
         $.ajax({
             url: '/api/decisions/candidatures-a-traiter/',
@@ -526,12 +513,12 @@
                         response.candidatures.forEach(c => {
                             tbody.append(`<tr class="fade-in">
                                 <td><strong>#${c.id}</strong></td>
-                                <td><strong>${escapeHtml(c.candidat_nom)}</strong></td>
+                                <td><strong>${escapeHtml(c.candidat_nom)}</strong><br><small class="text-muted">${escapeHtml(c.candidat_email || '')}</small></td>
                                 <td class="titre-cliquable" onclick="ouvrirCV(${c.id})">${escapeHtml(c.offre_titre)}</td>
                                 <td><span class="badge-attente">${escapeHtml(c.offre_domaine)}</span></td>
                                 <td><button class="btn-action btn-voir-cv" onclick="ouvrirCV(${c.id})"><i class="fas fa-file-pdf"></i> Voir CV</button></td>
                                 <td><i class="fas fa-calendar"></i> ${c.date_soumission}</td>
-                                <td><button class="btn-action btn-decider" onclick="ouvrirModalDecision(${c.id}, '${escapeHtml(c.candidat_nom)}', '${escapeHtml(c.offre_titre)}')"><i class="fas fa-gavel"></i> Décider</button></td>
+                                <td><button class="btn-action btn-decider" onclick="ouvrirModalDecision(${c.id}, '${escapeHtml(c.candidat_nom)}', '${escapeHtml(c.candidat_email || '')}', '${escapeHtml(c.offre_titre)}')"><i class="fas fa-gavel"></i> Décider</button></td>
                             </tr>`);
                         });
                     }
@@ -541,7 +528,6 @@
         });
     }
     
-    // Charger les candidatures traitées
     function chargerCandidaturesTraitees() {
         $.ajax({
             url: '/api/decisions/candidatures-traitees/',
@@ -561,12 +547,12 @@
                             
                             tbody.append(`<tr class="fade-in">
                                 <td><strong>#${d.candidature_id}</strong></td>
-                                <td><strong>${escapeHtml(d.candidat_nom)}</strong></td>
-                                <td class="titre-cliquable" onclick="ouvrirCV(${d.candidature_id})">${escapeHtml(d.offre_titre)}</td>
+                                <td><strong>${escapeHtml(d.candidat_nom)}</strong><br><small class="text-muted">${escapeHtml(d.candidat_email || '')}</small></td>
+                                <td>${escapeHtml(d.offre_titre)}</td>
                                 <td><span class="${badgeClass}">${escapeHtml(d.type_decision)}</span></td>
-                                <td>${escapeHtml(d.motif.substring(0, 50))}${d.motif.length > 50 ? '...' : ''}</td>
+                                <td>${escapeHtml(d.motif ? d.motif.substring(0, 50) : '')}${d.motif && d.motif.length > 50 ? '...' : ''}</td>
                                 <td><i class="fas fa-calendar"></i> ${d.date_decision}</td>
-                                <td><button class="btn-action btn-modifier" onclick="ouvrirModalModifierDecision(${d.id}, ${d.type_decision_id || 'null'}, '${escapeHtml(d.motif)}')"><i class="fas fa-edit"></i> Modifier</button></td>
+                                <td><button class="btn-action btn-modifier" onclick="ouvrirModalModifierDecision(${d.id}, ${d.type_decision_id || 'null'}, '${escapeHtml(d.motif || '')}')"><i class="fas fa-edit"></i> Modifier</button></td>
                             </tr>`);
                         });
                     }
@@ -576,10 +562,13 @@
         });
     }
     
-    function ouvrirModalDecision(candidatureId, candidatNom, offreTitre) {
+    function ouvrirModalDecision(candidatureId, candidatNom, candidatEmail, offreTitre) {
         $('#decisionCandidatureId').val(candidatureId);
         $('#modalCandidatNom').text(candidatNom);
+        $('#modalCandidatEmail').text(candidatEmail);
         $('#modalOffreTitre').text(offreTitre);
+        $('#decisionCandidatEmail').val(candidatEmail);
+        $('#decisionCandidatNomComplet').val(candidatNom);
         $('#typeDecisionSelect').val('');
         $('#motifText').val('');
         $('#decisionModal').modal('show');
@@ -589,11 +578,17 @@
         const candidatureId = $('#decisionCandidatureId').val();
         const typeDecisionId = $('#typeDecisionSelect').val();
         const motif = $('#motifText').val();
+        const candidatEmail = $('#decisionCandidatEmail').val();
+        const candidatNom = $('#decisionCandidatNomComplet').val();
+        const offreTitre = $('#modalOffreTitre').text();
         
         if (!typeDecisionId) {
             showError('Veuillez sélectionner un type de décision');
             return;
         }
+        
+        // Récupérer la description du type de décision
+        const typeDecisionText = $('#typeDecisionSelect option:selected').text();
         
         showLoading();
         
@@ -603,13 +598,40 @@
             data: JSON.stringify({
                 candidature_id: candidatureId,
                 type_decision_id: typeDecisionId,
-                motif: motif
+                motif: motif,
+                // On envoie aussi les infos pour l'email
+                envoyer_email: true,
+                candidat_email: candidatEmail,
+                candidat_nom: candidatNom,
+                offre_titre: offreTitre,
+                type_decision: typeDecisionText
             }),
             headers: { 'X-CSRFToken': getCSRFToken(), 'Content-Type': 'application/json' },
             success: function(response) {
                 hideLoading();
                 if (response.success) {
-                    showSuccess(response.message);
+                    // Afficher un message personnalisé selon l'envoi d'email
+                    let message = response.message;
+                    if (response.email_envoye) {
+                        message += `\nUn email a été envoyé à ${candidatEmail}`;
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Succès !',
+                            html: message,
+                            timer: 3000,
+                            showConfirmButton: false,
+                            toast: false
+                        });
+                    } else if (response.email_erreur) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Attention',
+                            html: `${response.message}<br>⚠️ ${response.email_erreur}`,
+                            confirmButtonColor: '#f39c12'
+                        });
+                    } else {
+                        showSuccess(message);
+                    }
                     $('#decisionModal').modal('hide');
                     chargerCandidaturesATraiter();
                     chargerCandidaturesTraitees();
@@ -619,7 +641,8 @@
             },
             error: function(xhr) {
                 hideLoading();
-                showError(xhr.responseJSON?.message || 'Erreur lors de l\'enregistrement');
+                const errorMsg = xhr.responseJSON?.message || 'Erreur lors de l\'enregistrement';
+                showError(errorMsg);
             }
         });
     }
@@ -670,7 +693,6 @@
         return div.innerHTML;
     }
     
-    // Rafraîchir les onglets
     $('#decisionTab button').on('shown.bs.tab', function(e) {
         if (e.target.id === 'a-traiter-tab') {
             chargerCandidaturesATraiter();
@@ -680,7 +702,7 @@
     });
     
     $(document).ready(function() {
-        chargerTypesDecision();  // ← Charger les types via l'API
+        chargerTypesDecision();
         chargerCandidaturesATraiter();
         chargerCandidaturesTraitees();
     });
