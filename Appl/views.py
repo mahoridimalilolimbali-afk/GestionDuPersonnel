@@ -1323,9 +1323,8 @@ import json
 
 
 
-
-# Vue pour enregistrer une décision et envoyer l'email
 @csrf_exempt
+@require_http_methods(["POST"])
 def enregistrer_decision(request):
     if request.method == 'POST':
         try:
@@ -1333,176 +1332,46 @@ def enregistrer_decision(request):
             candidature_id = data.get('candidature_id')
             type_decision_id = data.get('type_decision_id')
             motif = data.get('motif', '')
-            envoyer_email = data.get('envoyer_email', True)
             
-            # Récupérer la candidature avec toutes les relations
             candidature = Candidature.objects.select_related(
-                'candidat',
-                'candidat__user',
-                'offre'
+                'candidat', 'candidat__user', 'offre'
             ).get(id=candidature_id)
             
             type_decision = TypeDecision.objects.get(id=type_decision_id)
             
-            # Créer la décision
             decision = Decision.objects.create(
                 candidature=candidature,
                 type_decision=type_decision,
                 motif=motif
             )
             
-            email_envoye = False
-            email_erreur = None
+            # ========== ENVOYER L'EMAIL AU CANDIDAT ==========
+            from .utils import notifier_acceptation_candidature, notifier_refus_candidature
+            base_url = "https://mahoridi.pythonanywhere.com"  # Remplacez par votre URL en production
             
-            # Envoyer l'email si demandé
-            if envoyer_email:
-                # Récupérer l'email depuis l'utilisateur Django
-                candidat_user = candidature.candidat.user
-                candidat_email = candidat_user.email
-                candidat_nom = f"{candidat_user.first_name} {candidat_user.last_name}"
-                offre_titre = candidature.offre.titre
-                type_decision_text = type_decision.Description
-                
-                # URL de votre application (à modifier)
-                app_url = "https://mahoridi.pythonanywhere.com"
-                
-                # Vérifier si l'email existe
-                if candidat_email:
-                    try:
-                        if "Accept" in type_decision_text or "Valid" in type_decision_text or "accept" in type_decision_text.lower():
-                            # Email d'acceptation
-                            sujet = f"✅ Votre candidature pour {offre_titre} - GRH ENGINEERING"
-                            message_html = f"""
-                            <!DOCTYPE html>
-                            <html>
-                            <head>
-                                <meta charset="UTF-8">
-                                <title>Acceptation de candidature</title>
-                            </head>
-                            <body style="font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4;">
-                                <div style="max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
-                                    <div style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); padding: 30px; text-align: center;">
-                                        <h1 style="color: white; margin: 0;">🎉 Félicitations !</h1>
-                                    </div>
-                                    <div style="padding: 30px;">
-                                        <h2 style="color: #2c3e50; margin-top: 0;">Bonjour {candidat_nom},</h2>
-                                        <p style="color: #34495e; font-size: 16px; line-height: 1.6;">
-                                            Votre candidature pour le poste <strong style="color: #27ae60;">"{offre_titre}"</strong> 
-                                            a été <strong style="color: #27ae60;">ACCEPTÉE</strong>.
-                                        </p>
-                                        <p style="color: #34495e; font-size: 16px; line-height: 1.6;">
-                                            Nous avons été impressionnés par votre profil et nous souhaitons poursuivre 
-                                            le processus de recrutement avec vous.
-                                        </p>
-                                        <div style="text-align: center; margin: 35px 0;">
-                                            <a href="{app_url}" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); color: white; padding: 14px 35px; text-decoration: none; border-radius: 50px; font-weight: bold; display: inline-block;">
-                                                📋 Cliquez ici pour continuer
-                                            </a>
-                                        </div>
-                                        <p style="color: #34495e; font-size: 14px;">
-                                            Notre équipe vous contactera très prochainement pour la suite du processus.
-                                        </p>
-                                        <hr style="margin: 25px 0; border: none; border-top: 1px solid #ecf0f1;">
-                                        <p style="color: #7f8c8d; font-size: 12px; text-align: center;">
-                                            GRH ENGINEERING SARL - RDC, Goma<br>
-                                            Cet email est généré automatiquement, merci de ne pas y répondre.
-                                        </p>
-                                    </div>
-                                </div>
-                            </body>
-                            </html>
-                            """
-                        else:
-                            # Email de refus
-                            sujet = f"📋 Suite de votre candidature pour {offre_titre} - GRH ENGINEERING"
-                            message_html = f"""
-                            <!DOCTYPE html>
-                            <html>
-                            <head>
-                                <meta charset="UTF-8">
-                                <title>Résultat de candidature</title>
-                            </head>
-                            <body style="font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4;">
-                                <div style="max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
-                                    <div style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); padding: 30px; text-align: center;">
-                                        <h1 style="color: white; margin: 0;">📢 Suite de votre candidature</h1>
-                                    </div>
-                                    <div style="padding: 30px;">
-                                        <h2 style="color: #2c3e50; margin-top: 0;">Bonjour {candidat_nom},</h2>
-                                        <p style="color: #34495e; font-size: 16px; line-height: 1.6;">
-                                            Nous vous remercions d'avoir postulé au poste <strong style="color: #e74c3c;">"{offre_titre}"</strong> 
-                                            au sein de GRH ENGINEERING SARL.
-                                        </p>
-                                        <p style="color: #34495e; font-size: 16px; line-height: 1.6;">
-                                            Après examen attentif de votre candidature, nous avons le regret de vous informer que 
-                                            <strong style="color: #e74c3c;">votre candidature n'a pas été retenue</strong> pour cette offre.
-                                        </p>
-                                        <div style="text-align: center; margin: 35px 0;">
-                                            <a href="{app_url}" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; padding: 14px 35px; text-decoration: none; border-radius: 50px; font-weight: bold; display: inline-block;">
-                                                🔍 Voir nos offres
-                                            </a>
-                                        </div>
-                                        <p style="color: #34495e; font-size: 14px;">
-                                            Nous vous encourageons vivement à consulter régulièrement nos offres d'emploi. 
-                                            Votre profil pourrait parfaitement correspondre à une autre opportunité.
-                                        </p>
-                                        <hr style="margin: 25px 0; border: none; border-top: 1px solid #ecf0f1;">
-                                        <p style="color: #7f8c8d; font-size: 12px; text-align: center;">
-                                            GRH ENGINEERING SARL - RDC, Goma<br>
-                                            Cet email est généré automatiquement, merci de ne pas y répondre.
-                                        </p>
-                                    </div>
-                                </div>
-                            </body>
-                            </html>
-                            """
-                        
-                        # Envoi de l'email
-                        send_mail(
-                            sujet,
-                            "",  # Message texte (optionnel)
-                            settings.DEFAULT_FROM_EMAIL,
-                            [candidat_email],
-                            html_message=message_html,
-                            fail_silently=False
-                        )
-                        email_envoye = True
-                        
-                    except Exception as e:
-                        email_envoye = False
-                        email_erreur = str(e)
-                else:
-                    email_erreur = "Le candidat n'a pas d'adresse email enregistrée"
+            email_envoye = False
+            email_message = ""
+            
+            type_decision_text = type_decision.Description.lower()
+            if "accept" in type_decision_text or "valid" in type_decision_text:
+                success, msg = notifier_acceptation_candidature(candidature, base_url)
+                email_envoye = success
+                email_message = msg
+            elif "refus" in type_decision_text or "rejet" in type_decision_text:
+                success, msg = notifier_refus_candidature(candidature, motif, base_url)
+                email_envoye = success
+                email_message = msg
+            # =================================================
             
             return JsonResponse({
                 'success': True,
                 'message': 'Décision enregistrée avec succès',
                 'decision_id': decision.id,
                 'email_envoye': email_envoye,
-                'email_erreur': email_erreur
+                'email_message': email_message
             })
-            
-        except Candidature.DoesNotExist:
-            return JsonResponse({
-                'success': False,
-                'message': 'Candidature introuvable'
-            }, status=404)
-        except TypeDecision.DoesNotExist:
-            return JsonResponse({
-                'success': False,
-                'message': 'Type de décision introuvable'
-            }, status=404)
         except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'message': f'Erreur: {str(e)}'
-            }, status=500)
-    
-    return JsonResponse({
-        'success': False,
-        'message': 'Méthode non autorisée'
-    }, status=405)
-
+            return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
 
 
@@ -1938,82 +1807,55 @@ def changer_groupe_utilisateur(user, nouveau_groupe_nom):
 
 
 # ========== FONCTION POUR VÉRIFIER ET CHANGER LE STATUT AGENT ==========
-def verifier_et_promouvoir_agent(candidature):
-    """
-    Vérifie si tous les tests de l'offre sont évalués et si la moyenne >= 70%.
-    Si oui, promeut le candidat en Agent (change son groupe Django et crée l'enregistrement Agent).
-    Retourne un message indiquant ce qui s'est passé.
-    """
+def verifier_et_promouvoir_agent(candidature, base_url):
+    """Vérifie et promeut le candidat en Agent si conditions remplies"""
     offre = candidature.offre
     tous_les_tests = Test.objects.filter(offre=offre)
     nombre_tests = tous_les_tests.count()
     
-    # S'il n'y a pas de tests définis pour cette offre, on ne fait rien
     if nombre_tests == 0:
         return "Aucun test défini pour cette offre."
     
     evaluations_existantes = Evaluation.objects.filter(candidature=candidature).count()
     
-    # Si tous les tests ne sont pas encore évalués
     if evaluations_existantes < nombre_tests:
         restant = nombre_tests - evaluations_existantes
-        return f"Encore {restant} test(s) à évaluer pour cette offre."
+        return f"Encore {restant} test(s) à évaluer pour devenir agent."
     
-    # Tous les tests sont évalués, calculer la moyenne
     toutes_notes = Evaluation.objects.filter(candidature=candidature).values_list('note', flat=True)
     moyenne = sum(toutes_notes) / len(toutes_notes)
     
     if moyenne >= 70:
-        # Le candidat est retenu comme AGENT
         user = candidature.candidat.user
+        success, message = changer_groupe_utilisateur(user, 'AGENT')
         
-        # 1. Changer le groupe Django de CANDIDAT à AGENT
-        success, message_groupe = changer_groupe_utilisateur(user, 'AGENT')
-        
-        # 2. Créer ou mettre à jour l'enregistrement Agent
-        agent, created = Agent.objects.get_or_create(
-            candidat=candidature.candidat,
-            defaults={
-                'statut': 'Approuvé',
-                'matricule': f"GRH-{user.id}-{user.date_joined.strftime('%Y%m%d')}"
-            }
-        )
-        
-        if not created and agent.statut != 'Approuvé':
-            agent.statut = 'Approuvé'
-            agent.save()
-        
+        agent, created = Agent.objects.get_or_create(candidat=candidature.candidat)
         if created:
-            message_agent = "Le candidat a été promu Agent avec succès!"
-        else:
-            message_agent = "Le candidat est déjà Agent."
+            agent.matricule = f"GRH-{user.id}-{user.date_joined.strftime('%Y%m%d')}"
+        agent.statut = 'Approuvé'
+        agent.save()
         
-        if success:
-            return f"✅ Tous les tests évalués! Moyenne: {moyenne:.2f}%. {message_agent} Groupe: {message_groupe}"
+        # ENVOYER L'EMAIL DE PROMOTION
+        from .utils import notifier_promotion_agent
+        email_envoye, email_message = notifier_promotion_agent(candidature, moyenne)
+        
+        if email_envoye:
+            return f"✅ Félicitations! Le candidat a été promu AGENT (moyenne: {moyenne:.2f}%) - Email envoyé"
         else:
-            return f"✅ Tous les tests évalués! Moyenne: {moyenne:.2f}%. {message_agent} ⚠️ Attention: {message_groupe}"
-    
+            return f"✅ Promu AGENT! (moyenne: {moyenne:.2f}%) - ⚠️ Email non envoyé: {email_message}"
     else:
-        # Moyenne insuffisante - s'assurer que l'utilisateur reste CANDIDAT (ou devient NON_RETENU)
         user = candidature.candidat.user
-        
-        # Vérifier si l'utilisateur est dans le groupe AGENT, si oui le remettre en CANDIDAT
         if user.groups.filter(name='AGENT').exists():
-            success, message_groupe = changer_groupe_utilisateur(user, 'CANDIDAT')
-            message_groupe = f" L'utilisateur a été rétrogradé en CANDIDAT."
-        else:
-            message_groupe = ""
-        
-        # Mettre à jour le statut de l'agent s'il existe
-        try:
-            agent = Agent.objects.get(candidat=candidature.candidat)
-            if agent.statut == 'Approuvé':
+            changer_groupe_utilisateur(user, 'CANDIDAT')
+            agent = Agent.objects.filter(candidat=candidature.candidat).first()
+            if agent:
                 agent.statut = 'Non retenu'
                 agent.save()
-        except Agent.DoesNotExist:
-            pass
+            return f"⚠️ Note insuffisante (moyenne: {moyenne:.2f}%). L'utilisateur a été rétrogradé en CANDIDAT"
         
-        return f"❌ Tous les tests évalués! Moyenne: {moyenne:.2f}%. Note inférieure à 70%, le candidat n'est pas retenu comme agent.{message_groupe}"
+        return f"❌ Note insuffisante (moyenne: {moyenne:.2f}%). Le candidat n'est pas promu agent."
+
+
 
 #= SUPPRIMER UNE ÉVALUATION ==========
 @csrf_exempt
