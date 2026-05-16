@@ -177,7 +177,7 @@ urlpatterns = [
     path('api/evaluations/enregistrer/', views.enregistrer_evaluation, name='enregistrer_evaluation'),
     path('api/evaluations/modifier/<int:id_evaluation>/', views.modifier_evaluation, name='modifier_evaluation'),
 
-
+    path('api/candidat/status/<int:candidature_id>/', get_candidat_status, name='get_candidat_status'),
      
     # URLs Type Congé
     path('type-conge/', views.liste_type_conge, name='liste_type_conge'),
