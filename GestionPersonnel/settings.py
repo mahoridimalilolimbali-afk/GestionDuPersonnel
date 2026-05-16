@@ -12,12 +12,12 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os
-from dotenv import load_dotenv
-from pathlib import Path
 # settings.py
 # settings.py - Assurez-vous que load_dotenv() est appelé AVANT d'utiliser os.getenv()
 
-
+import os
+from dotenv import load_dotenv
+from pathlib import Path
 
 # Chemin absolu vers le dossier du projet
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,16 +29,17 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 # ==================== CONFIGURATION EMAIL ====================
 
+print(f"EMAIL_HOST_USER: {os.getenv('EMAIL_HOST_USER')}")  # Debug - vérifie dans le terminal
+print(f"SENDGRID_API_KEY: {os.getenv('SENDGRID_API_KEY')[:10]}...")  # Debug
 
 # settings.py
-# Configuration Email (Gmail)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
+EMAIL_HOST = 'smtp.sendgrid.net'
+EMAIL_PORT = 2525  # ← Changement : 587 → 2525
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'mahoridimalilolimbali@gmail.com'  # Votre email
-EMAIL_HOST_PASSWORD = 'uiss xwsl wocw scdg'  # Le code à 16 chiffres reçu
-DEFAULT_FROM_EMAIL = f'GRH ENGINEERING <{EMAIL_HOST_USER}>'
+EMAIL_HOST_USER = 'apikey'
+EMAIL_HOST_PASSWORD = os.getenv('SENDGRID_API_KEY')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
