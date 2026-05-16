@@ -1364,7 +1364,7 @@ def enregistrer_decision(request):
                 type_decision_text = type_decision.Description
                 
                 # URL de votre application (à modifier)
-                app_url = "https://votre-domaine.com"
+                app_url = "https://mahoridi.pythonanywhere.com"
                 
                 # Vérifier si l'email existe
                 if candidat_email:
@@ -1887,6 +1887,240 @@ def get_evaluations_by_candidature(request, id_candidature):
 
 # ==================== API ENREGISTRER EVALUATION ====================
 
+
+
+
+
+
+
+
+
+
+# CONVERSION EN AGENT
+
+
+from django.core.mail import send_mail
+from django.conf import settings
+from django.contrib.auth.models import User, Group
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+import json
+
+# ========== FONCTION UTILITAIRE POUR CHANGER LE GROUPE ==========
+def changer_groupe_utilisateur(user, nouveau_groupe_nom):
+    """
+    Change le groupe d'un utilisateur Django.
+    Retire tous ses groupes existants et ajoute le nouveau groupe.
+    """
+    try:
+        # Récupérer ou créer le groupe
+        nouveau_groupe, created = Group.objects.get_or_create(name=nouveau_groupe_nom)
+        
+        # Retirer tous les groupes existants
+        user.groups.clear()
+        
+        # Ajouter au nouveau groupe
+        user.groups.add(nouveau_groupe)
+        
+        # Mettre à jour le statut is_staff si nécessaire (pour les agents)
+        if nouveau_groupe_nom.upper() == 'AGENT':
+            user.is_staff = True
+        else:
+            user.is_staff = False
+        
+        user.save()
+        
+        return True, f"Utilisateur ajouté au groupe {nouveau_groupe_nom}"
+    except Exception as e:
+        return False, str(e)
+
+
+# ========== FONCTION POUR VÉRIFIER ET CHANGER LE STATUT AGENT ==========
+def verifier_et_promouvoir_agent(candidature):
+    """
+    Vérifie si tous les tests de l'offre sont évalués et si la moyenne >= 70%.
+    Si oui, promeut le candidat en Agent (change son groupe Django et crée l'enregistrement Agent).
+    Retourne un message indiquant ce qui s'est passé.
+    """
+    offre = candidature.offre
+    tous_les_tests = Test.objects.filter(offre=offre)
+    nombre_tests = tous_les_tests.count()
+    
+    # S'il n'y a pas de tests définis pour cette offre, on ne fait rien
+    if nombre_tests == 0:
+        return "Aucun test défini pour cette offre."
+    
+    evaluations_existantes = Evaluation.objects.filter(candidature=candidature).count()
+    
+    # Si tous les tests ne sont pas encore évalués
+    if evaluations_existantes < nombre_tests:
+        restant = nombre_tests - evaluations_existantes
+        return f"Encore {restant} test(s) à évaluer pour cette offre."
+    
+    # Tous les tests sont évalués, calculer la moyenne
+    toutes_notes = Evaluation.objects.filter(candidature=candidature).values_list('note', flat=True)
+    moyenne = sum(toutes_notes) / len(toutes_notes)
+    
+    if moyenne >= 70:
+        # Le candidat est retenu comme AGENT
+        user = candidature.candidat.user
+        
+        # 1. Changer le groupe Django de CANDIDAT à AGENT
+        success, message_groupe = changer_groupe_utilisateur(user, 'AGENT')
+        
+        # 2. Créer ou mettre à jour l'enregistrement Agent
+        agent, created = Agent.objects.get_or_create(
+            candidat=candidature.candidat,
+            defaults={
+                'statut': 'Approuvé',
+                'matricule': f"GRH-{user.id}-{user.date_joined.strftime('%Y%m%d')}"
+            }
+        )
+        
+        if not created and agent.statut != 'Approuvé':
+            agent.statut = 'Approuvé'
+            agent.save()
+        
+        if created:
+            message_agent = "Le candidat a été promu Agent avec succès!"
+        else:
+            message_agent = "Le candidat est déjà Agent."
+        
+        if success:
+            return f"✅ Tous les tests évalués! Moyenne: {moyenne:.2f}%. {message_agent} Groupe: {message_groupe}"
+        else:
+            return f"✅ Tous les tests évalués! Moyenne: {moyenne:.2f}%. {message_agent} ⚠️ Attention: {message_groupe}"
+    
+    else:
+        # Moyenne insuffisante - s'assurer que l'utilisateur reste CANDIDAT (ou devient NON_RETENU)
+        user = candidature.candidat.user
+        
+        # Vérifier si l'utilisateur est dans le groupe AGENT, si oui le remettre en CANDIDAT
+        if user.groups.filter(name='AGENT').exists():
+            success, message_groupe = changer_groupe_utilisateur(user, 'CANDIDAT')
+            message_groupe = f" L'utilisateur a été rétrogradé en CANDIDAT."
+        else:
+            message_groupe = ""
+        
+        # Mettre à jour le statut de l'agent s'il existe
+        try:
+            agent = Agent.objects.get(candidat=candidature.candidat)
+            if agent.statut == 'Approuvé':
+                agent.statut = 'Non retenu'
+                agent.save()
+        except Agent.DoesNotExist:
+            pass
+        
+        return f"❌ Tous les tests évalués! Moyenne: {moyenne:.2f}%. Note inférieure à 70%, le candidat n'est pas retenu comme agent.{message_groupe}"
+
+#= SUPPRIMER UNE ÉVALUATION ==========
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def supprimer_evaluation(request, id_evaluation):
+    """Supprimer une évaluation et recalculer le statut Agent"""
+    try:
+        evaluation = get_object_or_404(Evaluation, id=id_evaluation)
+        candidature = evaluation.candidature
+        
+        # Récupérer l'offre et le nombre de tests
+        offre = candidature.offre
+        nombre_tests = Test.objects.filter(offre=offre).count()
+        
+        # Supprimer l'évaluation
+        evaluation.delete()
+        
+        # Recompter les évaluations restantes
+        evaluations_restantes = Evaluation.objects.filter(candidature=candidature).count()
+        
+        message_promotion = ""
+        
+        # Si après suppression, il n'y a plus tous les tests d'évalués, retirer le statut Agent si nécessaire
+        if evaluations_restantes < nombre_tests:
+            # L'utilisateur n'a plus tous ses tests évalués, donc ne peut pas être Agent
+            user = candidature.candidat.user
+            
+            # Vérifier si l'utilisateur est dans le groupe AGENT, si oui le remettre en CANDIDAT
+            if user.groups.filter(name='AGENT').exists():
+                success, message_groupe = changer_groupe_utilisateur(user, 'CANDIDAT')
+                message_promotion = f"⚠️ L'utilisateur a été remis en CANDIDAT car il manque des évaluations."
+            
+            # Mettre à jour le statut de l'agent
+            try:
+                agent = Agent.objects.get(candidat=candidature.candidat)
+                if agent.statut == 'Approuvé':
+                    agent.statut = 'En cours'
+                    agent.save()
+            except Agent.DoesNotExist:
+                pass
+        else:
+            # Recalculer avec les évaluations restantes
+            message_promotion = verifier_et_promouvoir_agent(candidature)
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Évaluation supprimée avec succès.',
+            'promotion_message': message_promotion
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+# ========== FONCTION POUR OBTENIR LE STATUT D'UN CANDIDAT ==========
+@csrf_exempt
+def get_candidat_status(request, candidature_id):
+    """Obtenir le statut d'un candidat (groupes Django, évaluations, moyenne)"""
+    try:
+        candidature = get_object_or_404(Candidature, id=candidature_id)
+        user = candidature.candidat.user
+        offre = candidature.offre
+        
+        # Récupérer les groupes de l'utilisateur
+        groupes = list(user.groups.values_list('name', flat=True))
+        
+        # Récupérer les évaluations
+        evaluations = Evaluation.objects.filter(candidature=candidature).values('id', 'note', 'observation', 'date_evaluation')
+        
+        # Calculer la moyenne si toutes les évaluations sont faites
+        tous_les_tests = Test.objects.filter(offre=offre).count()
+        evaluations_count = evaluations.count()
+        moyenne = None
+        
+        if tous_les_tests > 0 and evaluations_count >= tous_les_tests:
+            notes = [e['note'] for e in evaluations]
+            moyenne = sum(notes) / len(notes)
+        
+        return JsonResponse({
+            'success': True,
+            'status': {
+                'user_id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'groupes': groupes,
+                'is_staff': user.is_staff,
+                'evaluations_count': evaluations_count,
+                'total_tests_requis': tous_les_tests,
+                'moyenne': moyenne,
+                'est_agent': 'AGENT' in groupes,
+                'evaluations': list(evaluations)
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+
+
+
+
+
+
+
+
+
+
+
 @csrf_exempt
 @require_http_methods(["POST"])
 def enregistrer_evaluation(request):
@@ -2138,218 +2372,6 @@ def get_evaluations_effectuees(request):
 
 
 
-# CONVERSION EN AGENT
-
-
-from django.core.mail import send_mail
-from django.conf import settings
-from django.contrib.auth.models import User, Group
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
-import json
-
-# ========== FONCTION UTILITAIRE POUR CHANGER LE GROUPE ==========
-def changer_groupe_utilisateur(user, nouveau_groupe_nom):
-    """
-    Change le groupe d'un utilisateur Django.
-    Retire tous ses groupes existants et ajoute le nouveau groupe.
-    """
-    try:
-        # Récupérer ou créer le groupe
-        nouveau_groupe, created = Group.objects.get_or_create(name=nouveau_groupe_nom)
-        
-        # Retirer tous les groupes existants
-        user.groups.clear()
-        
-        # Ajouter au nouveau groupe
-        user.groups.add(nouveau_groupe)
-        
-        # Mettre à jour le statut is_staff si nécessaire (pour les agents)
-        if nouveau_groupe_nom.upper() == 'AGENT':
-            user.is_staff = True
-        else:
-            user.is_staff = False
-        
-        user.save()
-        
-        return True, f"Utilisateur ajouté au groupe {nouveau_groupe_nom}"
-    except Exception as e:
-        return False, str(e)
-
-
-# ========== FONCTION POUR VÉRIFIER ET CHANGER LE STATUT AGENT ==========
-def verifier_et_promouvoir_agent(candidature):
-    """
-    Vérifie si tous les tests de l'offre sont évalués et si la moyenne >= 70%.
-    Si oui, promeut le candidat en Agent (change son groupe Django et crée l'enregistrement Agent).
-    Retourne un message indiquant ce qui s'est passé.
-    """
-    offre = candidature.offre
-    tous_les_tests = Test.objects.filter(offre=offre)
-    nombre_tests = tous_les_tests.count()
-    
-    # S'il n'y a pas de tests définis pour cette offre, on ne fait rien
-    if nombre_tests == 0:
-        return "Aucun test défini pour cette offre."
-    
-    evaluations_existantes = Evaluation.objects.filter(candidature=candidature).count()
-    
-    # Si tous les tests ne sont pas encore évalués
-    if evaluations_existantes < nombre_tests:
-        restant = nombre_tests - evaluations_existantes
-        return f"Encore {restant} test(s) à évaluer pour cette offre."
-    
-    # Tous les tests sont évalués, calculer la moyenne
-    toutes_notes = Evaluation.objects.filter(candidature=candidature).values_list('note', flat=True)
-    moyenne = sum(toutes_notes) / len(toutes_notes)
-    
-    if moyenne >= 70:
-        # Le candidat est retenu comme AGENT
-        user = candidature.candidat.user
-        
-        # 1. Changer le groupe Django de CANDIDAT à AGENT
-        success, message_groupe = changer_groupe_utilisateur(user, 'AGENT')
-        
-        # 2. Créer ou mettre à jour l'enregistrement Agent
-        agent, created = Agent.objects.get_or_create(
-            candidat=candidature.candidat,
-            defaults={
-                'statut': 'Approuvé',
-                'matricule': f"GRH-{user.id}-{user.date_joined.strftime('%Y%m%d')}"
-            }
-        )
-        
-        if not created and agent.statut != 'Approuvé':
-            agent.statut = 'Approuvé'
-            agent.save()
-        
-        if created:
-            message_agent = "Le candidat a été promu Agent avec succès!"
-        else:
-            message_agent = "Le candidat est déjà Agent."
-        
-        if success:
-            return f"✅ Tous les tests évalués! Moyenne: {moyenne:.2f}%. {message_agent} Groupe: {message_groupe}"
-        else:
-            return f"✅ Tous les tests évalués! Moyenne: {moyenne:.2f}%. {message_agent} ⚠️ Attention: {message_groupe}"
-    
-    else:
-        # Moyenne insuffisante - s'assurer que l'utilisateur reste CANDIDAT (ou devient NON_RETENU)
-        user = candidature.candidat.user
-        
-        # Vérifier si l'utilisateur est dans le groupe AGENT, si oui le remettre en CANDIDAT
-        if user.groups.filter(name='AGENT').exists():
-            success, message_groupe = changer_groupe_utilisateur(user, 'CANDIDAT')
-            message_groupe = f" L'utilisateur a été rétrogradé en CANDIDAT."
-        else:
-            message_groupe = ""
-        
-        # Mettre à jour le statut de l'agent s'il existe
-        try:
-            agent = Agent.objects.get(candidat=candidature.candidat)
-            if agent.statut == 'Approuvé':
-                agent.statut = 'Non retenu'
-                agent.save()
-        except Agent.DoesNotExist:
-            pass
-        
-        return f"❌ Tous les tests évalués! Moyenne: {moyenne:.2f}%. Note inférieure à 70%, le candidat n'est pas retenu comme agent.{message_groupe}"
-
-#= SUPPRIMER UNE ÉVALUATION ==========
-@csrf_exempt
-@require_http_methods(["DELETE"])
-def supprimer_evaluation(request, id_evaluation):
-    """Supprimer une évaluation et recalculer le statut Agent"""
-    try:
-        evaluation = get_object_or_404(Evaluation, id=id_evaluation)
-        candidature = evaluation.candidature
-        
-        # Récupérer l'offre et le nombre de tests
-        offre = candidature.offre
-        nombre_tests = Test.objects.filter(offre=offre).count()
-        
-        # Supprimer l'évaluation
-        evaluation.delete()
-        
-        # Recompter les évaluations restantes
-        evaluations_restantes = Evaluation.objects.filter(candidature=candidature).count()
-        
-        message_promotion = ""
-        
-        # Si après suppression, il n'y a plus tous les tests d'évalués, retirer le statut Agent si nécessaire
-        if evaluations_restantes < nombre_tests:
-            # L'utilisateur n'a plus tous ses tests évalués, donc ne peut pas être Agent
-            user = candidature.candidat.user
-            
-            # Vérifier si l'utilisateur est dans le groupe AGENT, si oui le remettre en CANDIDAT
-            if user.groups.filter(name='AGENT').exists():
-                success, message_groupe = changer_groupe_utilisateur(user, 'CANDIDAT')
-                message_promotion = f"⚠️ L'utilisateur a été remis en CANDIDAT car il manque des évaluations."
-            
-            # Mettre à jour le statut de l'agent
-            try:
-                agent = Agent.objects.get(candidat=candidature.candidat)
-                if agent.statut == 'Approuvé':
-                    agent.statut = 'En cours'
-                    agent.save()
-            except Agent.DoesNotExist:
-                pass
-        else:
-            # Recalculer avec les évaluations restantes
-            message_promotion = verifier_et_promouvoir_agent(candidature)
-        
-        return JsonResponse({
-            'success': True,
-            'message': 'Évaluation supprimée avec succès.',
-            'promotion_message': message_promotion
-        })
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)}, status=400)
-
-
-# ========== FONCTION POUR OBTENIR LE STATUT D'UN CANDIDAT ==========
-@csrf_exempt
-def get_candidat_status(request, candidature_id):
-    """Obtenir le statut d'un candidat (groupes Django, évaluations, moyenne)"""
-    try:
-        candidature = get_object_or_404(Candidature, id=candidature_id)
-        user = candidature.candidat.user
-        offre = candidature.offre
-        
-        # Récupérer les groupes de l'utilisateur
-        groupes = list(user.groups.values_list('name', flat=True))
-        
-        # Récupérer les évaluations
-        evaluations = Evaluation.objects.filter(candidature=candidature).values('id', 'note', 'observation', 'date_evaluation')
-        
-        # Calculer la moyenne si toutes les évaluations sont faites
-        tous_les_tests = Test.objects.filter(offre=offre).count()
-        evaluations_count = evaluations.count()
-        moyenne = None
-        
-        if tous_les_tests > 0 and evaluations_count >= tous_les_tests:
-            notes = [e['note'] for e in evaluations]
-            moyenne = sum(notes) / len(notes)
-        
-        return JsonResponse({
-            'success': True,
-            'status': {
-                'user_id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'groupes': groupes,
-                'is_staff': user.is_staff,
-                'evaluations_count': evaluations_count,
-                'total_tests_requis': tous_les_tests,
-                'moyenne': moyenne,
-                'est_agent': 'AGENT' in groupes,
-                'evaluations': list(evaluations)
-            }
-        })
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
 
 
@@ -4117,186 +4139,6 @@ def get_evaluations_effectuees(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
-# ==================== API ENREGISTRER EVALUATION ====================
-
-@csrf_exempt
-@require_http_methods(["POST"])
-def enregistrer_evaluation(request):
-    """Enregistrer une évaluation pour une candidature et un test spécifique"""
-    try:
-        data = json.loads(request.body)
-        candidature_id = data.get('candidature_id')
-        test_id = data.get('test_id')
-        observation = data.get('observation', '').strip()
-        note = data.get('note')
-        
-        if not candidature_id:
-            return JsonResponse({'success': False, 'message': 'Candidature non spécifiée'}, status=400)
-        
-        if not test_id:
-            return JsonResponse({'success': False, 'message': 'Test non spécifié'}, status=400)
-        
-        if note is None:
-            return JsonResponse({'success': False, 'message': 'La note est requise'}, status=400)
-        
-        try:
-            note = float(note)
-            if note < 0 or note > 100:
-                return JsonResponse({'success': False, 'message': 'La note doit être comprise entre 0 et 100'}, status=400)
-        except ValueError:
-            return JsonResponse({'success': False, 'message': 'Note invalide'}, status=400)
-        
-        candidature = get_object_or_404(Candidature, id=candidature_id)
-        test = get_object_or_404(Test, id=test_id)
-        
-        # Vérifier que la candidature a une décision Accepter
-        try:
-            type_decision_accepter = TypeDecision.objects.get(Description__icontains='Accepter')
-            Decision.objects.get(
-                candidature=candidature,
-                type_decision=type_decision_accepter
-            )
-        except TypeDecision.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Type de décision "Accepter" non configuré'}, status=400)
-        except Decision.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Cette candidature n\'a pas été acceptée'}, status=400)
-        
-        # Vérifier si une évaluation existe déjà pour ce test
-        if Evaluation.objects.filter(candidature=candidature, test=test).exists():
-            return JsonResponse({'success': False, 'message': 'Ce test a déjà été évalué pour cette candidature'}, status=400)
-        
-        # Créer l'évaluation
-        evaluation = Evaluation.objects.create(
-            candidature=candidature,
-            test=test,
-            observation=observation,
-            note=note
-        )
-        
-        # Vérifier si tous les tests de l'offre ont été évalués
-        tous_les_tests = Test.objects.filter(offre=candidature.offre)
-        nombre_tests = tous_les_tests.count()
-        evaluations_existantes = Evaluation.objects.filter(candidature=candidature).count()
-        
-        message_supp = ""
-        
-        # Si tous les tests sont évalués, calculer la moyenne
-        if nombre_tests > 0 and evaluations_existantes >= nombre_tests:
-            toutes_notes = Evaluation.objects.filter(candidature=candidature).values_list('note', flat=True)
-            moyenne = sum(toutes_notes) / len(toutes_notes)
-            
-            if moyenne >= 70:
-                agent, created = Agent.objects.get_or_create(
-                    candidat=candidature.candidat,
-                    defaults={'statut': 'Approuvé'}
-                )
-                if created:
-                    message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est retenu comme agent!"
-                else:
-                    if agent.statut != 'Approuvé':
-                        agent.statut = 'Approuvé'
-                        agent.save()
-                        message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est maintenant agent!"
-                    else:
-                        message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est déjà agent!"
-            else:
-                message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Note inférieure à 70%, le candidat n'est pas retenu."
-        else:
-            restant = nombre_tests - evaluations_existantes
-            message_supp = f" Évaluation enregistrée. Encore {restant} test(s) à évaluer pour cette offre."
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Évaluation du test du {test.date_test.strftime("%d/%m/%Y")} enregistrée avec succès. Note: {note}%{message_supp}',
-            'evaluation': {
-                'id': evaluation.id,
-                'note': evaluation.note,
-                'observation': evaluation.observation,
-                'date_evaluation': evaluation.date_evaluation.strftime('%d/%m/%Y à %H:%M')
-            }
-        })
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)}, status=400)
-
-
-# ==================== API MODIFIER EVALUATION ====================
-
-@csrf_exempt
-@require_http_methods(["POST"])
-def modifier_evaluation(request, id_evaluation):
-    """Modifier une évaluation existante"""
-    try:
-        evaluation = get_object_or_404(Evaluation, id=id_evaluation)
-        data = json.loads(request.body)
-        
-        observation = data.get('observation', '').strip()
-        note = data.get('note')
-        
-        if note is not None:
-            try:
-                note = float(note)
-                if note < 0 or note > 100:
-                    return JsonResponse({'success': False, 'message': 'La note doit être comprise entre 0 et 100'}, status=400)
-                evaluation.note = note
-            except ValueError:
-                return JsonResponse({'success': False, 'message': 'Note invalide'}, status=400)
-        
-        evaluation.observation = observation
-        evaluation.save()
-        
-        # Recalculer la moyenne après modification
-        candidature = evaluation.candidature
-        tous_les_tests = Test.objects.filter(offre=candidature.offre)
-        nombre_tests = tous_les_tests.count()
-        evaluations_existantes = Evaluation.objects.filter(candidature=candidature).count()
-        
-        message_supp = ""
-        
-        if nombre_tests > 0 and evaluations_existantes >= nombre_tests:
-            toutes_notes = Evaluation.objects.filter(candidature=candidature).values_list('note', flat=True)
-            moyenne = sum(toutes_notes) / len(toutes_notes)
-            
-            if moyenne >= 70:
-                agent, created = Agent.objects.get_or_create(
-                    candidat=candidature.candidat,
-                    defaults={'statut': 'Approuvé'}
-                )
-                if created:
-                    message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est retenu comme agent!"
-                else:
-                    if agent.statut != 'Approuvé':
-                        agent.statut = 'Approuvé'
-                        agent.save()
-                        message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est maintenant agent!"
-                    else:
-                        message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est déjà agent!"
-            else:
-                try:
-                    agent = Agent.objects.get(candidat=candidature.candidat)
-                    if agent.statut == 'Approuvé':
-                        agent.statut = 'Non retenu'
-                        agent.save()
-                        message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat n'est plus retenu."
-                except Agent.DoesNotExist:
-                    message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Note inférieure à 70%."
-        else:
-            restant = nombre_tests - evaluations_existantes
-            message_supp = f" Évaluation modifiée. Encore {restant} test(s) à évaluer."
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Évaluation modifiée avec succès.{message_supp}',
-            'evaluation': {
-                'id': evaluation.id,
-                'note': evaluation.note,
-                'observation': evaluation.observation,
-                'date_evaluation': evaluation.date_evaluation.strftime('%d/%m/%Y à %H:%M')
-            }
-        })
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)}, status=400)
-
-
 
 # ==================== API CANDIDAT - INFOS ====================
 
@@ -4975,7 +4817,7 @@ def get_destinataires_possibles(request):
         else:
             groupes = get_groupes_utilisateur(user)
             if 'CANDIDAT' in groupes:
-                destinataires = User.objects.filter(groups__name='CANDIDAT') | User.objects.filter(is_superuser=True)
+                destinataires = User.objects.filter(is_superuser=True)
             elif 'AGENT' in groupes:
                 destinataires = User.objects.filter(groups__name='AGENT') | User.objects.filter(is_superuser=True)
             elif 'ONEM' in groupes:

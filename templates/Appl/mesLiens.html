@@ -386,7 +386,189 @@
     </div>
 </div>
 
+<div>
+    # ==================== API ENREGISTRER EVALUATION ====================
 
+@csrf_exempt
+@require_http_methods(["POST"])
+def enregistrer_evaluation(request):
+    """Enregistrer une évaluation pour une candidature et un test spécifique"""
+    try:
+        data = json.loads(request.body)
+        candidature_id = data.get('candidature_id')
+        test_id = data.get('test_id')
+        observation = data.get('observation', '').strip()
+        note = data.get('note')
+        
+        if not candidature_id:
+            return JsonResponse({'success': False, 'message': 'Candidature non spécifiée'}, status=400)
+        
+        if not test_id:
+            return JsonResponse({'success': False, 'message': 'Test non spécifié'}, status=400)
+        
+        if note is None:
+            return JsonResponse({'success': False, 'message': 'La note est requise'}, status=400)
+        
+        try:
+            note = float(note)
+            if note < 0 or note > 100:
+                return JsonResponse({'success': False, 'message': 'La note doit être comprise entre 0 et 100'}, status=400)
+        except ValueError:
+            return JsonResponse({'success': False, 'message': 'Note invalide'}, status=400)
+        
+        candidature = get_object_or_404(Candidature, id=candidature_id)
+        test = get_object_or_404(Test, id=test_id)
+        
+        # Vérifier que la candidature a une décision Accepter
+        try:
+            type_decision_accepter = TypeDecision.objects.get(Description__icontains='Accepter')
+            Decision.objects.get(
+                candidature=candidature,
+                type_decision=type_decision_accepter
+            )
+        except TypeDecision.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Type de décision "Accepter" non configuré'}, status=400)
+        except Decision.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Cette candidature n\'a pas été acceptée'}, status=400)
+        
+        # Vérifier si une évaluation existe déjà pour ce test
+        if Evaluation.objects.filter(candidature=candidature, test=test).exists():
+            return JsonResponse({'success': False, 'message': 'Ce test a déjà été évalué pour cette candidature'}, status=400)
+        
+        # Créer l'évaluation
+        evaluation = Evaluation.objects.create(
+            candidature=candidature,
+            test=test,
+            observation=observation,
+            note=note
+        )
+        
+        # Vérifier si tous les tests de l'offre ont été évalués
+        tous_les_tests = Test.objects.filter(offre=candidature.offre)
+        nombre_tests = tous_les_tests.count()
+        evaluations_existantes = Evaluation.objects.filter(candidature=candidature).count()
+        
+        message_supp = ""
+        
+        # Si tous les tests sont évalués, calculer la moyenne
+        if nombre_tests > 0 and evaluations_existantes >= nombre_tests:
+            toutes_notes = Evaluation.objects.filter(candidature=candidature).values_list('note', flat=True)
+            moyenne = sum(toutes_notes) / len(toutes_notes)
+            
+            if moyenne >= 70:
+                agent, created = Agent.objects.get_or_create(
+                    candidat=candidature.candidat,
+                    defaults={'statut': 'Approuvé'}
+                )
+                if created:
+                    message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est retenu comme agent!"
+                else:
+                    if agent.statut != 'Approuvé':
+                        agent.statut = 'Approuvé'
+                        agent.save()
+                        message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est maintenant agent!"
+                    else:
+                        message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est déjà agent!"
+            else:
+                message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Note inférieure à 70%, le candidat n'est pas retenu."
+        else:
+            restant = nombre_tests - evaluations_existantes
+            message_supp = f" Évaluation enregistrée. Encore {restant} test(s) à évaluer pour cette offre."
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Évaluation du test du {test.date_test.strftime("%d/%m/%Y")} enregistrée avec succès. Note: {note}%{message_supp}',
+            'evaluation': {
+                'id': evaluation.id,
+                'note': evaluation.note,
+                'observation': evaluation.observation,
+                'date_evaluation': evaluation.date_evaluation.strftime('%d/%m/%Y à %H:%M')
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+# ==================== API MODIFIER EVALUATION ====================
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def modifier_evaluation(request, id_evaluation):
+    """Modifier une évaluation existante"""
+    try:
+        evaluation = get_object_or_404(Evaluation, id=id_evaluation)
+        data = json.loads(request.body)
+        
+        observation = data.get('observation', '').strip()
+        note = data.get('note')
+        
+        if note is not None:
+            try:
+                note = float(note)
+                if note < 0 or note > 100:
+                    return JsonResponse({'success': False, 'message': 'La note doit être comprise entre 0 et 100'}, status=400)
+                evaluation.note = note
+            except ValueError:
+                return JsonResponse({'success': False, 'message': 'Note invalide'}, status=400)
+        
+        evaluation.observation = observation
+        evaluation.save()
+        
+        # Recalculer la moyenne après modification
+        candidature = evaluation.candidature
+        tous_les_tests = Test.objects.filter(offre=candidature.offre)
+        nombre_tests = tous_les_tests.count()
+        evaluations_existantes = Evaluation.objects.filter(candidature=candidature).count()
+        
+        message_supp = ""
+        
+        if nombre_tests > 0 and evaluations_existantes >= nombre_tests:
+            toutes_notes = Evaluation.objects.filter(candidature=candidature).values_list('note', flat=True)
+            moyenne = sum(toutes_notes) / len(toutes_notes)
+            
+            if moyenne >= 70:
+                agent, created = Agent.objects.get_or_create(
+                    candidat=candidature.candidat,
+                    defaults={'statut': 'Approuvé'}
+                )
+                if created:
+                    message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est retenu comme agent!"
+                else:
+                    if agent.statut != 'Approuvé':
+                        agent.statut = 'Approuvé'
+                        agent.save()
+                        message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est maintenant agent!"
+                    else:
+                        message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est déjà agent!"
+            else:
+                try:
+                    agent = Agent.objects.get(candidat=candidature.candidat)
+                    if agent.statut == 'Approuvé':
+                        agent.statut = 'Non retenu'
+                        agent.save()
+                        message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat n'est plus retenu."
+                except Agent.DoesNotExist:
+                    message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Note inférieure à 70%."
+        else:
+            restant = nombre_tests - evaluations_existantes
+            message_supp = f" Évaluation modifiée. Encore {restant} test(s) à évaluer."
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Évaluation modifiée avec succès.{message_supp}',
+            'evaluation': {
+                'id': evaluation.id,
+                'note': evaluation.note,
+                'observation': evaluation.observation,
+                'date_evaluation': evaluation.date_evaluation.strftime('%d/%m/%Y à %H:%M')
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+
+</div>
 
 </body>
 </html>
