@@ -178,9 +178,10 @@ class Agent(models.Model):
     date_retenu = models.DateTimeField(auto_now_add=True)
     statut = models.CharField(max_length=50, default='En attente')
     contrat_signe = models.BooleanField(default=False)
+    matricule = models.CharField(max_length=50, unique=True, blank=True, null=True)  # ← AJOUTÉ
     
     def __str__(self):
-        return f"Agent: {self.candidat.nom} {self.candidat.prenom}"
+        return f"Agent: {self.candidat.nom} {self.candidat.prenom} - {self.matricule}"
     
     class Meta:
         verbose_name = "Agent"

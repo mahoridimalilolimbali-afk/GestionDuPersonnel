@@ -162,12 +162,6 @@ urlpatterns = [
     path('evaluations/', views.liste_evaluations, name='liste_evaluations'),
     
     # API Évaluations
-    path('api/evaluations/candidatures-acceptees/', views.get_candidatures_acceptees, name='get_candidatures_acceptees'),
-    path('api/evaluations/evaluations-effectuees/', views.get_evaluations_effectuees, name='get_evaluations_effectuees'),
-    path('api/evaluations/tests/<int:id_offre>/', views.get_tests_by_offre, name='get_tests_by_offre'),
-    path('api/evaluations/candidature/<int:id_candidature>/', views.get_evaluations_by_candidature, name='get_evaluations_by_candidature'),
-    path('api/evaluations/enregistrer/', views.enregistrer_evaluation, name='enregistrer_evaluation'),
-    path('api/evaluations/modifier/<int:id_evaluation>/', views.modifier_evaluation, name='modifier_evaluation'),
 
     path('api/candidat/status/<int:candidature_id>/', get_candidat_status, name='get_candidat_status'),
      
@@ -284,11 +278,6 @@ urlpatterns = [
     path('evaluations/', views.liste_evaluations, name='liste_evaluations'),
     
     # API Évaluations
-    path('api/evaluations/candidatures-tests/', views.get_candidatures_avec_tests_non_evalues, name='get_candidatures_avec_tests_non_evalues'),
-    path('api/evaluations/evaluations-effectuees/', views.get_evaluations_effectuees, name='get_evaluations_effectuees'),
-    path('api/evaluations/tests/<int:id_offre>/', views.get_tests_by_offre_evaluation, name='get_tests_by_offre_evaluation'),
-    path('api/evaluations/enregistrer/', views.enregistrer_evaluation, name='enregistrer_evaluation'),
-    path('api/evaluations/modifier/<int:id_evaluation>/', views.modifier_evaluation, name='modifier_evaluation'),
 
 
 
@@ -364,6 +353,16 @@ urlpatterns = [
     
     # Page principale
     path('decision/', views.liste_decisions_candidature, name='liste_decisions_candidature'),
+
+
+
+    # URLs pour les évaluations
+    path('api/evaluations/candidatures-tests/', views.get_candidatures_tests, name='get_candidatures_tests'),
+    path('api/evaluations/tests/<int:id_offre>/', views.get_tests_by_offre_evaluation, name='get_tests_by_offre_evaluation'),
+    path('api/evaluations/candidature/<int:id_candidature>/', views.get_evaluations_by_candidature, name='get_evaluations_by_candidature'),
+    path('api/evaluations/enregistrer/', views.enregistrer_evaluation, name='enregistrer_evaluation'),
+    path('api/evaluations/modifier/<int:id_evaluation>/', views.modifier_evaluation, name='modifier_evaluation'),
+    path('api/evaluations/evaluations-effectuees/', views.get_evaluations_effectuees, name='get_evaluations_effectuees'),
 
 ]
 # Servir les fichiers média en développement

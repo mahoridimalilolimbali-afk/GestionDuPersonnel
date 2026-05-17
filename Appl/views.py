@@ -1706,30 +1706,6 @@ def get_tests_by_offre(request, id_offre):
 
 # ==================== API RECUPERER EVALUATIONS D'UNE CANDIDATURE ====================
 
-@csrf_exempt
-@require_http_methods(["GET"])
-def get_evaluations_by_candidature(request, id_candidature):
-    """API pour récupérer toutes les évaluations d'une candidature"""
-    try:
-        evaluations = Evaluation.objects.filter(
-            candidature_id=id_candidature
-        ).select_related('candidature').order_by('-date_evaluation')
-        
-        data = [{
-            'id': e.id,
-            'note': e.note,
-            'observation': e.observation,
-            'date_evaluation': e.date_evaluation.strftime('%d/%m/%Y à %H:%M')
-        } for e in evaluations]
-        
-        return JsonResponse({
-            'success': True,
-            'evaluations': data,
-            'total': len(data)
-        })
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
-
 
 # ==================== API ENREGISTRER EVALUATION ====================
 
@@ -1745,121 +1721,9 @@ def get_evaluations_by_candidature(request, id_candidature):
 # CONVERSION EN AGENT
 
 
-from django.core.mail import send_mail
-from django.conf import settings
-from django.contrib.auth.models import User, Group
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
-import json
-
-# ========== FONCTION UTILITAIRE POUR CHANGER LE GROUPE ==========
-def changer_groupe_utilisateur(user, nouveau_groupe_nom):
-    """
-    Change le groupe d'un utilisateur Django.
-    Retire tous ses groupes existants et ajoute le nouveau groupe.
-    """
-    try:
-        # Récupérer ou créer le groupe
-        nouveau_groupe, created = Group.objects.get_or_create(name=nouveau_groupe_nom)
-        
-        # Retirer tous les groupes existants
-        user.groups.clear()
-        
-        # Ajouter au nouveau groupe
-        user.groups.add(nouveau_groupe)
-        
-        # Mettre à jour le statut is_staff si nécessaire (pour les agents)
-        if nouveau_groupe_nom.upper() == 'AGENT':
-            user.is_staff = True
-        else:
-            user.is_staff = False
-        
-        user.save()
-        
-        return True, f"Utilisateur ajouté au groupe {nouveau_groupe_nom}"
-    except Exception as e:
-        return False, str(e)
-
-
 # ========== FONCTION POUR VÉRIFIER ET CHANGER LE STATUT AGENT ==========
-def verifier_et_promouvoir_agent(candidature):
-    """
-    Vérifie si tous les tests de l'offre sont évalués et si la moyenne >= 70%.
-    Si oui, promeut le candidat en Agent (change son groupe Django et crée l'enregistrement Agent).
-    Retourne un message indiquant ce qui s'est passé.
-    """
-    offre = candidature.offre
-    tous_les_tests = Test.objects.filter(offre=offre)
-    nombre_tests = tous_les_tests.count()
-    
-    # S'il n'y a pas de tests définis pour cette offre, on ne fait rien
-    if nombre_tests == 0:
-        return "Aucun test défini pour cette offre."
-    
-    evaluations_existantes = Evaluation.objects.filter(candidature=candidature).count()
-    
-    # Si tous les tests ne sont pas encore évalués
-    if evaluations_existantes < nombre_tests:
-        restant = nombre_tests - evaluations_existantes
-        return f"Encore {restant} test(s) à évaluer pour cette offre."
-    
-    # Tous les tests sont évalués, calculer la moyenne
-    toutes_notes = Evaluation.objects.filter(candidature=candidature).values_list('note', flat=True)
-    moyenne = sum(toutes_notes) / len(toutes_notes)
-    
-    if moyenne >= 70:
-        # Le candidat est retenu comme AGENT
-        user = candidature.candidat.user
-        
-        # 1. Changer le groupe Django de CANDIDAT à AGENT
-        success, message_groupe = changer_groupe_utilisateur(user, 'AGENT')
-        
-        # 2. Créer ou mettre à jour l'enregistrement Agent
-        agent, created = Agent.objects.get_or_create(
-            candidat=candidature.candidat,
-            defaults={
-                'statut': 'Approuvé',
-                'matricule': f"GRH-{user.id}-{user.date_joined.strftime('%Y%m%d')}"
-            }
-        )
-        
-        if not created and agent.statut != 'Approuvé':
-            agent.statut = 'Approuvé'
-            agent.save()
-        
-        if created:
-            message_agent = "Le candidat a été promu Agent avec succès!"
-        else:
-            message_agent = "Le candidat est déjà Agent."
-        
-        if success:
-            return f"✅ Tous les tests évalués! Moyenne: {moyenne:.2f}%. {message_agent} Groupe: {message_groupe}"
-        else:
-            return f"✅ Tous les tests évalués! Moyenne: {moyenne:.2f}%. {message_agent} ⚠️ Attention: {message_groupe}"
-    
-    else:
-        # Moyenne insuffisante - s'assurer que l'utilisateur reste CANDIDAT (ou devient NON_RETENU)
-        user = candidature.candidat.user
-        
-        # Vérifier si l'utilisateur est dans le groupe AGENT, si oui le remettre en CANDIDAT
-        if user.groups.filter(name='AGENT').exists():
-            success, message_groupe = changer_groupe_utilisateur(user, 'CANDIDAT')
-            message_groupe = f" L'utilisateur a été rétrogradé en CANDIDAT."
-        else:
-            message_groupe = ""
-        
-        # Mettre à jour le statut de l'agent s'il existe
-        try:
-            agent = Agent.objects.get(candidat=candidature.candidat)
-            if agent.statut == 'Approuvé':
-                agent.statut = 'Non retenu'
-                agent.save()
-        except Agent.DoesNotExist:
-            pass
-        
-        return f"❌ Tous les tests évalués! Moyenne: {moyenne:.2f}%. Note inférieure à 70%, le candidat n'est pas retenu comme agent.{message_groupe}"
+
+
 
 #= SUPPRIMER UNE ÉVALUATION ==========
 @csrf_exempt
@@ -1954,250 +1818,6 @@ def get_candidat_status(request, candidature_id):
         })
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
-
-
-
-
-
-
-
-
-
-
-
-
-
-@csrf_exempt
-@require_http_methods(["POST"])
-def enregistrer_evaluation(request):
-    """Enregistrer une évaluation pour une candidature"""
-    try:
-        data = json.loads(request.body)
-        candidature_id = data.get('candidature_id')
-        observation = data.get('observation', '').strip()
-        note = data.get('note')
-        
-        if not candidature_id:
-            return JsonResponse({'success': False, 'message': 'Candidature non spécifiée'}, status=400)
-        
-        if note is None:
-            return JsonResponse({'success': False, 'message': 'La note est requise'}, status=400)
-        
-        try:
-            note = float(note)
-            if note < 0 or note > 100:
-                return JsonResponse({'success': False, 'message': 'La note doit être comprise entre 0 et 100'}, status=400)
-        except ValueError:
-            return JsonResponse({'success': False, 'message': 'Note invalide'}, status=400)
-        
-        candidature = get_object_or_404(Candidature, id=candidature_id)
-        
-        # Vérifier que la candidature a une décision Accepter
-        try:
-            type_decision_accepter = TypeDecision.objects.get(Description__icontains='Accepter')
-            Decision.objects.get(
-                candidature=candidature,
-                type_decision=type_decision_accepter
-            )
-        except TypeDecision.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Type de décision "Accepter" non configuré'}, status=400)
-        except Decision.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Cette candidature n\'a pas été acceptée'}, status=400)
-        
-        # Créer l'évaluation
-        evaluation = Evaluation.objects.create(
-            candidature=candidature,
-            observation=observation,
-            note=note
-        )
-        
-        # ========== NOUVEAU : Vérifier la promotion du candidat (changement de groupe automatique) ==========
-        message_promotion = verifier_et_promouvoir_agent(candidature)
-        # ================================================================================================
-        
-        # Vérifier si tous les tests de l'offre ont été évalués
-        tous_les_tests = Test.objects.filter(offre=candidature.offre)
-        nombre_tests = tous_les_tests.count()
-        evaluations_existantes = Evaluation.objects.filter(candidature=candidature).count()
-        
-        message_supp = ""
-        
-        # Si tous les tests sont évalués ET la note moyenne >= 70%, créer l'agent
-        if nombre_tests > 0 and evaluations_existantes >= nombre_tests:
-            # Calculer la moyenne des notes
-            toutes_notes = Evaluation.objects.filter(candidature=candidature).values_list('note', flat=True)
-            moyenne = sum(toutes_notes) / len(toutes_notes)
-            
-            if moyenne >= 70:
-                agent, created = Agent.objects.get_or_create(
-                    candidat=candidature.candidat,
-                    defaults={'statut': 'Approuvé'}
-                )
-                if created:
-                    message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est retenu comme agent!"
-                else:
-                    if agent.statut != 'Approuvé':
-                        agent.statut = 'Approuvé'
-                        agent.save()
-                        message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est maintenant agent!"
-                    else:
-                        message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est déjà agent!"
-            else:
-                message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Note inférieure à 70%, le candidat n'est pas retenu."
-        else:
-            restant = nombre_tests - evaluations_existantes
-            message_supp = f" Évaluation enregistrée. Encore {restant} test(s) à évaluer pour cette offre."
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Évaluation enregistrée avec succès. Note: {note}%{message_supp}',
-            'evaluation': {
-                'id': evaluation.id,
-                'note': evaluation.note,
-                'observation': evaluation.observation,
-                'date_evaluation': evaluation.date_evaluation.strftime('%d/%m/%Y à %H:%M')
-            },
-            'promotion_message': message_promotion  # ← AJOUT DE LA LIGNE
-        })
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)}, status=400)
-
-
-# ==================== API MODIFIER EVALUATION ====================
-
-@csrf_exempt
-@require_http_methods(["POST"])
-def modifier_evaluation(request, id_evaluation):
-    """Modifier une évaluation existante et recalculer le statut Agent"""
-    try:
-        evaluation = get_object_or_404(Evaluation, id=id_evaluation)
-        data = json.loads(request.body)
-        
-        observation = data.get('observation', '').strip()
-        note = data.get('note')
-        
-        if note is not None:
-            try:
-                note = float(note)
-                if note < 0 or note > 100:
-                    return JsonResponse({'success': False, 'message': 'La note doit être comprise entre 0 et 100'}, status=400)
-                evaluation.note = note
-            except ValueError:
-                return JsonResponse({'success': False, 'message': 'Note invalide'}, status=400)
-        
-        evaluation.observation = observation
-        evaluation.save()
-        
-        # ========== NOUVEAU : Vérifier la promotion du candidat (changement de groupe automatique) ==========
-        candidature = evaluation.candidature
-        message_promotion = verifier_et_promouvoir_agent(candidature)
-        # ================================================================================================
-        
-        # Recalculer la moyenne après modification
-        tous_les_tests = Test.objects.filter(offre=candidature.offre)
-        nombre_tests = tous_les_tests.count()
-        evaluations_existantes = Evaluation.objects.filter(candidature=candidature).count()
-        
-        message_supp = ""
-        
-        if nombre_tests > 0 and evaluations_existantes >= nombre_tests:
-            toutes_notes = Evaluation.objects.filter(candidature=candidature).values_list('note', flat=True)
-            moyenne = sum(toutes_notes) / len(toutes_notes)
-            
-            if moyenne >= 70:
-                agent, created = Agent.objects.get_or_create(
-                    candidat=candidature.candidat,
-                    defaults={'statut': 'Approuvé'}
-                )
-                if created:
-                    message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est retenu comme agent!"
-                else:
-                    if agent.statut != 'Approuvé':
-                        agent.statut = 'Approuvé'
-                        agent.save()
-                        message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est maintenant agent!"
-                    else:
-                        message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat est déjà agent!"
-            else:
-                # Si moyenne < 70%, s'assurer que le candidat n'est pas agent
-                try:
-                    agent = Agent.objects.get(candidat=candidature.candidat)
-                    if agent.statut == 'Approuvé':
-                        agent.statut = 'Non retenu'
-                        agent.save()
-                        message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Le candidat n'est plus retenu."
-                except Agent.DoesNotExist:
-                    message_supp = f" Tous les tests sont évalués! Moyenne: {moyenne:.2f}%. Note inférieure à 70%."
-        else:
-            restant = nombre_tests - evaluations_existantes
-            message_supp = f" Évaluation modifiée. Encore {restant} test(s) à évaluer."
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Évaluation modifiée avec succès.{message_supp}',
-            'evaluation': {
-                'id': evaluation.id,
-                'note': evaluation.note,
-                'observation': evaluation.observation,
-                'date_evaluation': evaluation.date_evaluation.strftime('%d/%m/%Y à %H:%M')
-            },
-            'promotion_message': message_promotion  # ← AJOUT DE LA LIGNE
-        })
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)}, status=400)
-
-
-# ==================== API EVALUATIONS EFFECTUEES ====================
-
-@csrf_exempt
-@require_http_methods(["GET"])
-def get_evaluations_effectuees(request):
-    """API pour récupérer toutes les évaluations effectuées"""
-    try:
-        evaluations = Evaluation.objects.select_related(
-            'candidature', 'candidature__candidat', 'candidature__offre', 'candidature__offre__domaine'
-        ).all().order_by('-date_evaluation')
-        
-        data = []
-        for e in evaluations:
-            # Vérifier si tous les tests sont évalués et la moyenne
-            candidature = e.candidature
-            tous_les_tests = Test.objects.filter(offre=candidature.offre)
-            nombre_tests = tous_les_tests.count()
-            evaluations_existantes = Evaluation.objects.filter(candidature=candidature).count()
-            evaluation_complete = evaluations_existantes >= nombre_tests if nombre_tests > 0 else True
-            
-            # Calculer la moyenne si tous les tests sont évalués
-            moyenne = None
-            if evaluation_complete and nombre_tests > 0:
-                toutes_notes = Evaluation.objects.filter(candidature=candidature).values_list('note', flat=True)
-                moyenne = sum(toutes_notes) / len(toutes_notes)
-            
-            data.append({
-                'id': e.id,
-                'candidature_id': e.candidature.id,
-                'candidat_id': e.candidature.candidat.id,
-                'candidat_nom': f"{e.candidature.candidat.nom} {e.candidature.candidat.postnom} {e.candidature.candidat.prenom}",
-                'offre_id': e.candidature.offre.id,
-                'offre_titre': e.candidature.offre.titre,
-                'offre_domaine': e.candidature.offre.domaine.NomDomaine,
-                'observation': e.observation or '',
-                'note': e.note,
-                'date_evaluation': e.date_evaluation.strftime('%d/%m/%Y à %H:%M'),
-                'numero_evaluation': Evaluation.objects.filter(candidature=e.candidature).count(),
-                'nombre_tests': nombre_tests,
-                'evaluation_complete': evaluation_complete,
-                'moyenne': round(moyenne, 2) if moyenne else None,
-                'est_agent': Agent.objects.filter(candidat=e.candidature.candidat, statut='Approuvé').exists()
-            })
-        
-        return JsonResponse({
-            'success': True,
-            'evaluations': data,
-            'total': len(data)
-        })
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
 
@@ -3828,161 +3448,11 @@ def supprimer_demande_conge(request, id_demande):
 
 
 
-from django.shortcuts import render, get_object_or_404
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from .models import Candidature, Evaluation, Agent, TypeDecision, Decision, Test, OffreEmploie
-from datetime import date, datetime
-import json
-import os
-
-# ==================== PAGE EVALUATIONS ====================
-
-def liste_evaluations(request):
-    """Affiche la page principale des évaluations"""
-    return render(request, 'Evaluation.html')
 
 
 # ==================== API CANDIDATURES AVEC TESTS NON EVALUES ====================
 
-@csrf_exempt
-@require_http_methods(["GET"])
-def get_candidatures_avec_tests_non_evalues(request):
-    """API pour récupérer les candidatures acceptées avec leurs tests non évalués"""
-    try:
-        # Récupérer le type de décision "Accepter"
-        try:
-            type_decision_accepter = TypeDecision.objects.get(Description__icontains='Accepter')
-        except TypeDecision.DoesNotExist:
-            return JsonResponse({'success': True, 'candidatures': [], 'total': 0})
-        
-        # Récupérer les candidatures avec décision Accepter
-        decisions_acceptees = Decision.objects.filter(
-            type_decision=type_decision_accepter
-        ).select_related('candidature', 'candidature__candidat', 'candidature__offre', 'candidature__offre__domaine')
-        
-        data = []
-        for d in decisions_acceptees:
-            candidature = d.candidature
-            offre = candidature.offre
-            
-            # Récupérer tous les tests de l'offre
-            tous_les_tests = Test.objects.filter(offre=offre).order_by('date_test')
-            
-            # Pour chaque test, vérifier s'il a été évalué
-            tests_data = []
-            for test in tous_les_tests:
-                evaluation_exists = Evaluation.objects.filter(candidature=candidature, test=test).exists()
-                evaluation = Evaluation.objects.filter(candidature=candidature, test=test).first()
-                
-                tests_data.append({
-                    'id': test.id,
-                    'date_test': test.date_test.strftime('%d/%m/%Y à %H:%M'),
-                    'fichier_url': test.fichier_test.url if test.fichier_test else None,
-                    'nom_fichier': test.filename(),
-                    'est_evalue': evaluation_exists,
-                    'note': evaluation.note if evaluation else None,
-                    'observation': evaluation.observation if evaluation else None
-                })
-            
-            # Compter les tests évalués
-            tests_evalues = len([t for t in tests_data if t['est_evalue']])
-            nombre_tests = len(tests_data)
-            evaluation_complete = tests_evalues >= nombre_tests if nombre_tests > 0 else True
-            
-            data.append({
-                'id': candidature.id,
-                'candidat_id': candidature.candidat.id,
-                'candidat_nom': f"{candidature.candidat.nom} {candidature.candidat.postnom} {candidature.candidat.prenom}",
-                'offre_id': offre.id,
-                'offre_titre': offre.titre,
-                'offre_domaine': offre.domaine.NomDomaine,
-                'date_candidature': candidature.date_soumission.strftime('%d/%m/%Y'),
-                'cv_url': candidature.cv.url if candidature.cv else None,
-                'tests': tests_data,
-                'nombre_tests': nombre_tests,
-                'tests_evalues': tests_evalues,
-                'evaluation_complete': evaluation_complete
-            })
-        
-        return JsonResponse({
-            'success': True,
-            'candidatures': data,
-            'total': len(data)
-        })
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-
-# ==================== API TESTS D'UNE OFFRE ====================
-
-@csrf_exempt
-@require_http_methods(["GET"])
-def get_tests_by_offre_evaluation(request, id_offre):
-    """API pour récupérer tous les tests d'une offre"""
-    try:
-        tests = Test.objects.filter(offre_id=id_offre).order_by('date_test')
-        data = [{
-            'id': t.id,
-            'date_test': t.date_test.strftime('%d/%m/%Y à %H:%M'),
-            'fichier_url': t.fichier_test.url if t.fichier_test else None,
-            'nom_fichier': t.filename(),
-        } for t in tests]
-        
-        return JsonResponse({
-            'success': True,
-            'tests': data,
-            'total': len(data)
-        })
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
-
-
-# ==================== API EVALUATIONS EFFECTUEES ====================
-
-@csrf_exempt
-@require_http_methods(["GET"])
-def get_evaluations_effectuees(request):
-    """API pour récupérer toutes les évaluations effectuées"""
-    try:
-        evaluations = Evaluation.objects.select_related(
-            'candidature', 'candidature__candidat', 'candidature__offre', 'candidature__offre__domaine', 'test'
-        ).all().order_by('-date_evaluation')
-        
-        data = []
-        for e in evaluations:
-            # Vérifier si l'agent existe
-            est_agent = False
-            try:
-                agent = Agent.objects.get(candidat=e.candidature.candidat)
-                est_agent = agent.statut == 'Approuvé'
-            except Agent.DoesNotExist:
-                pass
-            
-            data.append({
-                'id': e.id,
-                'candidature_id': e.candidature.id,
-                'candidat_id': e.candidature.candidat.id,
-                'candidat_nom': f"{e.candidature.candidat.nom} {e.candidature.candidat.postnom} {e.candidature.candidat.prenom}",
-                'offre_id': e.candidature.offre.id,
-                'offre_titre': e.candidature.offre.titre,
-                'offre_domaine': e.candidature.offre.domaine.NomDomaine,
-                'test_id': e.test.id,
-                'test_date': e.test.date_test.strftime('%d/%m/%Y à %H:%M'),
-                'observation': e.observation or '',
-                'note': e.note,
-                'date_evaluation': e.date_evaluation.strftime('%d/%m/%Y à %H:%M'),
-                'est_agent': est_agent
-            })
-        
-        return JsonResponse({
-            'success': True,
-            'evaluations': data,
-            'total': len(data)
-        })
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
 
@@ -4998,3 +4468,383 @@ def get_agent_photo(request, id_agent):
             return JsonResponse({'success': False, 'photo_url': None})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+
+
+
+
+
+# EVALUATION
+
+
+# ==================== FONCTIONS UTILITAIRES POUR LA PROMOTION AGENT ====================
+
+from datetime import datetime
+import random
+
+def changer_groupe_utilisateur(user, nouveau_groupe_nom):
+    """Change le groupe d'un utilisateur Django"""
+    try:
+        nouveau_groupe, _ = Group.objects.get_or_create(name=nouveau_groupe_nom)
+        user.groups.clear()
+        user.groups.add(nouveau_groupe)
+        user.is_staff = (nouveau_groupe_nom.upper() == 'AGENT')
+        user.save()
+        return True, f"Utilisateur ajouté au groupe {nouveau_groupe_nom}"
+    except Exception as e:
+        return False, str(e)
+
+
+def generer_matricule():
+    """Génère un matricule unique pour un agent"""
+    annee = datetime.now().year
+    mois = datetime.now().month
+    random_num = random.randint(100, 999)
+    matricule = f"GRH-{annee}{mois:02d}-{random_num}"
+    
+    # Éviter les doublons
+    while Agent.objects.filter(matricule=matricule).exists():
+        random_num = random.randint(100, 999)
+        matricule = f"GRH-{annee}{mois:02d}-{random_num}"
+    
+    return matricule
+
+
+def verifier_et_promouvoir_agent(candidature):
+    """
+    Vérifie et promeut le candidat en Agent si moyenne >= 70% après tous les tests.
+    Retourne un message indiquant le résultat.
+    """
+    offre = candidature.offre
+    tous_les_tests = Test.objects.filter(offre=offre)
+    nombre_tests = tous_les_tests.count()
+    
+    if nombre_tests == 0:
+        return "Aucun test défini pour cette offre.", None
+    
+    evaluations_existantes = Evaluation.objects.filter(candidature=candidature)
+    evaluations_count = evaluations_existantes.count()
+    
+    # Si tous les tests ne sont pas encore évalués
+    if evaluations_count < nombre_tests:
+        restant = nombre_tests - evaluations_count
+        return f"Encore {restant} test(s) à évaluer pour devenir agent.", None
+    
+    # Tous les tests sont évalués, calculer la moyenne
+    toutes_notes = evaluations_existantes.values_list('note', flat=True)
+    moyenne = sum(toutes_notes) / len(toutes_notes)
+    
+    if moyenne >= 70:
+        # Le candidat est promu AGENT
+        user = candidature.candidat.user
+        success, message = changer_groupe_utilisateur(user, 'AGENT')
+        
+        # Créer ou mettre à jour l'enregistrement Agent
+        agent, created = Agent.objects.get_or_create(
+            candidat=candidature.candidat,
+            defaults={'statut': 'Approuvé'}
+        )
+        
+        if created:
+            # Nouvel agent : générer un matricule
+            agent.matricule = generer_matricule()
+            agent.statut = 'Approuvé'
+            agent.save()
+        elif agent.statut != 'Approuvé':
+            # Agent existant mais pas approuvé
+            agent.statut = 'Approuvé'
+            if not agent.matricule:
+                agent.matricule = generer_matricule()
+            agent.save()
+        
+        # Envoyer l'email de promotion
+        from .utils import notifier_promotion_agent
+        base_url = "https://mahoridi.pythonanywhere.com/"  # À remplacer par votre domaine
+        email_envoye, email_msg = notifier_promotion_agent(
+            candidature, moyenne, base_url, agent.matricule
+        )
+        
+        if email_envoye:
+            return f"✅ Félicitations! Agent promu (Matricule: {agent.matricule}, Moyenne: {moyenne:.2f}%) - Email envoyé", {
+                'promu': True, 
+                'moyenne': moyenne, 
+                'matricule': agent.matricule,
+                'email_envoye': email_envoye
+            }
+        else:
+            return f"✅ Promu Agent (Matricule: {agent.matricule}, Moyenne: {moyenne:.2f}%) - ⚠️ Email: {email_msg}", {
+                'promu': True, 
+                'moyenne': moyenne, 
+                'matricule': agent.matricule,
+                'email_envoye': email_envoye
+            }
+    else:
+        # Moyenne insuffisante
+        return f"❌ Moyenne {moyenne:.2f}% < 70% - Non promu", {
+            'promu': False, 
+            'moyenne': moyenne
+        }
+
+
+
+
+
+
+# ==================== API: CANDIDATURES AVEC TESTS À ÉVALUER ====================
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_candidatures_tests(request):
+    """API: Récupérer les candidatures acceptées avec leurs tests"""
+    try:
+        try:
+            type_decision_accepter = TypeDecision.objects.get(Description__icontains='Accepter')
+        except TypeDecision.DoesNotExist:
+            return JsonResponse({'success': True, 'candidatures': [], 'total': 0})
+        
+        decisions_acceptees = Decision.objects.filter(
+            type_decision=type_decision_accepter
+        ).select_related('candidature', 'candidature__candidat', 'candidature__offre', 'candidature__offre__domaine')
+        
+        data = []
+        for d in decisions_acceptees:
+            candidature = d.candidature
+            offre = candidature.offre
+            
+            tous_les_tests = Test.objects.filter(offre=offre).order_by('date_test')
+            
+            tests_data = []
+            for test in tous_les_tests:
+                evaluation_exists = Evaluation.objects.filter(candidature=candidature, test=test).exists()
+                evaluation = Evaluation.objects.filter(candidature=candidature, test=test).first()
+                
+                tests_data.append({
+                    'id': test.id,
+                    'date_test': test.date_test.strftime('%d/%m/%Y à %H:%M'),
+                    'nom_fichier': test.filename(),
+                    'est_evalue': evaluation_exists,
+                    'note': evaluation.note if evaluation else None,
+                })
+            
+            tests_evalues = len([t for t in tests_data if t['est_evalue']])
+            nombre_tests = len(tests_data)
+            evaluation_complete = tests_evalues >= nombre_tests if nombre_tests > 0 else True
+            
+            data.append({
+                'id': candidature.id,
+                'candidat_nom': f"{candidature.candidat.nom} {candidature.candidat.postnom} {candidature.candidat.prenom}",
+                'offre_id': offre.id,
+                'offre_titre': offre.titre,
+                'offre_domaine': offre.domaine.NomDomaine,
+                'date_candidature': candidature.date_soumission.strftime('%d/%m/%Y'),
+                'cv_url': candidature.cv.url if candidature.cv else None,
+                'tests': tests_data,
+                'nombre_tests': nombre_tests,
+                'tests_evalues': tests_evalues,
+                'evaluation_complete': evaluation_complete
+            })
+        
+        return JsonResponse({'success': True, 'candidatures': data, 'total': len(data)})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+# ==================== API: RÉCUPÉRER LES TESTS D'UNE OFFRE ====================
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_tests_by_offre_evaluation(request, id_offre):
+    """API: Récupérer tous les tests d'une offre pour évaluation"""
+    try:
+        tests = Test.objects.filter(offre_id=id_offre).order_by('date_test')
+        data = [{
+            'id': t.id,
+            'date_test': t.date_test.strftime('%d/%m/%Y à %H:%M'),
+            'nom_fichier': t.filename(),
+        } for t in tests]
+        return JsonResponse({'success': True, 'tests': data, 'total': len(data)})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+# ==================== API: RÉCUPÉRER LES ÉVALUATIONS D'UNE CANDIDATURE ====================
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_evaluations_by_candidature(request, id_candidature):
+    """API: Récupérer les évaluations d'une candidature"""
+    try:
+        evaluations = Evaluation.objects.filter(
+            candidature_id=id_candidature
+        ).select_related('test').order_by('-date_evaluation')
+        
+        data = [{
+            'id': e.id,
+            'test_id': e.test.id,
+            'test_nom': e.test.filename(),
+            'note': e.note,
+            'observation': e.observation,
+            'date_evaluation': e.date_evaluation.strftime('%d/%m/%Y à %H:%M')
+        } for e in evaluations]
+        
+        return JsonResponse({'success': True, 'evaluations': data, 'total': len(data)})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+# ==================== API: ENREGISTRER UNE ÉVALUATION ====================
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def enregistrer_evaluation(request):
+    """API: Enregistrer une évaluation pour une candidature et un test"""
+    try:
+        data = json.loads(request.body)
+        candidature_id = data.get('candidature_id')
+        test_id = data.get('test_id')
+        observation = data.get('observation', '').strip()
+        note = data.get('note')
+        
+        if not candidature_id:
+            return JsonResponse({'success': False, 'message': 'Candidature non spécifiée'}, status=400)
+        
+        if not test_id:
+            return JsonResponse({'success': False, 'message': 'Test non spécifié'}, status=400)
+        
+        if note is None:
+            return JsonResponse({'success': False, 'message': 'La note est requise'}, status=400)
+        
+        try:
+            note = float(note)
+            if note < 0 or note > 100:
+                return JsonResponse({'success': False, 'message': 'La note doit être entre 0 et 100'}, status=400)
+        except ValueError:
+            return JsonResponse({'success': False, 'message': 'Note invalide'}, status=400)
+        
+        candidature = get_object_or_404(Candidature, id=candidature_id)
+        test = get_object_or_404(Test, id=test_id)
+        
+        # Vérifier que le test appartient à l'offre
+        if test.offre.id != candidature.offre.id:
+            return JsonResponse({'success': False, 'message': 'Ce test ne correspond pas à l\'offre'}, status=400)
+        
+        # Vérifier que la candidature est acceptée
+        try:
+            type_decision_accepter = TypeDecision.objects.get(Description__icontains='Accepter')
+            if not Decision.objects.filter(candidature=candidature, type_decision=type_decision_accepter).exists():
+                return JsonResponse({'success': False, 'message': 'Cette candidature n\'a pas été acceptée'}, status=400)
+        except TypeDecision.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Type "Accepter" non configuré'}, status=400)
+        
+        # Vérifier les doublons
+        if Evaluation.objects.filter(candidature=candidature, test=test).exists():
+            return JsonResponse({'success': False, 'message': 'Ce test a déjà été évalué'}, status=400)
+        
+        # Créer l'évaluation
+        evaluation = Evaluation.objects.create(
+            candidature=candidature,
+            test=test,
+            observation=observation,
+            note=note
+        )
+        
+        # Vérifier la promotion
+        message_promotion, promotion_info = verifier_et_promouvoir_agent(candidature)
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Évaluation enregistrée. Note: {note}%',
+            'evaluation': {
+                'id': evaluation.id,
+                'note': evaluation.note,
+                'observation': evaluation.observation,
+                'date_evaluation': evaluation.date_evaluation.strftime('%d/%m/%Y à %H:%M')
+            },
+            'promotion_message': message_promotion,
+            'promotion_info': promotion_info
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+# ==================== API: MODIFIER UNE ÉVALUATION ====================
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def modifier_evaluation(request, id_evaluation):
+    """API: Modifier une évaluation existante"""
+    try:
+        evaluation = get_object_or_404(Evaluation, id=id_evaluation)
+        data = json.loads(request.body)
+        
+        observation = data.get('observation', '').strip()
+        note = data.get('note')
+        
+        if note is not None:
+            try:
+                note = float(note)
+                if note < 0 or note > 100:
+                    return JsonResponse({'success': False, 'message': 'Note entre 0 et 100'}, status=400)
+                evaluation.note = note
+            except ValueError:
+                return JsonResponse({'success': False, 'message': 'Note invalide'}, status=400)
+        
+        evaluation.observation = observation
+        evaluation.save()
+        
+        # Re-vérifier la promotion
+        candidature = evaluation.candidature
+        message_promotion, promotion_info = verifier_et_promouvoir_agent(candidature)
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Évaluation modifiée',
+            'evaluation': {
+                'id': evaluation.id,
+                'note': evaluation.note,
+                'observation': evaluation.observation,
+                'date_evaluation': evaluation.date_evaluation.strftime('%d/%m/%Y à %H:%M')
+            },
+            'promotion_message': message_promotion,
+            'promotion_info': promotion_info
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+# ==================== API: LISTE DES ÉVALUATIONS EFFECTUÉES ====================
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_evaluations_effectuees(request):
+    """API: Récupérer toutes les évaluations effectuées"""
+    try:
+        evaluations = Evaluation.objects.select_related(
+            'candidature', 
+            'candidature__candidat',
+            'candidature__offre', 
+            'candidature__offre__domaine',
+            'test'
+        ).all().order_by('-date_evaluation')
+        
+        data = []
+        for e in evaluations:
+            est_agent = Agent.objects.filter(candidat=e.candidature.candidat, statut='Approuvé').exists()
+            
+            data.append({
+                'id': e.id,
+                'candidature_id': e.candidature.id,
+                'candidat_nom': f"{e.candidature.candidat.nom} {e.candidature.candidat.postnom} {e.candidature.candidat.prenom}",
+                'offre_titre': e.candidature.offre.titre,
+                'offre_domaine': e.candidature.offre.domaine.NomDomaine,
+                'test_date': e.test.date_test.strftime('%d/%m/%Y'),
+                'note': e.note,
+                'observation': e.observation or '',
+                'date_evaluation': e.date_evaluation.strftime('%d/%m/%Y à %H:%M'),
+                'est_agent': est_agent
+            })
+        
+        return JsonResponse({'success': True, 'evaluations': data, 'total': len(data)})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
