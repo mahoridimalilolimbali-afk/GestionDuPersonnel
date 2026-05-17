@@ -487,315 +487,358 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <script>
-        let currentOffres = [];
-        
-        function getCSRFToken() {
-            return document.querySelector('[name=csrf-token]').getAttribute('content');
+    let currentOffres = [];
+    
+    function getCSRFToken() {
+        return document.querySelector('[name=csrf-token]').getAttribute('content');
+    }
+    
+    function showLoading() {
+        $('#loadingOverlay').fadeIn(300);
+    }
+    
+    function hideLoading() {
+        $('#loadingOverlay').fadeOut(300);
+    }
+    
+    function showSuccess(message, emailInfo = null) {
+        let html = message;
+        if (emailInfo) {
+            html += `<div class="mt-2 pt-2 border-top"><i class="fas fa-envelope"></i> ${emailInfo}</div>`;
         }
-        
-        function showLoading() {
-            $('#loadingOverlay').fadeIn(300);
-        }
-        
-        function hideLoading() {
-            $('#loadingOverlay').fadeOut(300);
-        }
-        
-        function showSuccess(message) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Succès !',
-                text: message,
-                timer: 2500,
-                showConfirmButton: false,
-                toast: true,
-                position: 'top-end'
-            });
-        }
-        
-        function showError(message) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Erreur',
-                text: message,
-                confirmButtonColor: '#e74c3c'
-            });
-        }
-        
-        // Charger les domaines
-        function chargerDomaines() {
-            $.ajax({
-                url: '/api/domaines/',
-                method: 'GET',
-                success: function(response) {
-                    if (response.success && response.domaines) {
-                        var selectAdd = $('#ajouterDomaine');
-                        var selectEdit = $('#modifierDomaine');
-                        
-                        selectAdd.empty();
-                        selectEdit.empty();
-                        
-                        selectAdd.append('<option value="">-- Sélectionnez un domaine --</option>');
-                        selectEdit.append('<option value="">-- Sélectionnez un domaine --</option>');
-                        
-                        response.domaines.forEach(function(domaine) {
-                            selectAdd.append('<option value="' + domaine.id + '">' + domaine.NomDomaine + '</option>');
-                            selectEdit.append('<option value="' + domaine.id + '">' + domaine.NomDomaine + '</option>');
-                        });
-                        
-                        if (response.domaines.length === 0) {
-                            selectAdd.append('<option value="" disabled>Aucun domaine disponible</option>');
-                            selectEdit.append('<option value="" disabled>Aucun domaine disponible</option>');
-                        }
+        Swal.fire({
+            icon: 'success',
+            title: 'Succès !',
+            html: html,
+            timer: 5000,
+            timerProgressBar: true,
+            showConfirmButton: true,
+            confirmButtonColor: '#667eea'
+        });
+    }
+    
+    function showError(message) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Erreur',
+            text: message,
+            confirmButtonColor: '#e74c3c',
+            timer: 4000,
+            timerProgressBar: true
+        });
+    }
+    
+    function showWarning(message) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Attention',
+            text: message,
+            confirmButtonColor: '#f39c12',
+            timer: 4000,
+            timerProgressBar: true
+        });
+    }
+    
+    // Charger les domaines
+    function chargerDomaines() {
+        $.ajax({
+            url: '/api/domaines/',
+            method: 'GET',
+            success: function(response) {
+                if (response.success && response.domaines) {
+                    var selectAdd = $('#ajouterDomaine');
+                    var selectEdit = $('#modifierDomaine');
+                    
+                    selectAdd.empty();
+                    selectEdit.empty();
+                    
+                    selectAdd.append('<option value="">-- Sélectionnez un domaine --</option>');
+                    selectEdit.append('<option value="">-- Sélectionnez un domaine --</option>');
+                    
+                    response.domaines.forEach(function(domaine) {
+                        selectAdd.append('<option value="' + domaine.id + '">' + domaine.NomDomaine + '</option>');
+                        selectEdit.append('<option value="' + domaine.id + '">' + domaine.NomDomaine + '</option>');
+                    });
+                    
+                    if (response.domaines.length === 0) {
+                        selectAdd.append('<option value="" disabled>Aucun domaine disponible</option>');
+                        selectEdit.append('<option value="" disabled>Aucun domaine disponible</option>');
                     }
-                },
-                error: function() {
-                    $('#ajouterDomaine').html('<option value="">Erreur de chargement</option>');
-                    $('#modifierDomaine').html('<option value="">Erreur de chargement</option>');
                 }
-            });
-        }
-        
-        // Charger les offres
-        function chargerOffres() {
-            showLoading();
-            
-            $.ajax({
-                url: '/api/offres/',
-                method: 'GET',
-                headers: { 'X-CSRFToken': getCSRFToken() },
-                success: function(response) {
-                    hideLoading();
-                    if (response.success) {
-                        currentOffres = response.offres;
-                        afficherOffres(response.offres);
-                        $('#totalCount').text(response.total);
-                    } else {
-                        showError('Impossible de charger les offres');
-                    }
-                },
-                error: function() {
-                    hideLoading();
-                    showError('Erreur de connexion');
-                }
-            });
-        }
-        
-        // Afficher les offres
-        function afficherOffres(offres) {
-            const tbody = $('#offresTableBody');
-            tbody.empty();
-            
-            if (!offres || offres.length === 0) {
-                tbody.html(`
-                    <tr>
-                        <td colspan="6">
-                            <div class="empty-state-custom">
-                                <i class="fas fa-folder-open"></i>
-                                <p>Aucune offre d'emploi</p>
-                                <button class="btn-add" data-bs-toggle="modal" data-bs-target="#ajouterModal">
-                                    <i class="fas fa-plus-circle"></i> Créer la première offre
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `);
-                return;
+            },
+            error: function() {
+                $('#ajouterDomaine').html('<option value="">Erreur de chargement</option>');
+                $('#modifierDomaine').html('<option value="">Erreur de chargement</option>');
+                showWarning('Impossible de charger les domaines');
             }
-            
-            offres.forEach(offre => {
-                const fichierHtml = offre.offre_fichier ? 
-                    `<button class="btn-download btn-action" onclick="telechargerFichier(${offre.id})">
-                        <i class="fas fa-download"></i> ${offre.nom_fichier}
-                    </button>` : 
-                    '<span class="text-muted">Aucun fichier</span>';
-                
-                const row = `
-                    <tr class="fade-in">
-                        <td><strong>#${offre.id}</strong></td>
-                        <td><strong>${escapeHtml(offre.titre)}</strong></td>
-                        <td><span class="badge-domaine">${escapeHtml(offre.domaine_nom)}</span></td>
-                        <td>${fichierHtml}</td>
-                        <td><i class="fas fa-calendar"></i> ${offre.date_publication}</td>
-                        <td>
-                            <button class="btn-action btn-edit" onclick="openEditModal(${offre.id})">
-                                <i class="fas fa-edit"></i> Modifier
+        });
+    }
+    
+    // Charger les offres
+    function chargerOffres() {
+        showLoading();
+        
+        $.ajax({
+            url: '/api/offres/',
+            method: 'GET',
+            headers: { 'X-CSRFToken': getCSRFToken() },
+            success: function(response) {
+                hideLoading();
+                if (response.success) {
+                    currentOffres = response.offres;
+                    afficherOffres(response.offres);
+                    $('#totalCount').text(response.total);
+                } else {
+                    showError('Impossible de charger les offres');
+                }
+            },
+            error: function(xhr) {
+                hideLoading();
+                const message = xhr.responseJSON?.message || 'Erreur de connexion';
+                showError(message);
+            }
+        });
+    }
+    
+    // Afficher les offres
+    function afficherOffres(offres) {
+        const tbody = $('#offresTableBody');
+        tbody.empty();
+        
+        if (!offres || offres.length === 0) {
+            tbody.html(`
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state-custom">
+                            <i class="fas fa-folder-open"></i>
+                            <p>Aucune offre d'emploi</p>
+                            <button class="btn-add" data-bs-toggle="modal" data-bs-target="#ajouterModal">
+                                <i class="fas fa-plus-circle"></i> Créer la première offre
                             </button>
-                            <button class="btn-action btn-delete" onclick="openDeleteModal(${offre.id})">
-                                <i class="fas fa-trash"></i> Supprimer
-                            </button>
-                        </td>
-                    </tr>
-                `;
-                tbody.append(row);
-            });
+                        </div>
+                     </td>
+                </tr>
+            `);
+            return;
         }
         
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-        
-        // Ajouter une offre
-        function ajouterOffre() {
-            const titre = $('#ajouterTitre').val().trim();
-            const domaineId = $('#ajouterDomaine').val();
-            const fichier = $('#ajouterFichier')[0].files[0];
+        offres.forEach(offre => {
+            const fichierHtml = offre.offre_fichier ? 
+                `<button class="btn-download btn-action" onclick="telechargerFichier(${offre.id})">
+                    <i class="fas fa-download"></i> ${offre.nom_fichier}
+                </button>` : 
+                '<span class="text-muted">Aucun fichier</span>';
             
-            if (!titre) {
-                showError('Veuillez saisir le titre');
-                return;
-            }
-            
-            if (!domaineId) {
-                showError('Veuillez sélectionner un domaine');
-                return;
-            }
-            
-            const formData = new FormData();
-            formData.append('titre', titre);
-            formData.append('domaine_id', domaineId);
-            if (fichier) formData.append('offre_fichier', fichier);
-            
-            showLoading();
-            
-            $.ajax({
-                url: '/api/offres/ajouter/',
-                method: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                headers: { 'X-CSRFToken': getCSRFToken() },
-                success: function(response) {
-                    hideLoading();
-                    if (response.success) {
-                        showSuccess(response.message);
-                        $('#ajouterModal').modal('hide');
-                        $('#ajouterForm')[0].reset();
-                        chargerOffres();
-                    } else {
-                        showError(response.message);
-                    }
-                },
-                error: function() {
-                    hideLoading();
-                    showError('Erreur lors de l\'ajout');
-                }
-            });
-        }
-        
-        // Modifier une offre
-        function openEditModal(id) {
-            const offre = currentOffres.find(o => o.id === id);
-            if (offre) {
-                $('#modifierId').val(id);
-                $('#modifierTitre').val(offre.titre);
-                $('#modifierDomaine').val(offre.domaine_id);
-                $('#modifierModal').modal('show');
-            }
-        }
-        
-        function modifierOffre() {
-            const id = $('#modifierId').val();
-            const titre = $('#modifierTitre').val().trim();
-            const domaineId = $('#modifierDomaine').val();
-            const fichier = $('#modifierFichier')[0].files[0];
-            
-            if (!titre) {
-                showError('Veuillez saisir le titre');
-                return;
-            }
-            
-            if (!domaineId) {
-                showError('Veuillez sélectionner un domaine');
-                return;
-            }
-            
-            const formData = new FormData();
-            formData.append('titre', titre);
-            formData.append('domaine_id', domaineId);
-            if (fichier) formData.append('offre_fichier', fichier);
-            
-            showLoading();
-            
-            $.ajax({
-                url: `/api/offres/modifier/${id}/`,
-                method: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                headers: { 'X-CSRFToken': getCSRFToken() },
-                success: function(response) {
-                    hideLoading();
-                    if (response.success) {
-                        showSuccess(response.message);
-                        $('#modifierModal').modal('hide');
-                        $('#modifierForm')[0].reset();
-                        chargerOffres();
-                    } else {
-                        showError(response.message);
-                    }
-                },
-                error: function() {
-                    hideLoading();
-                    showError('Erreur lors de la modification');
-                }
-            });
-        }
-        
-        // Supprimer une offre
-        function openDeleteModal(id) {
-            $('#supprimerId').val(id);
-            $('#supprimerModal').modal('show');
-        }
-        
-        function supprimerOffre() {
-            const id = $('#supprimerId').val();
-            
-            showLoading();
-            
-            $.ajax({
-                url: `/api/offres/supprimer/${id}/`,
-                method: 'POST',
-                headers: { 'X-CSRFToken': getCSRFToken() },
-                success: function(response) {
-                    hideLoading();
-                    if (response.success) {
-                        showSuccess(response.message);
-                        $('#supprimerModal').modal('hide');
-                        chargerOffres();
-                    } else {
-                        showError(response.message);
-                    }
-                },
-                error: function() {
-                    hideLoading();
-                    showError('Erreur lors de la suppression');
-                }
-            });
-        }
-        
-        // Télécharger fichier
-        function telechargerFichier(id) {
-            window.open(`/api/offres/telecharger/${id}/`, '_blank');
-        }
-        
-        // Initialisation
-        $(document).ready(function() {
-            chargerDomaines();
-            chargerOffres();
+            const row = `
+                <tr class="fade-in">
+                    <td><strong>#${offre.id}</strong></td>
+                    <td><strong>${escapeHtml(offre.titre)}</strong></td>
+                    <td><span class="badge-domaine">${escapeHtml(offre.domaine_nom)}</span></td>
+                    <td>${fichierHtml}</td>
+                    <td><i class="fas fa-calendar"></i> ${offre.date_publication}</td>
+                    <td>
+                        <button class="btn-action btn-edit" onclick="openEditModal(${offre.id})">
+                            <i class="fas fa-edit"></i> Modifier
+                        </button>
+                        <button class="btn-action btn-delete" onclick="openDeleteModal(${offre.id})">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tbody.append(row);
         });
+    }
+    
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // ==================== AJOUTER UNE OFFRE AVEC NOTIFICATION ====================
+    
+    function ajouterOffre() {
+        const titre = $('#ajouterTitre').val().trim();
+        const domaineId = $('#ajouterDomaine').val();
+        const fichier = $('#ajouterFichier')[0].files[0];
         
-        // Réinitialisation des formulaires
-        $('#ajouterModal').on('hidden.bs.modal', function() {
-            $('#ajouterForm')[0].reset();
-        });
+        if (!titre) {
+            showError('Veuillez saisir le titre');
+            return;
+        }
         
-        $('#modifierModal').on('hidden.bs.modal', function() {
-            $('#modifierForm')[0].reset();
+        if (!domaineId) {
+            showError('Veuillez sélectionner un domaine');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('titre', titre);
+        formData.append('domaine_id', domaineId);
+        if (fichier) formData.append('offre_fichier', fichier);
+        
+        showLoading();
+        
+        $.ajax({
+            url: '/api/offres/ajouter/',
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: { 'X-CSRFToken': getCSRFToken() },
+            success: function(response) {
+                hideLoading();
+                if (response.success) {
+                    let emailInfo = null;
+                    if (response.email_envoye) {
+                        emailInfo = `<i class="fas fa-check-circle text-success"></i> ${response.email_message}`;
+                    } else if (response.email_message) {
+                        emailInfo = `<i class="fas fa-exclamation-triangle text-warning"></i> ⚠️ ${response.email_message}`;
+                    }
+                    
+                    showSuccess(response.message, emailInfo);
+                    $('#ajouterModal').modal('hide');
+                    $('#ajouterForm')[0].reset();
+                    chargerOffres();
+                } else {
+                    showError(response.message);
+                }
+            },
+            error: function(xhr) {
+                hideLoading();
+                const message = xhr.responseJSON?.message || 'Erreur lors de l\'ajout';
+                showError(message);
+            }
         });
-    </script>
+    }
+    
+    // ==================== MODIFIER UNE OFFRE AVEC NOTIFICATION ====================
+    
+    function openEditModal(id) {
+        const offre = currentOffres.find(o => o.id === id);
+        if (offre) {
+            $('#modifierId').val(id);
+            $('#modifierTitre').val(offre.titre);
+            $('#modifierDomaine').val(offre.domaine_id);
+            $('#modifierModal').modal('show');
+        }
+    }
+    
+    function modifierOffre() {
+        const id = $('#modifierId').val();
+        const titre = $('#modifierTitre').val().trim();
+        const domaineId = $('#modifierDomaine').val();
+        const fichier = $('#modifierFichier')[0].files[0];
+        
+        if (!titre) {
+            showError('Veuillez saisir le titre');
+            return;
+        }
+        
+        if (!domaineId) {
+            showError('Veuillez sélectionner un domaine');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('titre', titre);
+        formData.append('domaine_id', domaineId);
+        if (fichier) formData.append('offre_fichier', fichier);
+        
+        showLoading();
+        
+        $.ajax({
+            url: `/api/offres/modifier/${id}/`,
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: { 'X-CSRFToken': getCSRFToken() },
+            success: function(response) {
+                hideLoading();
+                if (response.success) {
+                    let emailInfo = null;
+                    if (response.email_envoye) {
+                        emailInfo = `<i class="fas fa-check-circle text-success"></i> ${response.email_message}`;
+                    } else if (response.email_message) {
+                        emailInfo = `<i class="fas fa-exclamation-triangle text-warning"></i> ⚠️ ${response.email_message}`;
+                    }
+                    
+                    showSuccess(response.message, emailInfo);
+                    $('#modifierModal').modal('hide');
+                    $('#modifierForm')[0].reset();
+                    chargerOffres();
+                } else {
+                    showError(response.message);
+                }
+            },
+            error: function(xhr) {
+                hideLoading();
+                const message = xhr.responseJSON?.message || 'Erreur lors de la modification';
+                showError(message);
+            }
+        });
+    }
+    
+    // ==================== SUPPRIMER UNE OFFRE ====================
+    
+    function openDeleteModal(id) {
+        $('#supprimerId').val(id);
+        $('#supprimerModal').modal('show');
+    }
+    
+    function supprimerOffre() {
+        const id = $('#supprimerId').val();
+        
+        showLoading();
+        
+        $.ajax({
+            url: `/api/offres/supprimer/${id}/`,
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRFToken() },
+            success: function(response) {
+                hideLoading();
+                if (response.success) {
+                    showSuccess(response.message);
+                    $('#supprimerModal').modal('hide');
+                    chargerOffres();
+                } else {
+                    showError(response.message);
+                }
+            },
+            error: function(xhr) {
+                hideLoading();
+                const message = xhr.responseJSON?.message || 'Erreur lors de la suppression';
+                showError(message);
+            }
+        });
+    }
+    
+    // ==================== TÉLÉCHARGER FICHIER ====================
+    
+    function telechargerFichier(id) {
+        window.open(`/api/offres/telecharger/${id}/`, '_blank');
+    }
+    
+    // ==================== INITIALISATION ====================
+    
+    $(document).ready(function() {
+        chargerDomaines();
+        chargerOffres();
+    });
+    
+    // Réinitialisation des formulaires
+    $('#ajouterModal').on('hidden.bs.modal', function() {
+        $('#ajouterForm')[0].reset();
+        $('#ajouterFichier').val('');
+    });
+    
+    $('#modifierModal').on('hidden.bs.modal', function() {
+        $('#modifierForm')[0].reset();
+        $('#modifierFichier').val('');
+    });
+</script>
 </body>
 </html>

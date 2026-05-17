@@ -369,10 +369,11 @@ def get_all_offres(request):
             'error': str(e)
         }, status=500)
 
+
 @csrf_exempt
 @require_http_methods(["POST"])
 def ajouter_offre(request):
-    """Ajouter une nouvelle offre d'emploi"""
+    """API: Ajouter une offre d'emploi et notifier les utilisateurs ONEM"""
     try:
         titre = request.POST.get('titre', '').strip()
         domaine_id = request.POST.get('domaine_id')
@@ -383,11 +384,9 @@ def ajouter_offre(request):
         if not domaine_id:
             return JsonResponse({'success': False, 'message': 'Veuillez sélectionner un domaine'}, status=400)
         
-        try:
-            domaine = Domaine.objects.get(id=domaine_id)
-        except Domaine.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Domaine non trouvé'}, status=400)
+        domaine = get_object_or_404(Domaine, id=domaine_id)
         
+        # Créer l'offre
         offre = OffreEmploie.objects.create(
             titre=titre,
             domaine=domaine
@@ -398,6 +397,12 @@ def ajouter_offre(request):
         if fichier:
             offre.OffreFichier = fichier
             offre.save()
+        
+        # ========== NOTIFIER LES UTILISATEURS ONEM ==========
+        from .utils import notifier_onem_nouvelle_offre
+        base_url = "https://mahoridi.pythonanywhere.com/"  # À remplacer par votre domaine en production
+        email_envoye, email_message = notifier_onem_nouvelle_offre(offre, base_url)
+        # ===================================================
         
         return JsonResponse({
             'success': True,
@@ -410,15 +415,20 @@ def ajouter_offre(request):
                 'offre_fichier': offre.OffreFichier.url if offre.OffreFichier else None,
                 'nom_fichier': offre.filename(),
                 'date_publication': offre.date_publication.strftime('%d/%m/%Y à %H:%M')
-            }
+            },
+            'email_envoye': email_envoye,
+            'email_message': email_message
         })
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
+
+
+
 @csrf_exempt
 @require_http_methods(["POST"])
 def modifier_offre(request, id_offre):
-    """Modifier une offre d'emploi existante"""
+    """API: Modifier une offre d'emploi et notifier les utilisateurs ONEM"""
     try:
         offre = get_object_or_404(OffreEmploie, id=id_offre)
         titre = request.POST.get('titre', '').strip()
@@ -430,10 +440,10 @@ def modifier_offre(request, id_offre):
         if not domaine_id:
             return JsonResponse({'success': False, 'message': 'Veuillez sélectionner un domaine'}, status=400)
         
-        try:
-            domaine = Domaine.objects.get(id=domaine_id)
-        except Domaine.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Domaine non trouvé'}, status=400)
+        domaine = get_object_or_404(Domaine, id=domaine_id)
+        
+        # Sauvegarder l'ancien titre pour la notification
+        ancien_titre = offre.titre
         
         # Gérer le nouveau fichier si uploadé
         fichier = request.FILES.get('offre_fichier')
@@ -447,6 +457,12 @@ def modifier_offre(request, id_offre):
         offre.domaine = domaine
         offre.save()
         
+        # ========== NOTIFIER LES UTILISATEURS ONEM DE LA MODIFICATION ==========
+        from .utils import notifier_onem_modification_offre
+        base_url = "https://mahoridi.pythonanywhere.com/ss"  # À remplacer par votre domaine en production
+        email_envoye, email_message = notifier_onem_modification_offre(offre, ancien_titre, base_url)
+        # ======================================================================
+        
         return JsonResponse({
             'success': True,
             'message': f'Offre "{titre}" modifiée avec succès',
@@ -458,10 +474,15 @@ def modifier_offre(request, id_offre):
                 'offre_fichier': offre.OffreFichier.url if offre.OffreFichier else None,
                 'nom_fichier': offre.filename(),
                 'date_publication': offre.date_publication.strftime('%d/%m/%Y à %H:%M')
-            }
+            },
+            'email_envoye': email_envoye,
+            'email_message': email_message
         })
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+
 
 @csrf_exempt
 @require_http_methods(["POST"])

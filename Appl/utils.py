@@ -372,3 +372,316 @@ def notifier_promotion_agent(candidature, moyenne, base_url=None, matricule=None
         return True, f"Email de promotion envoyé à {email_destinataire}"
     except Exception as e:
         return False, str(e)
+
+
+
+
+
+
+
+# utils.py - Ajoutez cette fonction
+
+def notifier_onem_nouvelle_offre(offre, base_url=None):
+    """
+    Notifie tous les utilisateurs du groupe ONEM qu'une nouvelle offre est disponible
+    """
+    from django.contrib.auth.models import User, Group
+    from django.core.mail import EmailMultiAlternatives
+    from django.utils.html import strip_tags
+    
+    if not base_url:
+        base_url = "https://mahoridi.pythonanywhere.com/"
+    
+    # Récupérer tous les utilisateurs du groupe ONEM
+    try:
+        groupe_onem = Group.objects.get(name='ONEM')
+        utilisateurs_onem = User.objects.filter(groups=groupe_onem, is_active=True)
+    except Group.DoesNotExist:
+        return False, "Le groupe ONEM n'existe pas"
+    
+    if not utilisateurs_onem.exists():
+        return False, "Aucun utilisateur dans le groupe ONEM"
+    
+    sujet = f"📢 Nouvelle offre d'emploi - {offre.titre}"
+    
+    html_message = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Nouvelle offre d'emploi - GRH ENGINEERING</title>
+        <style>
+            body {{
+                font-family: 'Poppins', Arial, sans-serif;
+                background-color: #f4f4f4;
+                margin: 0;
+                padding: 20px;
+            }}
+            .container {{
+                max-width: 600px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 15px;
+                overflow: hidden;
+                box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            }}
+            .header {{
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 30px;
+                text-align: center;
+            }}
+            .header h1 {{ margin: 0; font-size: 24px; }}
+            .content {{ padding: 30px; }}
+            .info-box {{
+                background: #f8f9fa;
+                border-left: 4px solid #667eea;
+                padding: 15px;
+                margin: 20px 0;
+                border-radius: 8px;
+            }}
+            .info-box p {{ margin: 8px 0; }}
+            .btn {{
+                display: inline-block;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 12px 35px;
+                text-decoration: none;
+                border-radius: 25px;
+                margin: 20px 0;
+                font-weight: bold;
+            }}
+            .footer {{
+                background: #f8f9fa;
+                padding: 20px;
+                text-align: center;
+                font-size: 12px;
+                color: #999;
+                border-top: 1px solid #eee;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>📢 Nouvelle Offre d'Emploi</h1>
+                <p>GRH ENGINEERING SARL</p>
+            </div>
+            <div class="content">
+                <h2>Bonjour,</h2>
+                
+                <p>Une nouvelle offre d'emploi vient d'être publiée sur la plateforme GRH ENGINEERING.</p>
+                
+                <div class="info-box">
+                    <p><strong>📋 Détails de l'offre :</strong></p>
+                    <p>• Titre : <strong>{offre.titre}</strong></p>
+                    <p>• Domaine : <strong>{offre.domaine.NomDomaine}</strong></p>
+                    <p>• Date de publication : <strong>{offre.date_publication.strftime('%d/%m/%Y à %H:%M')}</strong></p>
+                </div>
+                
+                <p>Veuillez vous connecter à votre espace ONEM pour analyser cette offre et prendre une décision.</p>
+                
+                <div style="text-align: center;">
+                    <a href="{base_url}" class="btn">
+                        🔍 Analyser l'offre
+                    </a>
+                </div>
+                
+                <p style="font-size: 14px; color: #666;">
+                    Cliquez sur le bouton ci-dessus pour accéder à votre tableau de bord ONEM.
+                </p>
+            </div>
+            <div class="footer">
+                <p>Cet email est automatique, merci de ne pas y répondre.</p>
+                <p>&copy; 2025 GRH ENGINEERING SARL - RDC, Goma</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    # Envoyer les emails à tous les utilisateurs ONEM
+    emails_envoyes = 0
+    erreurs = []
+    
+    for user in utilisateurs_onem:
+        if user.email:
+            try:
+                plain_message = strip_tags(html_message)
+                email = EmailMultiAlternatives(
+                    subject=sujet,
+                    body=plain_message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to=[user.email]
+                )
+                email.attach_alternative(html_message, "text/html")
+                email.send()
+                emails_envoyes += 1
+            except Exception as e:
+                erreurs.append(f"{user.email}: {str(e)}")
+    
+    if emails_envoyes > 0:
+        return True, f"✅ Notification envoyée à {emails_envoyes} utilisateur(s) ONEM"
+    else:
+        return False, f"❌ Aucun email envoyé. {', '.join(erreurs)}"
+
+
+
+# utils.py - Ajoutez cette fonction
+
+def notifier_onem_modification_offre(offre, ancien_titre, base_url=None):
+    """
+    Notifie tous les utilisateurs du groupe ONEM qu'une offre a été modifiée
+    """
+    from django.contrib.auth.models import User, Group
+    from django.core.mail import EmailMultiAlternatives
+    from django.utils.html import strip_tags
+    
+    if not base_url:
+        base_url = "https://mahoridi.pythonanywhere.com/"
+    
+    # Récupérer tous les utilisateurs du groupe ONEM
+    try:
+        groupe_onem = Group.objects.get(name='ONEM')
+        utilisateurs_onem = User.objects.filter(groups=groupe_onem, is_active=True)
+    except Group.DoesNotExist:
+        return False, "Le groupe ONEM n'existe pas"
+    
+    if not utilisateurs_onem.exists():
+        return False, "Aucun utilisateur dans le groupe ONEM"
+    
+    sujet = f"✏️ Offre d'emploi modifiée - {offre.titre}"
+    
+    html_message = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Offre modifiée - GRH ENGINEERING</title>
+        <style>
+            body {{
+                font-family: 'Poppins', Arial, sans-serif;
+                background-color: #f4f4f4;
+                margin: 0;
+                padding: 20px;
+            }}
+            .container {{
+                max-width: 600px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 15px;
+                overflow: hidden;
+                box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            }}
+            .header {{
+                background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+                color: white;
+                padding: 30px;
+                text-align: center;
+            }}
+            .header h1 {{ margin: 0; font-size: 24px; }}
+            .content {{ padding: 30px; }}
+            .info-box {{
+                background: #f8f9fa;
+                border-left: 4px solid #f39c12;
+                padding: 15px;
+                margin: 20px 0;
+                border-radius: 8px;
+            }}
+            .info-box p {{ margin: 8px 0; }}
+            .modification-box {{
+                background: #fff3cd;
+                border-left: 4px solid #ffc107;
+                padding: 15px;
+                margin: 20px 0;
+                border-radius: 8px;
+            }}
+            .btn {{
+                display: inline-block;
+                background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+                color: white;
+                padding: 12px 35px;
+                text-decoration: none;
+                border-radius: 25px;
+                margin: 20px 0;
+                font-weight: bold;
+            }}
+            .footer {{
+                background: #f8f9fa;
+                padding: 20px;
+                text-align: center;
+                font-size: 12px;
+                color: #999;
+                border-top: 1px solid #eee;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>✏️ Offre d'Emploi Modifiée</h1>
+                <p>GRH ENGINEERING SARL</p>
+            </div>
+            <div class="content">
+                <h2>Bonjour,</h2>
+                
+                <p>Une offre d'emploi a été <strong>modifiée</strong> sur la plateforme GRH ENGINEERING.</p>
+                
+                <div class="modification-box">
+                    <p><strong>🔄 Changement effectué :</strong></p>
+                    <p>• Ancien titre : <strong>{ancien_titre}</strong></p>
+                    <p>• Nouveau titre : <strong>{offre.titre}</strong></p>
+                </div>
+                
+                <div class="info-box">
+                    <p><strong>📋 Nouveaux détails de l'offre :</strong></p>
+                    <p>• Titre : <strong>{offre.titre}</strong></p>
+                    <p>• Domaine : <strong>{offre.domaine.NomDomaine}</strong></p>
+                    <p>• Date de modification : <strong>{offre.date_modification.strftime('%d/%m/%Y à %H:%M')}</strong></p>
+                </div>
+                
+                <p>Veuillez vous connecter à votre espace ONEM pour analyser cette offre modifiée.</p>
+                
+                <div style="text-align: center;">
+                    <a href="{base_url}" class="btn">
+                        🔍 Analyser l'offre modifiée
+                    </a>
+                </div>
+                
+                <p style="font-size: 14px; color: #666;">
+                    Cliquez sur le bouton ci-dessus pour accéder à votre tableau de bord ONEM.
+                </p>
+            </div>
+            <div class="footer">
+                <p>Cet email est automatique, merci de ne pas y répondre.</p>
+                <p>&copy; 2025 GRH ENGINEERING SARL - RDC, Goma</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    # Envoyer les emails à tous les utilisateurs ONEM
+    emails_envoyes = 0
+    erreurs = []
+    
+    for user in utilisateurs_onem:
+        if user.email:
+            try:
+                plain_message = strip_tags(html_message)
+                email = EmailMultiAlternatives(
+                    subject=sujet,
+                    body=plain_message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to=[user.email]
+                )
+                email.attach_alternative(html_message, "text/html")
+                email.send()
+                emails_envoyes += 1
+            except Exception as e:
+                erreurs.append(f"{user.email}: {str(e)}")
+    
+    if emails_envoyes > 0:
+        return True, f"✅ Notification de modification envoyée à {emails_envoyes} utilisateur(s) ONEM"
+    else:
+        return False, f"❌ Aucun email envoyé. {', '.join(erreurs)}"
