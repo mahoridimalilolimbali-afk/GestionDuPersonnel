@@ -1194,44 +1194,39 @@ def supprimer_type_decision(request, id_type_decision):
 
 # ==================== PAGE DECISIONS ====================
 
+# ============================================================================
+# SECTION: DECISIONS SUR CANDIDATURES AVEC ENVOI D'EMAIL
+# ============================================================================
+
 def liste_decisions_candidature(request):
     """Affiche la page principale des décisions sur candidatures"""
     types_decision = TypeDecision.objects.all().order_by('Description')
     return render(request, 'Decision.html', {'types_decision': types_decision})
 
 
-# ==================== API CANDIDATURES ====================
-
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_candidatures_a_traiter(request):
-    """API pour récupérer les candidatures non encore décidées"""
+    """API: Récupérer les candidatures sans décision"""
     try:
-        # Récupérer les IDs des candidatures qui ont déjà une décision
         candidatures_avec_decision = Decision.objects.values_list('candidature_id', flat=True)
-        
-        # Récupérer les candidatures sans décision
         candidatures = Candidature.objects.exclude(
             id__in=candidatures_avec_decision
-        ).select_related('candidat', 'offre', 'offre__domaine').order_by('-date_soumission')
+        ).select_related('candidat', 'candidat__user', 'offre', 'offre__domaine').order_by('-date_soumission')
         
         data = []
         for c in candidatures:
             data.append({
                 'id': c.id,
                 'candidat_nom': f"{c.candidat.nom} {c.candidat.postnom} {c.candidat.prenom}",
+                'candidat_email': c.candidat.user.email if c.candidat.user else None,
                 'offre_titre': c.offre.titre,
                 'offre_domaine': c.offre.domaine.NomDomaine,
                 'cv_url': c.cv.url if c.cv else None,
-                'nom_fichier': c.cv.name.split('/')[-1] if c.cv else None,
                 'date_soumission': c.date_soumission.strftime('%d/%m/%Y à %H:%M')
             })
         
-        return JsonResponse({
-            'success': True,
-            'candidatures': data,
-            'total': len(data)
-        })
+        return JsonResponse({'success': True, 'candidatures': data, 'total': len(data)})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
@@ -1239,10 +1234,14 @@ def get_candidatures_a_traiter(request):
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_candidatures_traitees(request):
-    """API pour récupérer les candidatures avec décision"""
+    """API: Récupérer les candidatures avec décision"""
     try:
         decisions = Decision.objects.select_related(
-            'candidature', 'candidature__candidat', 'candidature__offre', 'type_decision'
+            'candidature', 
+            'candidature__candidat',
+            'candidature__candidat__user',
+            'candidature__offre',
+            'type_decision'
         ).all().order_by('-date_decision')
         
         data = []
@@ -1251,20 +1250,15 @@ def get_candidatures_traitees(request):
                 'id': d.id,
                 'candidature_id': d.candidature.id,
                 'candidat_nom': f"{d.candidature.candidat.nom} {d.candidature.candidat.postnom} {d.candidature.candidat.prenom}",
+                'candidat_email': d.candidature.candidat.user.email if d.candidature.candidat.user else None,
                 'offre_titre': d.candidature.offre.titre,
-                'offre_domaine': d.candidature.offre.domaine.NomDomaine,
                 'type_decision': d.type_decision.Description if d.type_decision else 'Non spécifié',
                 'type_decision_id': d.type_decision.id if d.type_decision else None,
                 'motif': d.motif or '',
-                'cv_url': d.candidature.cv.url if d.candidature.cv else None,
                 'date_decision': d.date_decision.strftime('%d/%m/%Y à %H:%M')
             })
         
-        return JsonResponse({
-            'success': True,
-            'decisions': data,
-            'total': len(data)
-        })
+        return JsonResponse({'success': True, 'decisions': data, 'total': len(data)})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
@@ -1275,251 +1269,97 @@ def ouvrir_cv_candidat(request, id_candidature):
     try:
         candidature = get_object_or_404(Candidature, id=id_candidature)
         if candidature.cv and os.path.exists(candidature.cv.path):
-            file_ext = os.path.splitext(candidature.cv.path)[1].lower()
-            
-            if file_ext == '.pdf':
-                with open(candidature.cv.path, 'rb') as f:
-                    response = HttpResponse(f.read(), content_type='application/pdf')
-                    response['Content-Disposition'] = f'inline; filename="{candidature.cv.name.split("/")[-1]}"'
-                    return response
-            else:
-                with open(candidature.cv.path, 'rb') as f:
-                    response = HttpResponse(f.read(), content_type='application/octet-stream')
-                    response['Content-Disposition'] = f'attachment; filename="{candidature.cv.name.split("/")[-1]}"'
-                    return response
-                    
+            with open(candidature.cv.path, 'rb') as f:
+                response = HttpResponse(f.read(), content_type='application/pdf')
+                response['Content-Disposition'] = f'inline; filename="{candidature.cv.name.split("/")[-1]}"'
+                return response
         return JsonResponse({'success': False, 'message': 'CV non trouvé'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
 
-from .utils import notifier_candidat_decision
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-from django.core.mail import send_mail
-from django.conf import settings
-from django.template.loader import render_to_string
-from django.contrib.auth.models import User
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-import json
-
-
-
-
-
-# Vue pour enregistrer une décision et envoyer l'email
 @csrf_exempt
+@require_http_methods(["POST"])
 def enregistrer_decision(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            candidature_id = data.get('candidature_id')
-            type_decision_id = data.get('type_decision_id')
-            motif = data.get('motif', '')
-            envoyer_email = data.get('envoyer_email', True)
-            
-            # Récupérer la candidature avec toutes les relations
-            candidature = Candidature.objects.select_related(
-                'candidat',
-                'candidat__user',
-                'offre'
-            ).get(id=candidature_id)
-            
-            type_decision = TypeDecision.objects.get(id=type_decision_id)
-            
-            # Créer la décision
-            decision = Decision.objects.create(
-                candidature=candidature,
-                type_decision=type_decision,
-                motif=motif
-            )
-            
-            email_envoye = False
-            email_erreur = None
-            
-            # Envoyer l'email si demandé
-            if envoyer_email:
-                # Récupérer l'email depuis l'utilisateur Django
-                candidat_user = candidature.candidat.user
-                candidat_email = candidat_user.email
-                candidat_nom = f"{candidat_user.first_name} {candidat_user.last_name}"
-                offre_titre = candidature.offre.titre
-                type_decision_text = type_decision.Description
-                
-                # URL de votre application (à modifier)
-                app_url = "https://mahoridi.pythonanywhere.com"
-                
-                # Vérifier si l'email existe
-                if candidat_email:
-                    try:
-                        if "Accept" in type_decision_text or "Valid" in type_decision_text or "accept" in type_decision_text.lower():
-                            # Email d'acceptation
-                            sujet = f"✅ Votre candidature pour {offre_titre} - GRH ENGINEERING"
-                            message_html = f"""
-                            <!DOCTYPE html>
-                            <html>
-                            <head>
-                                <meta charset="UTF-8">
-                                <title>Acceptation de candidature</title>
-                            </head>
-                            <body style="font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4;">
-                                <div style="max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
-                                    <div style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); padding: 30px; text-align: center;">
-                                        <h1 style="color: white; margin: 0;">🎉 Félicitations !</h1>
-                                    </div>
-                                    <div style="padding: 30px;">
-                                        <h2 style="color: #2c3e50; margin-top: 0;">Bonjour {candidat_nom},</h2>
-                                        <p style="color: #34495e; font-size: 16px; line-height: 1.6;">
-                                            Votre candidature pour le poste <strong style="color: #27ae60;">"{offre_titre}"</strong> 
-                                            a été <strong style="color: #27ae60;">ACCEPTÉE</strong>.
-                                        </p>
-                                        <p style="color: #34495e; font-size: 16px; line-height: 1.6;">
-                                            Nous avons été impressionnés par votre profil et nous souhaitons poursuivre 
-                                            le processus de recrutement avec vous.
-                                        </p>
-                                        <div style="text-align: center; margin: 35px 0;">
-                                            <a href="{app_url}" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); color: white; padding: 14px 35px; text-decoration: none; border-radius: 50px; font-weight: bold; display: inline-block;">
-                                                📋 Cliquez ici pour continuer
-                                            </a>
-                                        </div>
-                                        <p style="color: #34495e; font-size: 14px;">
-                                            Notre équipe vous contactera très prochainement pour la suite du processus.
-                                        </p>
-                                        <hr style="margin: 25px 0; border: none; border-top: 1px solid #ecf0f1;">
-                                        <p style="color: #7f8c8d; font-size: 12px; text-align: center;">
-                                            GRH ENGINEERING SARL - RDC, Goma<br>
-                                            Cet email est généré automatiquement, merci de ne pas y répondre.
-                                        </p>
-                                    </div>
-                                </div>
-                            </body>
-                            </html>
-                            """
-                        else:
-                            # Email de refus
-                            sujet = f"📋 Suite de votre candidature pour {offre_titre} - GRH ENGINEERING"
-                            message_html = f"""
-                            <!DOCTYPE html>
-                            <html>
-                            <head>
-                                <meta charset="UTF-8">
-                                <title>Résultat de candidature</title>
-                            </head>
-                            <body style="font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4;">
-                                <div style="max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
-                                    <div style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); padding: 30px; text-align: center;">
-                                        <h1 style="color: white; margin: 0;">📢 Suite de votre candidature</h1>
-                                    </div>
-                                    <div style="padding: 30px;">
-                                        <h2 style="color: #2c3e50; margin-top: 0;">Bonjour {candidat_nom},</h2>
-                                        <p style="color: #34495e; font-size: 16px; line-height: 1.6;">
-                                            Nous vous remercions d'avoir postulé au poste <strong style="color: #e74c3c;">"{offre_titre}"</strong> 
-                                            au sein de GRH ENGINEERING SARL.
-                                        </p>
-                                        <p style="color: #34495e; font-size: 16px; line-height: 1.6;">
-                                            Après examen attentif de votre candidature, nous avons le regret de vous informer que 
-                                            <strong style="color: #e74c3c;">votre candidature n'a pas été retenue</strong> pour cette offre.
-                                        </p>
-                                        <div style="text-align: center; margin: 35px 0;">
-                                            <a href="{app_url}" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; padding: 14px 35px; text-decoration: none; border-radius: 50px; font-weight: bold; display: inline-block;">
-                                                🔍 Voir nos offres
-                                            </a>
-                                        </div>
-                                        <p style="color: #34495e; font-size: 14px;">
-                                            Nous vous encourageons vivement à consulter régulièrement nos offres d'emploi. 
-                                            Votre profil pourrait parfaitement correspondre à une autre opportunité.
-                                        </p>
-                                        <hr style="margin: 25px 0; border: none; border-top: 1px solid #ecf0f1;">
-                                        <p style="color: #7f8c8d; font-size: 12px; text-align: center;">
-                                            GRH ENGINEERING SARL - RDC, Goma<br>
-                                            Cet email est généré automatiquement, merci de ne pas y répondre.
-                                        </p>
-                                    </div>
-                                </div>
-                            </body>
-                            </html>
-                            """
-                        
-                        # Envoi de l'email
-                        send_mail(
-                            sujet,
-                            "",  # Message texte (optionnel)
-                            settings.DEFAULT_FROM_EMAIL,
-                            [candidat_email],
-                            html_message=message_html,
-                            fail_silently=False
-                        )
-                        email_envoye = True
-                        
-                    except Exception as e:
-                        email_envoye = False
-                        email_erreur = str(e)
-                else:
-                    email_erreur = "Le candidat n'a pas d'adresse email enregistrée"
-            
-            return JsonResponse({
-                'success': True,
-                'message': 'Décision enregistrée avec succès',
-                'decision_id': decision.id,
-                'email_envoye': email_envoye,
-                'email_erreur': email_erreur
-            })
-            
-        except Candidature.DoesNotExist:
-            return JsonResponse({
-                'success': False,
-                'message': 'Candidature introuvable'
-            }, status=404)
-        except TypeDecision.DoesNotExist:
-            return JsonResponse({
-                'success': False,
-                'message': 'Type de décision introuvable'
-            }, status=404)
-        except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'message': f'Erreur: {str(e)}'
-            }, status=500)
-    
-    return JsonResponse({
-        'success': False,
-        'message': 'Méthode non autorisée'
-    }, status=405)
-
-
-
-
-
-
+    """API: Enregistrer une décision pour une candidature et envoyer un email"""
+    try:
+        data = json.loads(request.body)
+        candidature_id = data.get('candidature_id')
+        type_decision_id = data.get('type_decision_id')
+        motif = data.get('motif', '').strip()
+        
+        if not candidature_id or not type_decision_id:
+            return JsonResponse({'success': False, 'message': 'Données incomplètes'}, status=400)
+        
+        # Récupérer la candidature avec toutes les relations
+        candidature = get_object_or_404(
+            Candidature.objects.select_related('candidat', 'candidat__user', 'offre', 'offre__domaine'),
+            id=candidature_id
+        )
+        
+        type_decision = get_object_or_404(TypeDecision, id=type_decision_id)
+        
+        # Vérifier si une décision existe déjà
+        if Decision.objects.filter(candidature=candidature).exists():
+            return JsonResponse({'success': False, 'message': 'Cette candidature a déjà une décision'}, status=400)
+        
+        # Créer la décision
+        decision = Decision.objects.create(
+            candidature=candidature,
+            type_decision=type_decision,
+            motif=motif
+        )
+        
+        # Envoyer l'email de notification
+        email_envoye = False
+        email_message = ""
+        
+        from .utils import notifier_candidat_decision
+        base_url = "https://mahoridi.pythonanywhere.com"  # À remplacer par votre domaine
+        
+        success, msg = notifier_candidat_decision(
+            candidature, 
+            type_decision.Description, 
+            motif, 
+            base_url
+        )
+        email_envoye = success
+        email_message = msg
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Décision "{type_decision.Description}" enregistrée avec succès',
+            'decision_id': decision.id,
+            'email_envoye': email_envoye,
+            'email_message': email_message,
+            'type_decision': type_decision.Description
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
 
 @csrf_exempt
 @require_http_methods(["POST"])
 def modifier_decision(request, id_decision):
-    """Modifier une décision existante et notifier le candidat"""
+    """API: Modifier une décision existante et renvoyer un email"""
     try:
-        decision = get_object_or_404(Decision, id=id_decision)
-        data = json.loads(request.body)
+        decision = get_object_or_404(
+            Decision.objects.select_related(
+                'candidature', 
+                'candidature__candidat',
+                'candidature__candidat__user',
+                'candidature__offre',
+                'type_decision'
+            ),
+            id=id_decision
+        )
         
+        data = json.loads(request.body)
         type_decision_id = data.get('type_decision_id')
         motif = data.get('motif', '').strip()
+        
+        ancien_type = decision.type_decision.Description if decision.type_decision else "Non spécifié"
         
         if type_decision_id:
             type_decision = get_object_or_404(TypeDecision, id=type_decision_id)
@@ -1528,27 +1368,33 @@ def modifier_decision(request, id_decision):
         decision.motif = motif
         decision.save()
         
-        # ========== NOTIFIER LE CANDIDAT DE LA MODIFICATION ==========
-        try:
-            from .utils import notifier_candidat_decision
-            notifier_candidat_decision(decision.candidature, decision.type_decision.Description, motif)
-        except Exception as e:
-            print(f"⚠️ Erreur lors de l'envoi de l'email: {e}")
-        # ===========================================================
+        # Envoyer l'email de notification pour la modification
+        email_envoye = False
+        email_message = ""
+        
+        from .utils import notifier_candidat_decision
+        base_url = "https://mahoridi.pythonanywhere.com"  # À remplacer par votre domaine
+        
+        success, msg = notifier_candidat_decision(
+            decision.candidature,
+            decision.type_decision.Description,
+            motif,
+            base_url
+        )
+        email_envoye = success
+        email_message = msg
         
         return JsonResponse({
             'success': True,
-            'message': f'Décision modifiée avec succès. Le candidat a été notifié par email.',
-            'decision': {
-                'id': decision.id,
-                'type_decision': decision.type_decision.Description if decision.type_decision else 'Non spécifié',
-                'motif': decision.motif,
-                'date_decision': decision.date_decision.strftime('%d/%m/%Y à %H:%M')
-            }
+            'message': f'Décision modifiée avec succès (ancien: {ancien_type} → nouveau: {decision.type_decision.Description})',
+            'decision_id': decision.id,
+            'email_envoye': email_envoye,
+            'email_message': email_message,
+            'type_decision': decision.type_decision.Description if decision.type_decision else "Non spécifié"
         })
+        
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
-
 
 
 # ==================== PAGE TESTS ====================
