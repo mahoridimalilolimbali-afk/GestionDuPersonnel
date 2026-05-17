@@ -364,6 +364,13 @@ urlpatterns = [
     path('api/evaluations/modifier/<int:id_evaluation>/', views.modifier_evaluation, name='modifier_evaluation'),
     path('api/evaluations/evaluations-effectuees/', views.get_evaluations_effectuees, name='get_evaluations_effectuees'),
 
+
+
+
+    # INFO AGENT POUR DEMANDE CONGE
+
+    path('api/agent-infos/', views.get_agent_infos, name='get_agent_infos'),
+
 ]
 # Servir les fichiers média en développement
 if settings.DEBUG:

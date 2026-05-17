@@ -4869,3 +4869,32 @@ def get_evaluations_effectuees(request):
         return JsonResponse({'success': True, 'evaluations': data, 'total': len(data)})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+
+
+# CADRE DE DEMANDE CONGE AGENT
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_agent_infos(request):
+    """API pour récupérer les informations de l'agent connecté (date de recrutement)"""
+    try:
+        if not request.user.is_authenticated:
+            return JsonResponse({'success': False, 'message': 'Non authentifié'}, status=401)
+        
+        try:
+            candidat = Candidat.objects.get(user=request.user)
+            agent = Agent.objects.get(candidat=candidat)
+            
+            return JsonResponse({
+                'success': True,
+                'agent': {
+                    'id': agent.id,
+                    'date_retenu': agent.date_retenu.strftime('%Y-%m-%d'),
+                    'statut': agent.statut
+                }
+            })
+        except (Candidat.DoesNotExist, Agent.DoesNotExist):
+            return JsonResponse({'success': False, 'message': 'Agent non trouvé'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

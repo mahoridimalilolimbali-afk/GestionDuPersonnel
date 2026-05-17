@@ -341,7 +341,7 @@ def notifier_promotion_agent(candidature, moyenne, base_url=None, matricule=None
                 <p>Vous pouvez dès maintenant accéder à votre espace Agent et commencer à travailler avec nous.</p>
                 
                 <div style="text-align: center;">
-                    <a href="https://mahoridi.pythonanywhere.com/" class="btn">
+                    <a href="{base_url}" class="btn">
                         🚀 Accéder à mon espace Agent
                     </a>
                 </div>

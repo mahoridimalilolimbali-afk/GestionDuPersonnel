@@ -306,6 +306,10 @@
                         <i class="fas fa-umbrella-beach"></i>
                         Mes Demandes de Congé
                     </div>
+                    <div>
+                        <i class="fas fa-chart-line"></i>
+                        <a href="/Appl/dashboardAgent">Retourner à l'accueil</a>
+                    </div>
                     <div class="badge-stats">
                         <i class="fas fa-chart-line"></i>
                         <span id="totalCount">0</span> demande(s)
@@ -483,299 +487,483 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
     <script>
-        let currentDemandes = [];
-        let typesConge = [];
+    let currentDemandes = [];
+    let typesConge = [];
+    let infoAgent = null; // Stocker les infos de l'agent
+    
+    function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
+    function showLoading() { $('#loadingOverlay').fadeIn(300); }
+    function hideLoading() { $('#loadingOverlay').fadeOut(300); }
+    
+    function showSuccess(message) {
+        Swal.fire({
+            icon: 'success',
+            title: 'Succès !',
+            text: message,
+            timer: 3000,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+        });
+    }
+    
+    function showError(message) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Erreur',
+            text: message,
+            confirmButtonColor: '#e74c3c'
+        });
+    }
+    
+    function showWarning(message) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Attention',
+            text: message,
+            confirmButtonColor: '#f39c12'
+        });
+    }
+    
+    // ==================== FONCTIONS POUR LE CONGÉ ANNUEL ====================
+    
+    // Calculer l'ancienneté en années
+    function calculerAnciennete(dateRecrutement) {
+        const aujourdHui = new Date();
+        const recrutement = new Date(dateRecrutement);
+        let annees = aujourdHui.getFullYear() - recrutement.getFullYear();
+        const mois = aujourdHui.getMonth() - recrutement.getMonth();
         
-        function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
-        function showLoading() { $('#loadingOverlay').fadeIn(300); }
-        function hideLoading() { $('#loadingOverlay').fadeOut(300); }
-        
-        function showSuccess(message) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Succès !',
-                text: message,
-                timer: 2500,
-                showConfirmButton: false,
-                toast: true,
-                position: 'top-end'
-            });
+        if (mois < 0 || (mois === 0 && aujourdHui.getDate() < recrutement.getDate())) {
+            annees--;
+        }
+        return annees;
+    }
+    
+    // Calculer les jours de congé annuel selon la formule correcte
+    // Formule: Jours = 12 + Bonus × (Ancienneté / 5)
+    // On prend uniquement la partie entière (troncature)
+    function calculerJoursCongeAnnuel(anciennete) {
+        // Vérifier l'éligibilité
+        if (anciennete < 1) {
+            return { eligible: false, jours: 0, anciennete: anciennete };
         }
         
-        function showError(message) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Erreur',
-                text: message,
-                confirmButtonColor: '#e74c3c'
-            });
+        // Déterminer le bonus
+        let bonus = 2;  // par défaut pour ancienneté < 10 ans
+        if (anciennete >= 20) {
+            bonus = 6;
+        } else if (anciennete >= 10) {
+            bonus = 4;
         }
         
-        // Charger les types de congé
-        function chargerTypesConge() {
-            $.ajax({
-                url: '/api/types-conge/',
-                method: 'GET',
-                success: function(response) {
-                    if (response.success) {
-                        typesConge = response.types_conge;
-                        var select = $('#typeCongeSelect');
-                        select.empty();
-                        select.append('<option value="">-- Sélectionnez un type --</option>');
-                        response.types_conge.forEach(function(type) {
-                            select.append(`<option value="${type.id}" data-duree="${type.duree}">${type.designation} (${type.duree} jours max)</option>`);
-                        });
-                    }
+        // Calcul: 12 + bonus × (ancienneté / 5)
+        const joursBrut = 12 + bonus * (anciennete / 5);
+        const joursEntier = Math.floor(joursBrut); // Partie entière seulement
+        
+        return { 
+            eligible: true, 
+            jours: joursEntier, 
+            anciennete: anciennete,
+            bonus: bonus,
+            joursBrut: joursBrut
+        };
+    }
+    
+    // Vérifier si l'agent peut demander un congé annuel
+    function verifierEligibiliteCongeAnnuel() {
+        if (!infoAgent || !infoAgent.date_retenu) {
+            showError("Impossible de vérifier votre ancienneté");
+            return null;
+        }
+        
+        const anciennete = calculerAnciennete(infoAgent.date_retenu);
+        const resultat = calculerJoursCongeAnnuel(anciennete);
+        
+        if (!resultat.eligible) {
+            showWarning(`❌ Désolé, vous ne pouvez pas demander un congé annuel car vous n'avez pas encore 1 an d'ancienneté.\n\n📅 Ancienneté actuelle : ${anciennete} an(s)\n⏰ Date de recrutement : ${infoAgent.date_retenu}\n\n✅ Revenez après le ${infoAgent.date_retenu} pour faire votre demande.`);
+            return null;
+        }
+        
+        return resultat;
+    }
+    
+    // ==================== FONCTIONS STANDARD ====================
+    
+    // Charger les types de congé
+    function chargerTypesConge() {
+        $.ajax({
+            url: '/api/types-conge/',
+            method: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    typesConge = response.types_conge;
+                    var select = $('#typeCongeSelect');
+                    select.empty();
+                    select.append('<option value="">-- Sélectionnez un type --</option>');
+                    response.types_conge.forEach(function(type) {
+                        select.append(`<option value="${type.id}" data-duree="${type.duree}" data-designation="${type.designation}">${type.designation} (${type.duree} jours max)</option>`);
+                    });
                 }
-            });
-        }
+            }
+        });
+    }
+    
+    // Charger les infos de l'agent (date de recrutement)
+    function chargerInfosAgent() {
+        $.ajax({
+            url: '/api/agent-infos/',
+            method: 'GET',
+            headers: { 'X-CSRFToken': getCSRFToken() },
+            success: function(response) {
+                if (response.success) {
+                    infoAgent = response.agent;
+                    console.log("Infos agent chargées:", infoAgent);
+                }
+            },
+            error: function() {
+                console.log("Impossible de charger les infos de l'agent");
+            }
+        });
+    }
+    
+    // Calculer le nombre de jours entre deux dates
+    function calculerNbJours() {
+        const dateDebut = $('#dateDebut').val();
+        const dateFin = $('#dateFin').val();
+        const selectedOption = $('#typeCongeSelect option:selected');
+        const typeDesignation = selectedOption.data('designation');
         
-        // Calculer le nombre de jours entre deux dates
-        function calculerNbJours() {
-            const dateDebut = $('#dateDebut').val();
-            const dateFin = $('#dateFin').val();
+        if (dateDebut && dateFin) {
+            const debut = new Date(dateDebut);
+            const fin = new Date(dateFin);
+            const diffTime = Math.abs(fin - debut);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            $('#nbJoursInfo').text(diffDays);
             
-            if (dateDebut && dateFin) {
-                const debut = new Date(dateDebut);
-                const fin = new Date(dateFin);
-                const diffTime = Math.abs(fin - debut);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                $('#nbJoursInfo').text(diffDays);
+            let messageInfo = `${diffDays} jour(s) demandé(s)`;
+            
+            // VÉRIFICATION SPÉCIALE POUR LE CONGÉ ANNUEL
+            const isAnnuel = typeDesignation && typeDesignation.toLowerCase().includes('annuel');
+            
+            if (isAnnuel && infoAgent && infoAgent.date_retenu) {
+                const anciennete = calculerAnciennete(infoAgent.date_retenu);
+                const resultat = calculerJoursCongeAnnuel(anciennete);
                 
-                const selectedType = $('#typeCongeSelect option:selected');
-                const dureeMax = selectedType.data('duree');
-                if (dureeMax && diffDays > dureeMax) {
-                    $('#infoJours').removeClass('alert-info').addClass('alert-danger');
-                    $('#infoJours').html(`<i class="fas fa-exclamation-triangle"></i> Attention: ${diffDays} jour(s) demandé(s) - Maximum autorisé: ${dureeMax} jours`);
+                if (resultat.eligible) {
+                    messageInfo += `<br><small class="text-muted">📊 Ancienneté: ${anciennete} an(s) - Droit à ${resultat.jours} jours de congé annuel</small>`;
+                    
+                    if (diffDays > resultat.jours) {
+                        $('#infoJours').removeClass('alert-info').addClass('alert-danger');
+                        $('#infoJours').html(`<i class="fas fa-exclamation-triangle"></i> ${messageInfo}<br><strong>⚠️ Vous dépassez le nombre de jours auxquels vous avez droit (${resultat.jours} jours max)</strong>`);
+                        return false;
+                    } else {
+                        $('#infoJours').removeClass('alert-danger').addClass('alert-info');
+                        $('#infoJours').html(`<i class="fas fa-info-circle"></i> ${messageInfo}`);
+                        return true;
+                    }
                 } else {
-                    $('#infoJours').removeClass('alert-danger').addClass('alert-info');
-                    $('#infoJours').html(`<i class="fas fa-info-circle"></i> <span id="nbJoursInfo">${diffDays}</span> jour(s) demandé(s)`);
+                    $('#infoJours').removeClass('alert-info').addClass('alert-danger');
+                    $('#infoJours').html(`<i class="fas fa-exclamation-triangle"></i> ⚠️ Congé annuel non disponible - Ancienneté: ${anciennete} an(s) (minimum 1 an requis)`);
+                    return false;
                 }
             }
-        }
-        
-        function getStatutBadge(statut) {
-            if (statut === 'approuve') return '<span class="badge-approuve"><i class="fas fa-check-circle"></i> Approuvé</span>';
-            if (statut === 'refuse') return '<span class="badge-refuse"><i class="fas fa-times-circle"></i> Refusé</span>';
-            return '<span class="badge-attente"><i class="fas fa-clock"></i> En attente</span>';
-        }
-        
-        // Charger mes demandes
-        function chargerMesDemandes() {
-            showLoading();
             
-            $.ajax({
-                url: '/api/mes-demandes-conge/',
-                method: 'GET',
-                headers: { 'X-CSRFToken': getCSRFToken() },
-                success: function(response) {
-                    hideLoading();
-                    if (response.success) {
-                        currentDemandes = response.demandes;
-                        afficherDemandes(response.demandes);
-                        $('#totalCount').text(response.total);
-                        
-                        if (response.agent_nom) {
-                            $('#welcomeMessage').show();
-                            $('#agentNom').text(`${response.agent_nom}, voici vos demandes de congé`);
-                        }
-                    } else {
-                        showError(response.error || 'Impossible de charger les données');
+            // Pour les autres types de congé
+            const dureeMax = selectedOption.data('duree');
+            if (dureeMax && diffDays > dureeMax) {
+                $('#infoJours').removeClass('alert-info').addClass('alert-danger');
+                $('#infoJours').html(`<i class="fas fa-exclamation-triangle"></i> Attention: ${diffDays} jour(s) demandé(s) - Maximum autorisé: ${dureeMax} jours`);
+                return false;
+            } else {
+                $('#infoJours').removeClass('alert-danger').addClass('alert-info');
+                $('#infoJours').html(`<i class="fas fa-info-circle"></i> ${messageInfo}`);
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    function getStatutBadge(statut) {
+        if (statut === 'approuve') return '<span class="badge-approuve"><i class="fas fa-check-circle"></i> Approuvé</span>';
+        if (statut === 'refuse') return '<span class="badge-refuse"><i class="fas fa-times-circle"></i> Refusé</span>';
+        return '<span class="badge-attente"><i class="fas fa-clock"></i> En attente</span>';
+    }
+    
+    // Charger mes demandes
+    function chargerMesDemandes() {
+        showLoading();
+        
+        $.ajax({
+            url: '/api/mes-demandes-conge/',
+            method: 'GET',
+            headers: { 'X-CSRFToken': getCSRFToken() },
+            success: function(response) {
+                hideLoading();
+                if (response.success) {
+                    currentDemandes = response.demandes;
+                    afficherDemandes(response.demandes);
+                    $('#totalCount').text(response.total);
+                    
+                    if (response.agent_nom) {
+                        $('#welcomeMessage').show();
+                        $('#agentNom').text(`${response.agent_nom}, voici vos demandes de congé`);
                     }
-                },
-                error: function() {
-                    hideLoading();
-                    showError('Erreur de connexion au serveur');
+                } else {
+                    showError(response.error || 'Impossible de charger les données');
                 }
-            });
+            },
+            error: function() {
+                hideLoading();
+                showError('Erreur de connexion au serveur');
+            }
+        });
+    }
+    
+    function afficherDemandes(demandes) {
+        const tbody = $('#demandesTableBody');
+        tbody.empty();
+        
+        if (!demandes || demandes.length === 0) {
+            tbody.html(`
+                <tr><td colspan="8"><div class="empty-state-custom">
+                    <i class="fas fa-folder-open"></i>
+                    <p>Aucune demande de congé</p>
+                    <button class="btn-add" data-bs-toggle="modal" data-bs-target="#ajouterModal">
+                        <i class="fas fa-plus-circle"></i> Créer votre première demande
+                    </button>
+                </div><\/td><\/tr>
+            `);
+            return;
         }
         
-        function afficherDemandes(demandes) {
-            const tbody = $('#demandesTableBody');
-            tbody.empty();
+        demandes.forEach(demande => {
+            const periode = `${demande.date_debut} → ${demande.date_fin}`;
+            const statutBadge = getStatutBadge(demande.statut);
             
-            if (!demandes || demandes.length === 0) {
-                tbody.html(`
-                    <tr><td colspan="8"><div class="empty-state-custom">
-                        <i class="fas fa-folder-open"></i>
-                        <p>Aucune demande de congé</p>
-                        <button class="btn-add" data-bs-toggle="modal" data-bs-target="#ajouterModal">
-                            <i class="fas fa-plus-circle"></i> Créer votre première demande
+            const row = `
+                <tr class="fade-in">
+                    <td style="text-align: center;"><strong style="color: #667eea;">#${demande.id}</strong><\/td>
+                    <td style="text-align: left;"><span class="badge-conge">${escapeHtml(demande.type_conge_designation)}</span><\/td>
+                    <td style="text-align: left;"><small>${escapeHtml(demande.motif)}<\/small><\/td>
+                    <td style="text-align: center;"><i class="fas fa-calendar"></i> ${periode}<\/td>
+                    <td style="text-align: center;"><span class="badge-jours">${demande.nombre_jours} jour(s)</span><\/td>
+                    <td style="text-align: center;"><i class="fas fa-clock"></i> ${demande.date_demande}<\/td>
+                    <td style="text-align: center;">${statutBadge}<\/td>
+                    <td style="text-align: center;">
+                        <button class="btn-action btn-detail" onclick="voirDetailAnalyse(${demande.id})" ${!demande.analyse_existe ? 'disabled' : ''}>
+                            <i class="fas fa-eye"></i> Détail
                         </button>
-                    </div><\/div><\/td><\/tr>
-                `);
-                return;
-            }
-            
-            demandes.forEach(demande => {
-                const periode = `${demande.date_debut} → ${demande.date_fin}`;
-                const statutBadge = getStatutBadge(demande.statut);
-                
-                const row = `
-                    <tr class="fade-in">
-                        <td style="text-align: center;"><strong style="color: #667eea;">#${demande.id}</strong><\/td>
-                        <td style="text-align: left;"><span class="badge-conge">${escapeHtml(demande.type_conge_designation)}</span><\/td>
-                        <td style="text-align: left;"><small>${escapeHtml(demande.motif)}<\/small><\/td>
-                        <td style="text-align: center;"><i class="fas fa-calendar"></i> ${periode}<\/td>
-                        <td style="text-align: center;"><span class="badge-jours">${demande.nombre_jours} jour(s)</span><\/td>
-                        <td style="text-align: center;"><i class="fas fa-clock"></i> ${demande.date_demande}<\/td>
-                        <td style="text-align: center;">${statutBadge}<\/td>
-                        <td style="text-align: center;">
-                            <button class="btn-action btn-detail" onclick="voirDetailAnalyse(${demande.id})" ${!demande.analyse_existe ? 'disabled' : ''}>
-                                <i class="fas fa-eye"></i> Détail
-                            </button>
-                            <button class="btn-action btn-supprimer" onclick="ouvrirModalSupprimer(${demande.id})">
-                                <i class="fas fa-trash-alt"></i> Supprimer
-                            </button>
-                        <\/td>
-                    <\/tr>
-                `;
-                tbody.append(row);
-            });
-        }
-        
-        function voirDetailAnalyse(demandeId) {
-            $.ajax({
-                url: `/api/mes-demandes-conge/analyse/${demandeId}/`,
-                method: 'GET',
-                headers: { 'X-CSRFToken': getCSRFToken() },
-                success: function(response) {
-                    if (response.success && response.analyse) {
-                        $('#detailTypeConge').text(response.analyse.type_conge);
-                        $('#detailPeriode').text(`${response.analyse.date_debut} → ${response.analyse.date_fin}`);
-                        
-                        let decisionTexte = '';
-                        if (response.analyse.decision === 'approuve') {
-                            decisionTexte = '<span class="badge-approuve">✅ Approuvé</span>';
-                        } else if (response.analyse.decision === 'refuse') {
-                            decisionTexte = '<span class="badge-refuse">❌ Refusé</span>';
-                        } else {
-                            decisionTexte = '<span class="badge-attente">⏳ En attente</span>';
-                        }
-                        $('#detailDecision').html(decisionTexte);
-                        $('#detailMotifAnalyse').text(response.analyse.motif_analyse || 'Aucun motif fourni');
-                        $('#detailDateAnalyse').text(response.analyse.date_analyse);
-                        $('#detailAnalyseModal').modal('show');
-                    } else {
-                        showError('Aucune analyse disponible pour cette demande');
-                    }
-                },
-                error: function() {
-                    showError('Erreur lors du chargement des détails');
-                }
-            });
-        }
-        
-        function ajouterDemande() {
-            const typeCongeId = $('#typeCongeSelect').val();
-            const motif = $('#motif').val().trim();
-            const dateDebut = $('#dateDebut').val();
-            const dateFin = $('#dateFin').val();
-            
-            if (!typeCongeId) {
-                showError('Veuillez sélectionner un type de congé');
-                return;
-            }
-            
-            if (!motif) {
-                showError('Veuillez saisir le motif');
-                return;
-            }
-            
-            if (!dateDebut) {
-                showError('Veuillez sélectionner la date de début');
-                return;
-            }
-            
-            if (!dateFin) {
-                showError('Veuillez sélectionner la date de fin');
-                return;
-            }
-            
-            showLoading();
-            
-            $.ajax({
-                url: '/api/demandes-conge/ajouter/',
-                method: 'POST',
-                data: JSON.stringify({
-                    type_conge_id: typeCongeId,
-                    motif: motif,
-                    date_debut: dateDebut,
-                    date_fin: dateFin
-                }),
-                headers: {
-                    'X-CSRFToken': getCSRFToken(),
-                    'Content-Type': 'application/json'
-                },
-                success: function(response) {
-                    hideLoading();
-                    if (response.success) {
-                        showSuccess(response.message);
-                        $('#ajouterModal').modal('hide');
-                        $('#ajouterForm')[0].reset();
-                        chargerMesDemandes();
-                    } else {
-                        showError(response.message);
-                    }
-                },
-                error: function(xhr) {
-                    hideLoading();
-                    const message = xhr.responseJSON?.message || 'Erreur lors de l\'enregistrement';
-                    showError(message);
-                }
-            });
-        }
-        
-        function ouvrirModalSupprimer(id) {
-            $('#supprimerId').val(id);
-            $('#supprimerModal').modal('show');
-        }
-        
-        function supprimerDemande() {
-            const id = $('#supprimerId').val();
-            
-            showLoading();
-            
-            $.ajax({
-                url: `/api/demandes-conge/supprimer/${id}/`,
-                method: 'POST',
-                headers: { 'X-CSRFToken': getCSRFToken() },
-                success: function(response) {
-                    hideLoading();
-                    if (response.success) {
-                        showSuccess(response.message);
-                        $('#supprimerModal').modal('hide');
-                        chargerMesDemandes();
-                    } else {
-                        showError(response.message);
-                    }
-                },
-                error: function(xhr) {
-                    hideLoading();
-                    const message = xhr.responseJSON?.message || 'Erreur lors de la suppression';
-                    showError(message);
-                }
-            });
-        }
-        
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-        
-        $('#dateDebut, #dateFin').on('change', calculerNbJours);
-        $('#typeCongeSelect').on('change', function() {
-            calculerNbJours();
+                        <button class="btn-action btn-supprimer" onclick="ouvrirModalSupprimer(${demande.id})">
+                            <i class="fas fa-trash-alt"></i> Supprimer
+                        </button>
+                    <\/td>
+                <\/tr>
+            `;
+            tbody.append(row);
         });
-        
-        $(document).ready(function() {
-            chargerTypesConge();
-            chargerMesDemandes();
+    }
+    
+    function voirDetailAnalyse(demandeId) {
+        $.ajax({
+            url: `/api/mes-demandes-conge/analyse/${demandeId}/`,
+            method: 'GET',
+            headers: { 'X-CSRFToken': getCSRFToken() },
+            success: function(response) {
+                if (response.success && response.analyse) {
+                    $('#detailTypeConge').text(response.analyse.type_conge);
+                    $('#detailPeriode').text(`${response.analyse.date_debut} → ${response.analyse.date_fin}`);
+                    
+                    let decisionTexte = '';
+                    if (response.analyse.decision === 'approuve') {
+                        decisionTexte = '<span class="badge-approuve">✅ Approuvé</span>';
+                    } else if (response.analyse.decision === 'refuse') {
+                        decisionTexte = '<span class="badge-refuse">❌ Refusé</span>';
+                    } else {
+                        decisionTexte = '<span class="badge-attente">⏳ En attente</span>';
+                    }
+                    $('#detailDecision').html(decisionTexte);
+                    $('#detailMotifAnalyse').text(response.analyse.motif_analyse || 'Aucun motif fourni');
+                    $('#detailDateAnalyse').text(response.analyse.date_analyse);
+                    $('#detailAnalyseModal').modal('show');
+                } else {
+                    showError('Aucune analyse disponible pour cette demande');
+                }
+            },
+            error: function() {
+                showError('Erreur lors du chargement des détails');
+            }
         });
-    </script>
+    }
+    
+    // ==================== AJOUTER UNE DEMANDE AVEC VÉRIFICATION ====================
+    
+    function ajouterDemande() {
+        const typeCongeId = $('#typeCongeSelect').val();
+        const selectedOption = $('#typeCongeSelect option:selected');
+        const typeDesignation = selectedOption.data('designation');
+        const motif = $('#motif').val().trim();
+        const dateDebut = $('#dateDebut').val();
+        const dateFin = $('#dateFin').val();
+        
+        if (!typeCongeId) {
+            showError('Veuillez sélectionner un type de congé');
+            return;
+        }
+        
+        if (!motif) {
+            showError('Veuillez saisir le motif');
+            return;
+        }
+        
+        if (!dateDebut) {
+            showError('Veuillez sélectionner la date de début');
+            return;
+        }
+        
+        if (!dateFin) {
+            showError('Veuillez sélectionner la date de fin');
+            return;
+        }
+        
+        // VÉRIFICATION SPÉCIALE POUR LE CONGÉ ANNUEL
+        const isAnnuel = typeDesignation && typeDesignation.toLowerCase().includes('annuel');
+        
+        if (isAnnuel) {
+            const verification = verifierEligibiliteCongeAnnuel();
+            
+            if (!verification) {
+                return; // La fonction showWarning a déjà affiché le message
+            }
+            
+            // Vérifier que le nombre de jours demandés ne dépasse pas les jours disponibles
+            const joursDemandes = parseInt($('#nbJoursInfo').text());
+            
+            if (joursDemandes > verification.jours) {
+                showError(`❌ Vous ne pouvez pas demander ${joursDemandes} jours de congé annuel.\n\n📊 Selon votre ancienneté (${verification.anciennete} an(s)), vous avez droit à ${verification.jours} jours maximum.`);
+                return;
+            }
+            
+            // Afficher un récapitulatif avant l'envoi
+            Swal.fire({
+                title: 'Confirmation congé annuel',
+                html: `
+                    <div style="text-align: left;">
+                        <p><strong>📅 Ancienneté :</strong> ${verification.anciennete} an(s)</p>
+                        <p><strong>📊 Jours disponibles :</strong> ${verification.jours} jours</p>
+                        <p><strong>📝 Jours demandés :</strong> ${joursDemandes} jours</p>
+                        <hr>
+                        <p class="text-success">✅ Vous êtes éligible à ce congé annuel !</p>
+                    </div>
+                `,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonColor: '#27ae60',
+                cancelButtonColor: '#e74c3c',
+                confirmButtonText: 'Oui, envoyer la demande',
+                cancelButtonText: 'Annuler'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    envoyerDemande(typeCongeId, motif, dateDebut, dateFin, verification);
+                }
+            });
+            return;
+        }
+        
+        // Pour les autres types de congé, envoyer directement
+        envoyerDemande(typeCongeId, motif, dateDebut, dateFin, null);
+    }
+    
+    function envoyerDemande(typeCongeId, motif, dateDebut, dateFin, verifInfo) {
+        showLoading();
+        
+        $.ajax({
+            url: '/api/demandes-conge/ajouter/',
+            method: 'POST',
+            data: JSON.stringify({
+                type_conge_id: typeCongeId,
+                motif: motif,
+                date_debut: dateDebut,
+                date_fin: dateFin
+            }),
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            },
+            success: function(response) {
+                hideLoading();
+                if (response.success) {
+                    let message = response.message;
+                    if (verifInfo) {
+                        message += `\n\n📊 Ancienneté: ${verifInfo.anciennete} an(s) - Droit à ${verifInfo.jours} jours de congé annuel`;
+                    }
+                    showSuccess(message);
+                    $('#ajouterModal').modal('hide');
+                    $('#ajouterForm')[0].reset();
+                    chargerMesDemandes();
+                } else {
+                    showError(response.message);
+                }
+            },
+            error: function(xhr) {
+                hideLoading();
+                const message = xhr.responseJSON?.message || 'Erreur lors de l\'enregistrement';
+                showError(message);
+            }
+        });
+    }
+    
+    function ouvrirModalSupprimer(id) {
+        $('#supprimerId').val(id);
+        $('#supprimerModal').modal('show');
+    }
+    
+    function supprimerDemande() {
+        const id = $('#supprimerId').val();
+        
+        showLoading();
+        
+        $.ajax({
+            url: `/api/demandes-conge/supprimer/${id}/`,
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRFToken() },
+            success: function(response) {
+                hideLoading();
+                if (response.success) {
+                    showSuccess(response.message);
+                    $('#supprimerModal').modal('hide');
+                    chargerMesDemandes();
+                } else {
+                    showError(response.message);
+                }
+            },
+            error: function(xhr) {
+                hideLoading();
+                const message = xhr.responseJSON?.message || 'Erreur lors de la suppression';
+                showError(message);
+            }
+        });
+    }
+    
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // Événements
+    $('#dateDebut, #dateFin').on('change', calculerNbJours);
+    $('#typeCongeSelect').on('change', function() {
+        calculerNbJours();
+    });
+    
+    $(document).ready(function() {
+        chargerTypesConge();
+        chargerInfosAgent();
+        chargerMesDemandes();
+    });
+</script>
 </body>
 </html>
