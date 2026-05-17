@@ -146,16 +146,9 @@ urlpatterns = [
 
     # DECISION
 
-    # URLs Décisions
-    path('decisions-candidature/', views.liste_decisions_candidature, name='liste_decisions_candidature'),
+
     
-    # API Décisions
-    path('api/decisions/candidatures-a-traiter/', views.get_candidatures_a_traiter, name='get_candidatures_a_traiter'),
-    path('api/decisions/candidatures-traitees/', views.get_candidatures_traitees, name='get_candidatures_traitees'),
-    path('api/decisions/ouvrir-cv/<int:id_candidature>/', views.ouvrir_cv_candidat, name='ouvrir_cv_candidat'),
-    path('api/decisions/enregistrer/', views.enregistrer_decision, name='enregistrer_decision'),
-    path('api/decisions/modifier/<int:id_decision>/', views.modifier_decision, name='modifier_decision'),
-    
+
     # TEST
     path('tests/', views.liste_tests, name='liste_tests'),
     
@@ -357,6 +350,21 @@ urlpatterns = [
     # Dans votre urls.py, ajoutez :
     path('api/agents/valider/<int:id_agent>/', views.valider_agent_qrcode, name='valider_agent_qrcode'),
     path('api/candidat/agent/<int:id_agent>/photo/', views.get_agent_photo, name='get_agent_photo'),
+
+
+
+
+
+    # URLs pour les décisions sur candidatures
+    path('api/decisions/candidatures-a-traiter/', views.get_candidatures_a_traiter, name='get_candidatures_a_traiter'),
+    path('api/decisions/candidatures-traitees/', views.get_candidatures_traitees, name='get_candidatures_traitees'),
+    path('api/decisions/ouvrir-cv/<int:id_candidature>/', views.ouvrir_cv_candidat, name='ouvrir_cv_candidat'),
+    path('api/decisions/enregistrer/', views.enregistrer_decision, name='enregistrer_decision'),
+    path('api/decisions/modifier/<int:id_decision>/', views.modifier_decision, name='modifier_decision'),
+    path('api/type-decisions/', views.get_all_type_decisions, name='get_all_type_decisions'),
+    
+    # Page principale
+    path('decision/', views.liste_decisions_candidature, name='liste_decisions_candidature'),
 
 ]
 # Servir les fichiers média en développement

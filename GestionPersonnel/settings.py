@@ -12,12 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os
-# settings.py
-# settings.py - Assurez-vous que load_dotenv() est appelé AVANT d'utiliser os.getenv()
-
-import os
 from dotenv import load_dotenv
-from pathlib import Path
 
 # Chemin absolu vers le dossier du projet
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,13 +22,8 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 # ... le reste de votre code ...
 
-# ==================== CONFIGURATION EMAIL ====================
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-
-
 # Configuration MEDIA - AJOUTEZ CES LIGNES
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -143,3 +133,19 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# CONFIGURATION EMAIL DJANGO
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+EMAIL_HOST = 'smtp.gmail.com'
+
+EMAIL_PORT = 587
+
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = 'mahoridimalilolimbali@gmail.com'
+
+EMAIL_HOST_PASSWORD = 'uiss xwsl wocw scdg'
+
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
