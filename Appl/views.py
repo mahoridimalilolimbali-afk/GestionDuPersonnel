@@ -44,7 +44,7 @@ def ChargerInfoPersonnel(request):
     return render (request,"Appl/InfoPersonnel.html")
 
 def ChargerOffreEmploi(request):
-    return render (request,"Appl/ffreEmploi.html")
+    return render (request,"Appl/offreEmploi.html")
 
 def ChargerResultatTest(request):
     return render (request,"Appl/ResultatTest.html")
