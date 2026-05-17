@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>Dashboard Administrateur - GRH</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -208,7 +209,7 @@
             margin: 0;
         }
         
-        /* Cartes de bienvenue */
+        /* Carte de bienvenue */
         .welcome-card {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 25px;
@@ -237,7 +238,7 @@
         /* Cartes statistiques */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 25px;
             margin-bottom: 30px;
         }
@@ -246,29 +247,35 @@
             background: white;
             border-radius: 20px;
             padding: 25px;
-            text-align: center;
             transition: all 0.3s ease;
             box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            cursor: pointer;
         }
         
         .stat-card:hover {
             transform: translateY(-8px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+        
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
         }
         
         .stat-icon {
-            width: 70px;
-            height: 70px;
+            width: 55px;
+            height: 55px;
             background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
-            border-radius: 20px;
+            border-radius: 15px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 15px;
         }
         
         .stat-icon i {
-            font-size: 32px;
+            font-size: 28px;
             color: #667eea;
         }
         
@@ -276,20 +283,38 @@
             font-size: 32px;
             font-weight: 800;
             color: #2c3e50;
-            margin: 10px 0;
+            margin: 10px 0 5px;
         }
         
         .stat-label {
             color: #7f8c8d;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
         }
         
-        /* Section récente */
+        .stat-detail {
+            font-size: 11px;
+            color: #95a5a6;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #ecf0f1;
+        }
+        
+        /* Sections */
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin: 30px 0 20px;
+            padding-left: 10px;
+            border-left: 4px solid #667eea;
+        }
+        
         .recent-section {
             background: white;
             border-radius: 20px;
             padding: 25px;
+            margin-bottom: 30px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.08);
         }
         
@@ -308,10 +333,6 @@
             margin: 0;
         }
         
-        .recent-header i {
-            color: #667eea;
-        }
-        
         .badge {
             padding: 5px 12px;
             border-radius: 20px;
@@ -319,7 +340,86 @@
             font-weight: 600;
         }
         
-        /* Responsive */
+        .badge-success {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .badge-warning {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .badge-danger {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .badge-info {
+            background: #3498db;
+            color: white;
+        }
+        
+        .badge-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .badge-dark {
+            background: #2c3e50;
+            color: white;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .badge-notification {
+            background: #e74c3c;
+            color: white;
+            border-radius: 50px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 8px;
+            display: inline-block;
+            min-width: 20px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .fade-in {
+            animation: fadeInUp 0.5s ease-out;
+        }
+        
         @media (max-width: 768px) {
             .sidebar {
                 width: 80px;
@@ -347,27 +447,11 @@
                 grid-template-columns: 1fr;
             }
         }
-        
-        /* Animation */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .fade-in {
-            animation: fadeInUp 0.5s ease-out;
-        }
     </style>
 </head>
 <body>
     <div class="admin-container">
-        <!-- Sidebar - Menu vertical à gauche -->
+        <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
                 <h3>
@@ -384,42 +468,13 @@
                         <span>Offres d'emploi</span>
                     </a>
                 </li>
-                <!-- Dans le menu de navigation (sidebar), remplacez le lien Message par ceci -->
-<li class="nav-item">
-    <a href="/Appl/Messagerie" class="nav-link-custom" id="messageLink">
-        <i class="fas fa-envelope"></i>
-        <span>Message</span>
-        <span id="messageNotifBadge" class="badge-notification" style="display: none;">0</span>
-    </a>
-</li>
-
-<!-- Ajoutez ce style dans la section <style> de votre page -->
-<style>
-    .badge-notification {
-        background: #e74c3c;
-        color: white;
-        border-radius: 50px;
-        padding: 2px 8px;
-        font-size: 11px;
-        font-weight: bold;
-        margin-left: 8px;
-        display: inline-block;
-        min-width: 20px;
-        text-align: center;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
-    
-    @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.1); }
-        100% { transform: scale(1); }
-    }
-    
-    .badge-notification.notification-new {
-        animation: pulse 0.5s ease-in-out;
-    }
-</style>
-
+                <li class="nav-item">
+                    <a href="/Appl/Messagerie" class="nav-link-custom" id="messageLink">
+                        <i class="fas fa-envelope"></i>
+                        <span>Message</span>
+                        <span id="messageNotifBadge" class="badge-notification" style="display: none;">0</span>
+                    </a>
+                </li>
                 <li class="nav-item">
                     <a href="/Appl/ListeCandidat" class="nav-link-custom">
                         <i class="fas fa-users"></i>
@@ -450,21 +505,13 @@
                         <span>Agents</span>
                     </a>
                 </li>
-                
             </ul>
             
-            <!-- Section Paramètres avec icône -->
             <div class="nav-divider">
                 <i class="fas fa-cog"></i>
                 <span> PARAMÈTRES</span>
             </div>
             <ul class="nav-menu">
-                <li class="nav-item">
-                    <a href="/Appl/TypeDecision" class="nav-link-custom">
-                        <i class="fas fa-tags"></i>
-                        <span>Types de décision</span>
-                    </a>
-                </li>
                 <li class="nav-item">
                     <a href="/Appl/Domaine" class="nav-link-custom">
                         <i class="fas fa-layer-group"></i>
@@ -473,8 +520,8 @@
                 </li>
                 <li class="nav-item">
                     <a href="/Appl/AnalyseDemandeConge" class="nav-link-custom">
-                        <i class="fas fa-layer-group"></i>
-                        <span>Analyse demande conge</span>
+                        <i class="fas fa-chart-line"></i>
+                        <span>Analyse demande congé</span>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -491,13 +538,12 @@
                 </li>
                 <li class="nav-item">
                     <a href="/Appl/ReglageOffre" class="nav-link-custom">
-                        <i class="fas fa-flag-checkered"></i>
+                        <i class="fas fa-sliders-h"></i>
                         <span>Reglage offre</span>
                     </a>
                 </li>
             </ul>
             
-            <!-- Déconnexion -->
             <div class="nav-logout">
                 <ul class="nav-menu">
                     <li class="nav-item">
@@ -546,84 +592,264 @@
                 </p>
             </div>
             
+            <!-- Première ligne de stats -->
+            <div class="stats-grid">
+                <div class="stat-card" onclick="window.location.href='/Appl/ListeCandidat'">
+                    <div class="stat-header">
+                        <div class="stat-icon"><i class="fas fa-users"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalCandidats">0</div>
+                    <div class="stat-label">Candidats inscrits</div>
+                </div>
+                
+                <div class="stat-card" onclick="window.location.href='/Appl/Agents'">
+                    <div class="stat-header">
+                        <div class="stat-icon"><i class="fas fa-user-check"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalAgents">0</div>
+                    <div class="stat-label">Agents actifs</div>
+                </div>
+                
+                <div class="stat-card" onclick="window.location.href='/Appl/Decision'">
+                    <div class="stat-header">
+                        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                    </div>
+                    <div class="stat-number" id="candidaturesAcceptees">0</div>
+                    <div class="stat-label">Candidatures acceptées</div>
+                </div>
+                
+                <div class="stat-card" onclick="window.location.href='/Appl/Decision'">
+                    <div class="stat-header">
+                        <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
+                    </div>
+                    <div class="stat-number" id="candidaturesRejetees">0</div>
+                    <div class="stat-label">Candidatures rejetées</div>
+                </div>
+            </div>
+            
+            <!-- Deuxième ligne de stats -->
+            <div class="stats-grid">
+                <div class="stat-card" onclick="window.location.href='/Appl/Decision'">
+                    <div class="stat-header">
+                        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                    </div>
+                    <div class="stat-number" id="candidaturesNonTraitees">0</div>
+                    <div class="stat-label">Candidatures non traitées</div>
+                    <div class="stat-detail">En attente de décision</div>
+                </div>
+                
+                <div class="stat-card" onclick="window.location.href='/Appl/Test'">
+                    <div class="stat-header">
+                        <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalTests">0</div>
+                    <div class="stat-label">Tests programmés</div>
+                    <div class="stat-detail">Pour les offres acceptées</div>
+                </div>
+                
+                <div class="stat-card" onclick="window.location.href='/Appl/Onem'">
+                    <div class="stat-header">
+                        <div class="stat-icon"><i class="fas fa-check-double"></i></div>
+                    </div>
+                    <div class="stat-number" id="offresTraitees">0</div>
+                    <div class="stat-label">Offres traitées (ONEM)</div>
+                    <div class="stat-detail">Déjà analysées</div>
+                </div>
+                
+                <div class="stat-card" onclick="window.location.href='/Appl/Onem'">
+                    <div class="stat-header">
+                        <div class="stat-icon"><i class="fas fa-hourglass-half"></i></div>
+                    </div>
+                    <div class="stat-number" id="offresNonTraitees">0</div>
+                    <div class="stat-label">Offres non traitées</div>
+                    <div class="stat-detail">En attente d'analyse ONEM</div>
+                </div>
+            </div>
+            
+            <!-- Section État des offres -->
+            <div class="section-title">
+                <i class="fas fa-chart-pie"></i> État des offres d'emploi
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card" onclick="window.location.href='/Appl/ReglageOffre'">
+                    <div class="stat-header">
+                        <div class="stat-icon"><i class="fas fa-play-circle"></i></div>
+                    </div>
+                    <div class="stat-number" id="offresActives">0</div>
+                    <div class="stat-label">Offres actives</div>
+                    <div class="stat-detail">Non expirées</div>
+                </div>
+                
+                <div class="stat-card" onclick="window.location.href='/Appl/ReglageOffre'">
+                    <div class="stat-header">
+                        <div class="stat-icon"><i class="fas fa-calendar-times"></i></div>
+                    </div>
+                    <div class="stat-number" id="offresExpirees">0</div>
+                    <div class="stat-label">Offres expirées</div>
+                    <div class="stat-detail">Date dépassée</div>
+                </div>
+                
+                <div class="stat-card" onclick="window.location.href='/Appl/ReglageOffre'">
+                    <div class="stat-header">
+                        <div class="stat-icon"><i class="fas fa-stop-circle"></i></div>
+                    </div>
+                    <div class="stat-number" id="offresStoppees">0</div>
+                    <div class="stat-label">Offres stoppées</div>
+                    <div class="stat-detail">Désactivées</div>
+                </div>
+                
+                <div class="stat-card" onclick="window.location.href='/Appl/ReglageOffre'">
+                    <div class="stat-header">
+                        <div class="stat-icon"><i class="fas fa-cog"></i></div>
+                    </div>
+                    <div class="stat-number" id="offresNonParametrees">0</div>
+                    <div class="stat-label">Offres non paramétrées</div>
+                    <div class="stat-detail">Réglage manquant</div>
+                </div>
+            </div>
+            
+            <!-- Section Statistiques globales ONEM -->
+            <div class="section-title">
+                <i class="fas fa-building"></i> Statistiques ONEM
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card" onclick="window.location.href='/Appl/OffreEmploi'">
+                    <div class="stat-header">
+                        <div class="stat-icon"><i class="fas fa-briefcase"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalOffres">0</div>
+                    <div class="stat-label">Total offres publiées</div>
+                </div>
+                
+                <div class="stat-card" onclick="window.location.href='/Appl/Evaluation'">
+                    <div class="stat-header">
+                        <div class="stat-icon"><i class="fas fa-star-half-alt"></i></div>
+                    </div>
+                    <div class="stat-number" id="moyenneEvaluations">0</div>
+                    <div class="stat-label">Moyenne des évaluations</div>
+                    <div class="stat-detail">Tous tests confondus</div>
+                </div>
+                
+                <div class="stat-card" onclick="window.location.href='/Appl/DecisionOnem'">
+                    <div class="stat-header">
+                        <div class="stat-icon"><i class="fas fa-thumbs-up"></i></div>
+                    </div>
+                    <div class="stat-number" id="offresAcceptees">0</div>
+                    <div class="stat-label">Offres acceptées (ONEM)</div>
+                </div>
+                
+                <div class="stat-card" onclick="window.location.href='/Appl/DecisionOnem'">
+                    <div class="stat-header">
+                        <div class="stat-icon"><i class="fas fa-thumbs-down"></i></div>
+                    </div>
+                    <div class="stat-number" id="offresRefusees">0</div>
+                    <div class="stat-label">Offres refusées (ONEM)</div>
+                </div>
+            </div>
+        </div>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
     <script>
         // Afficher la date du jour
         const options = { year: 'numeric', month: 'long', day: 'numeric' };
         const today = new Date().toLocaleDateString('fr-FR', options);
         document.getElementById('currentDate').innerHTML = today;
         
-        // Charger les statistiques via API
-        async function chargerStats() {
+        function getCSRFToken() {
+            return document.querySelector('[name=csrf-token]')?.getAttribute('content');
+        }
+        
+        // Charger toutes les statistiques
+        async function chargerToutesStats() {
             try {
-                const response = await fetch('/api/admin/stats/');
+                const response = await fetch('/api/admin/dashboard-stats/');
                 const data = await response.json();
                 
                 if (data.success) {
-                    document.getElementById('totalOffres').innerText = data.total_offres || 0;
+                    // Statistiques générales
                     document.getElementById('totalCandidats').innerText = data.total_candidats || 0;
-                    document.getElementById('totalCandidatures').innerText = data.total_candidatures || 0;
                     document.getElementById('totalAgents').innerText = data.total_agents || 0;
+                    document.getElementById('candidaturesAcceptees').innerText = data.candidatures_acceptees || 0;
+                    document.getElementById('candidaturesRejetees').innerText = data.candidatures_rejetees || 0;
+                    document.getElementById('candidaturesNonTraitees').innerText = data.candidatures_non_traitees || 0;
+                    
+                    // Tests
+                    document.getElementById('totalTests').innerText = data.total_tests || 0;
+                    
+                    // Offres ONEM
+                    document.getElementById('offresTraitees').innerText = data.offres_traitees || 0;
+                    document.getElementById('offresNonTraitees').innerText = data.offres_non_traitees || 0;
+                    document.getElementById('totalOffres').innerText = data.total_offres || 0;
+                    document.getElementById('offresAcceptees').innerText = data.offres_acceptees || 0;
+                    document.getElementById('offresRefusees').innerText = data.offres_refusees || 0;
+                    
+                    // État des offres
+                    document.getElementById('offresActives').innerText = data.offres_actives || 0;
+                    document.getElementById('offresExpirees').innerText = data.offres_expirees || 0;
+                    document.getElementById('offresStoppees').innerText = data.offres_stoppees || 0;
+                    document.getElementById('offresNonParametrees').innerText = data.offres_non_parametrees || 0;
+                    
+                    // Moyenne évaluations
+                    const moyenne = data.moyenne_evaluations || 0;
+                    document.getElementById('moyenneEvaluations').innerHTML = moyenne.toFixed(1) + '%';
+                } else {
+                    console.error('Erreur:', data.message);
                 }
             } catch (error) {
-                console.error('Erreur chargement stats:', error);
+                console.error('Erreur chargement statistiques:', error);
             }
         }
         
-
-        
-<!-- Ajoutez ce script à la fin de votre page, avant la fermeture de </body> -->
-
-    function getCSRFToken() {
-        return document.querySelector('[name=csrf-token]')?.getAttribute('content');
-    }
-    
-    function chargerMessagesNonLus() {
-        fetch('/api/messagerie/non-lus/', {
-            method: 'GET',
-            headers: {
-                'X-CSRFToken': getCSRFToken(),
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const badge = document.getElementById('messageNotifBadge');
-                if (data.non_lus > 0) {
-                    badge.textContent = data.non_lus > 99 ? '99+' : data.non_lus;
-                    badge.style.display = 'inline-block';
-                    
-                    if (badge.dataset.previousValue && badge.dataset.previousValue != data.non_lus) {
-                        badge.classList.add('notification-new');
-                        setTimeout(() => badge.classList.remove('notification-new'), 500);
-                    }
-                    badge.dataset.previousValue = data.non_lus;
-                } else {
-                    badge.style.display = 'none';
+        // Charger les messages non lus
+        function chargerMessagesNonLus() {
+            fetch('/api/messagerie/non-lus/', {
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'Content-Type': 'application/json'
                 }
-            }
-        })
-        .catch(error => console.error('Erreur chargement messages non lus:', error));
-    }
-    
-    // Marquer comme lu quand on clique sur le lien
-    const messageLink = document.getElementById('messageLink');
-    if (messageLink) {
-        messageLink.addEventListener('click', function() {
-            const badge = document.getElementById('messageNotifBadge');
-            if (badge) badge.style.display = 'none';
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const badge = document.getElementById('messageNotifBadge');
+                    if (data.non_lus > 0) {
+                        badge.textContent = data.non_lus > 99 ? '99+' : data.non_lus;
+                        badge.style.display = 'inline-block';
+                        
+                        if (badge.dataset.previousValue && badge.dataset.previousValue != data.non_lus) {
+                            badge.classList.add('notification-new');
+                            setTimeout(() => badge.classList.remove('notification-new'), 500);
+                        }
+                        badge.dataset.previousValue = data.non_lus;
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            })
+            .catch(error => console.error('Erreur chargement messages non lus:', error));
+        }
+        
+        // Marquer comme lu quand on clique sur le lien
+        const messageLink = document.getElementById('messageLink');
+        if (messageLink) {
+            messageLink.addEventListener('click', function() {
+                const badge = document.getElementById('messageNotifBadge');
+                if (badge) badge.style.display = 'none';
+            });
+        }
+        
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            chargerToutesStats();
+            chargerMessagesNonLus();
+            setInterval(chargerMessagesNonLus, 30000);
+            setInterval(chargerToutesStats, 60000); // Rafraîchir toutes les minutes
         });
-    }
-    
-    // Initialiser au chargement
-    document.addEventListener('DOMContentLoaded', function() {
-        chargerMessagesNonLus();
-        setInterval(chargerMessagesNonLus, 30000);
-    });
-
     </script>
 </body>
 </html>

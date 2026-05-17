@@ -371,6 +371,13 @@ urlpatterns = [
 
     path('api/agent-infos/', views.get_agent_infos, name='get_agent_infos'),
 
+
+
+
+
+    # dashboardAdmin
+    path('api/admin/dashboard-stats/', views.admin_dashboard_stats, name='admin_dashboard_stats'),
+
 ]
 # Servir les fichiers média en développement
 if settings.DEBUG:

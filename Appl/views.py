@@ -4898,3 +4898,111 @@ def get_agent_infos(request):
             return JsonResponse({'success': False, 'message': 'Agent non trouvé'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+
+# dashboard admin
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def admin_dashboard_stats(request):
+    """API pour récupérer toutes les statistiques du dashboard admin"""
+    try:
+        from datetime import date
+        
+        today = date.today()
+        
+        # Statistiques des candidats et agents
+        total_candidats = Candidat.objects.count()
+        total_agents = Agent.objects.filter(statut='Approuvé').count()
+        
+        # Statistiques des candidatures
+        type_decision_accepter = TypeDecision.objects.filter(Description__icontains='Accepter').first()
+        type_decision_rejeter = TypeDecision.objects.filter(Description__icontains='Rejeter').first()
+        
+        if type_decision_accepter:
+            candidatures_acceptees = Decision.objects.filter(type_decision=type_decision_accepter).count()
+        else:
+            candidatures_acceptees = 0
+            
+        if type_decision_rejeter:
+            candidatures_rejetees = Decision.objects.filter(type_decision=type_decision_rejeter).count()
+        else:
+            candidatures_rejetees = 0
+        
+        candidatures_avec_decision = Decision.objects.values_list('candidature_id', flat=True)
+        candidatures_non_traitees = Candidature.objects.exclude(id__in=candidatures_avec_decision).count()
+        
+        # Statistiques des tests
+        total_tests = Test.objects.count()
+        
+        # Statistiques des offres ONEM
+        total_offres = OffreEmploie.objects.count()
+        offres_traitees = Onem.objects.count()
+        offres_non_traitees = total_offres - offres_traitees
+        
+        decision_acceptee = DecisionOnem.objects.filter(Description__icontains='Accepter').first()
+        decision_refusee = DecisionOnem.objects.filter(Description__icontains='Refuser').first()
+        
+        if decision_acceptee:
+            offres_acceptees = Onem.objects.filter(decision=decision_acceptee).count()
+        else:
+            offres_acceptees = 0
+            
+        if decision_refusee:
+            offres_refusees = Onem.objects.filter(decision=decision_refusee).count()
+        else:
+            offres_refusees = 0
+        
+        # Statistiques des états d'offres
+        offres_actives = 0
+        offres_expirees = 0
+        offres_stoppees = 0
+        offres_non_parametrees = 0
+        
+        for offre in OffreEmploie.objects.all():
+            try:
+                reglage = offre.reglage
+                type_etat = reglage.type_etat.designation
+                date_expiration = reglage.date_expiration
+                
+                if type_etat == 'Stopper':
+                    offres_stoppees += 1
+                elif type_etat in ['Actif', 'Renouveler']:
+                    if date_expiration and date_expiration < today:
+                        offres_expirees += 1
+                    else:
+                        offres_actives += 1
+                else:
+                    offres_non_parametrees += 1
+            except ReglageOffre.DoesNotExist:
+                offres_non_parametrees += 1
+        
+        # Moyenne des évaluations
+        evaluations = Evaluation.objects.all()
+        if evaluations.exists():
+            moyenne_evaluations = sum(e.note for e in evaluations) / evaluations.count()
+        else:
+            moyenne_evaluations = 0
+        
+        return JsonResponse({
+            'success': True,
+            'total_candidats': total_candidats,
+            'total_agents': total_agents,
+            'candidatures_acceptees': candidatures_acceptees,
+            'candidatures_rejetees': candidatures_rejetees,
+            'candidatures_non_traitees': candidatures_non_traitees,
+            'total_tests': total_tests,
+            'offres_traitees': offres_traitees,
+            'offres_non_traitees': offres_non_traitees,
+            'total_offres': total_offres,
+            'offres_acceptees': offres_acceptees,
+            'offres_refusees': offres_refusees,
+            'offres_actives': offres_actives,
+            'offres_expirees': offres_expirees,
+            'offres_stoppees': offres_stoppees,
+            'offres_non_parametrees': offres_non_parametrees,
+            'moyenne_evaluations': round(moyenne_evaluations, 1)
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
