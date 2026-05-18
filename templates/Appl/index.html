@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GRH - GRH ENGENEERING SARL</title>
+    <title>GRH ENGINEERING SARL - Accueil</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
     
     <style>
         * {
@@ -32,13 +33,9 @@
             color: #eee;
         }
         
-        body.dark-mode .card {
-            background: #2d3436;
-            color: #eee;
-        }
-        
         body.dark-mode .navbar {
             background: #1a1a2e !important;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.3);
         }
         
         body.dark-mode .offre-card {
@@ -51,6 +48,18 @@
             color: #eee;
         }
         
+        body.dark-mode .offre-details {
+            border-top-color: #444;
+        }
+        
+        body.dark-mode .contact-card {
+            background: #2d3436;
+        }
+        
+        body.dark-mode .footer {
+            background: #1a1a2e;
+        }
+        
         /* Navbar */
         .navbar {
             background: white;
@@ -59,18 +68,55 @@
             transition: all 0.3s;
         }
         
-        body.dark-mode .navbar {
-            background: #1a1a2e;
-            box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+        .navbar.scrolled {
+            padding: 10px 0;
+            background: rgba(255,255,255,0.95);
+        }
+        
+        body.dark-mode .navbar.scrolled {
+            background: rgba(26,26,46,0.95);
         }
         
         .navbar-brand {
             font-size: 24px;
-            font-weight: 700;
+            font-weight: 800;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
+        }
+        
+        .nav-link-custom {
+            font-weight: 500;
+            margin: 0 10px;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .nav-link-custom:hover {
+            color: #667eea !important;
+        }
+        
+        .nav-link-custom.active {
+            color: #667eea !important;
+        }
+        
+        .nav-link-custom:after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 2px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
+        
+        .nav-link-custom:hover:after,
+        .nav-link-custom.active:after {
+            width: 80%;
         }
         
         .btn-outline-custom {
@@ -89,6 +135,7 @@
         .btn-login:hover {
             background: #667eea;
             color: white;
+            transform: translateY(-2px);
         }
         
         .btn-register {
@@ -102,144 +149,6 @@
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
         
-        /* Hero Section */
-        .hero {
-            text-align: center;
-            padding: 80px 0 50px;
-        }
-        
-        .hero h1 {
-            font-size: 48px;
-            font-weight: 800;
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        
-        .hero p {
-            font-size: 18px;
-            opacity: 0.8;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        
-        /* Cartes offres */
-        .offres-section {
-            padding: 50px 0;
-        }
-        
-        .section-title {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-        
-        .section-title h2 {
-            font-size: 32px;
-            font-weight: 700;
-            position: relative;
-            display: inline-block;
-        }
-        
-        .section-title h2:after {
-            content: '';
-            position: absolute;
-            bottom: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 60px;
-            height: 3px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 3px;
-        }
-        
-        .offre-card {
-            background: white;
-            border-radius: 20px;
-            padding: 25px;
-            margin-bottom: 25px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
-            border: 1px solid #e1e8ed;
-        }
-        
-        .offre-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.15);
-        }
-        
-        .offre-card h3 {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: #667eea;
-            cursor: pointer;
-        }
-        
-        .offre-card h3:hover {
-            text-decoration: underline;
-        }
-        
-        .offre-card .badge-domaine {
-            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
-            color: #667eea;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        .offre-card .badge-expiration {
-            background: #f39c12;
-            color: white;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        .offre-card .badge-actif {
-            background: #27ae60;
-            color: white;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        .offre-card .btn-postuler {
-            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-            color: white;
-            border: none;
-            padding: 10px 25px;
-            border-radius: 30px;
-            font-weight: 600;
-            margin-top: 15px;
-            transition: all 0.3s;
-        }
-        
-        .offre-card .btn-postuler:hover {
-            transform: translateX(5px);
-        }
-        
-        /* Détails offre */
-        .offre-details {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #e1e8ed;
-            display: none;
-        }
-        
-        body.dark-mode .offre-details {
-            border-top-color: #444;
-        }
-        
-        .offre-details.show {
-            display: block;
-        }
-        
-        /* Theme toggle */
         .theme-toggle {
             cursor: pointer;
             font-size: 20px;
@@ -260,6 +169,330 @@
         
         .theme-toggle:hover {
             transform: rotate(15deg);
+        }
+        
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 120px 0 60px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23667eea" fill-opacity="0.05" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,165.3C1248,149,1344,107,1392,85.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat bottom;
+            background-size: cover;
+            opacity: 0.3;
+            z-index: 0;
+        }
+        
+        .hero h1 {
+            font-size: 52px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: fadeInUp 0.8s ease;
+        }
+        
+        .hero p {
+            font-size: 18px;
+            opacity: 0.8;
+            max-width: 600px;
+            margin: 0 auto;
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Sections */
+        .section {
+            padding: 80px 0;
+        }
+        
+        .section-title {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        
+        .section-title h2 {
+            font-size: 36px;
+            font-weight: 700;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .section-title h2:after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70px;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+        }
+        
+        /* Cartes offres */
+        .offre-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border: 1px solid #e1e8ed;
+            cursor: pointer;
+        }
+        
+        .offre-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.15);
+        }
+        
+        .offre-card h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #667eea;
+            cursor: pointer;
+        }
+        
+        .offre-card h3:hover {
+            text-decoration: underline;
+        }
+        
+        .badge-domaine {
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+            color: #667eea;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .badge-expiration {
+            background: #f39c12;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .badge-actif {
+            background: #27ae60;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .btn-postuler {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 30px;
+            font-weight: 600;
+            margin-top: 15px;
+            transition: all 0.3s;
+        }
+        
+        .btn-postuler:hover {
+            transform: translateX(5px);
+        }
+        
+        .offre-details {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e1e8ed;
+            display: none;
+        }
+        
+        .offre-details.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* À propos */
+        .about-content {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .about-content p {
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #667eea10 0%, #764ba210 100%);
+            border-radius: 20px;
+            transition: all 0.3s;
+        }
+        
+        .stat-item:hover {
+            transform: translateY(-5px);
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+        }
+        
+        .stat-number {
+            font-size: 48px;
+            font-weight: 800;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        
+        /* Contact */
+        .contact-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            transition: all 0.3s;
+            height: 100%;
+        }
+        
+        .contact-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .contact-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 40px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .contact-name {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .contact-title {
+            font-size: 12px;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        .contact-info {
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        
+        .contact-info i {
+            width: 25px;
+            color: #667eea;
+        }
+        
+        /* Aide */
+        .help-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+        
+        .help-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        body.dark-mode .help-card {
+            background: #2d3436;
+        }
+        
+        .help-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .help-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+        
+        .help-icon i {
+            font-size: 32px;
+            color: #667eea;
+        }
+        
+        .help-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+        
+        .help-text {
+            font-size: 14px;
+            line-height: 1.6;
+            text-align: left;
+        }
+        
+        .help-list {
+            text-align: left;
+            padding-left: 20px;
+        }
+        
+        .help-list li {
+            margin-bottom: 10px;
+            font-size: 14px;
         }
         
         /* Loading spinner */
@@ -311,17 +544,63 @@
             transform: translateY(-2px);
         }
         
-        footer {
-            text-align: center;
-            padding: 30px;
+        /* Footer */
+        .footer {
+            background: white;
+            padding: 40px 0 20px;
             margin-top: 50px;
             border-top: 1px solid #e1e8ed;
+        }
+        
+        body.dark-mode .footer {
+            background: #1a1a2e;
+            border-top-color: #2d3436;
+        }
+        
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .footer-logo h3 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+        
+        .footer-links ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .footer-links ul li {
+            margin-bottom: 10px;
+        }
+        
+        .footer-links ul li a {
+            text-decoration: none;
+            color: inherit;
+            transition: color 0.3s;
+        }
+        
+        .footer-links ul li a:hover {
+            color: #667eea;
+        }
+        
+        .footer-bottom {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #e1e8ed;
+            font-size: 12px;
         }
         
         @media (max-width: 768px) {
             .hero h1 { font-size: 32px; }
             .navbar-brand { font-size: 18px; }
             .btn-outline-custom { padding: 5px 15px; font-size: 12px; }
+            .section-title h2 { font-size: 28px; }
         }
     </style>
 </head>
@@ -329,33 +608,62 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-building"></i> GRH ENGENEERING
+            <a class="navbar-brand" href="#accueil">
+                <i class="fas fa-building"></i> GRH ENGINEERING
             </a>
             
-            <div class="ms-auto d-flex align-items-center">
-                <a href="/Appl/login/" class="btn btn-outline-custom btn-login me-2">
-                    <i class="fas fa-sign-in-alt"></i> Connexion
-                </a>
-                <a href="/Appl/Candidat" class="btn btn-outline-custom btn-register">
-                    <i class="fas fa-user-plus"></i> Créer compte
-                </a>
-                <div class="theme-toggle" onclick="toggleTheme()">
-                    <i class="fas fa-moon" id="themeIcon"></i>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom" href="#accueil" data-section="accueil">Accueil</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom" href="#offres" data-section="offres">Offres</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom" href="#about" data-section="about">À propos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom" href="#help" data-section="help">Aide</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom" href="#contact" data-section="contact">Contact</a>
+                    </li>
+                </ul>
+                
+                <div class="d-flex align-items-center">
+                    <a href="/Appl/login/" class="btn btn-outline-custom btn-login me-2">
+                        <i class="fas fa-sign-in-alt"></i> Connexion
+                    </a>
+                    <a href="/Appl/Candidat" class="btn btn-outline-custom btn-register me-2">
+                        <i class="fas fa-user-plus"></i> Créer compte
+                    </a>
+                    <div class="theme-toggle" onclick="toggleTheme()">
+                        <i class="fas fa-moon" id="themeIcon"></i>
+                    </div>
                 </div>
             </div>
         </div>
     </nav>
     
-    <!-- Hero Section -->
-    <div class="container" style="margin-top: 100px;">
-        <div class="hero">
-            <h1><i class="fas fa-hand-peace"></i> Bienvenue à l'entreprise GRH ENGENEERING</h1>
-            <p>Entreprise d'ingénièrie base sur les constructions de batiment privé et public - GRH ENGENEERING votre partenaire d'emploi en République Démocratique du Congo</p>
+    <!-- Sections -->
+    <div id="accueil" class="section" style="padding-top: 100px;">
+        <div class="container">
+            <div class="hero">
+                <div class="hero-bg"></div>
+                <h1><i class="fas fa-hand-peace"></i> Bienvenue à GRH ENGINEERING</h1>
+                <p>Entreprise d'ingénierie spécialisée dans la construction de bâtiments privés et publics.<br>
+                GRH ENGINEERING, votre partenaire d'emploi en République Démocratique du Congo.</p>
+            </div>
         </div>
-        
-        <!-- Offres Section -->
-        <div class="offres-section">
+    </div>
+    
+    <div id="offres" class="section" style="padding-top: 0;">
+        <div class="container">
             <div class="section-title">
                 <h2>Offres d'emploi disponibles</h2>
             </div>
@@ -368,8 +676,190 @@
         </div>
     </div>
     
-    <footer>
-        <p>&copy; 2026 GRH ENGENEERING. Tous droits réservés.</p>
+    <div id="about" class="section" style="background: linear-gradient(135deg, #667eea05 0%, #764ba205 100%);">
+        <div class="container">
+            <div class="section-title">
+                <h2>À propos de nous</h2>
+            </div>
+            <div class="about-content">
+                <p><strong>GRH ENGINEERING SARL</strong> est une entreprise leader dans le domaine de l'ingénierie et de la construction en République Démocratique du Congo. Basée à Goma, nous nous engageons à fournir des services de qualité supérieure dans la réalisation de projets de construction privés et publics.</p>
+                
+                <p>Notre mission est de créer des emplois durables et de contribuer au développement économique de la région en connectant les talents locaux avec des opportunités professionnelles enrichissantes.</p>
+                
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number" id="statOffres">0</div>
+                        <div class="stat-label">Offres publiées</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="statCandidats">0</div>
+                        <div class="stat-label">Candidats inscrits</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="statAgents">0</div>
+                        <div class="stat-label">Agents actifs</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="statPlacements">0</div>
+                        <div class="stat-label">Placements réussis</div>
+                    </div>
+                </div>
+                
+                <p><strong>Nos valeurs :</strong> Intégrité, Excellence, Innovation et Engagement envers nos employés et partenaires.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div id="help" class="section">
+        <div class="container">
+            <div class="section-title">
+                <h2>Centre d'aide</h2>
+            </div>
+            <div class="help-grid">
+                <div class="help-card">
+                    <div class="help-icon">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div class="help-title">Comment créer un compte ?</div>
+                    <div class="help-text">
+                        <ol class="help-list">
+                            <li>Cliquez sur "Créer compte" dans la barre de navigation</li>
+                            <li>Remplissez le formulaire d'inscription avec vos informations</li>
+                            <li>Choisissez un nom d'utilisateur et un mot de passe sécurisé</li>
+                            <li>Validez votre inscription et connectez-vous</li>
+                        </ol>
+                    </div>
+                </div>
+                
+                <div class="help-card">
+                    <div class="help-icon">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                    <div class="help-title">Comment postuler à une offre ?</div>
+                    <div class="help-text">
+                        <ol class="help-list">
+                            <li>Connectez-vous à votre espace candidat</li>
+                            <li>Parcourez les offres disponibles sur la page d'accueil</li>
+                            <li>Cliquez sur "Postuler" sur l'offre qui vous intéresse</li>
+                            <li>Importez votre CV et confirmez votre candidature</li>
+                        </ol>
+                    </div>
+                </div>
+                
+                <div class="help-card">
+                    <div class="help-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="help-title">Suivi de candidature</div>
+                    <div class="help-text">
+                        <ol class="help-list">
+                            <li>Connectez-vous à votre espace candidat</li>
+                            <li>Accédez à la section "Mes candidatures"</li>
+                            <li>Consultez le statut de chaque candidature</li>
+                            <li>Attendez la décision du recruteur</li>
+                        </ol>
+                    </div>
+                </div>
+                
+                <div class="help-card">
+                    <div class="help-icon">
+                        <i class="fas fa-gavel"></i>
+                    </div>
+                    <div class="help-title">Processus de sélection</div>
+                    <div class="help-text">
+                        <ol class="help-list">
+                            <li>Dépôt de candidature avec CV</li>
+                            <li>Analyse ONEM de l'offre et de la candidature</li>
+                            <li>Test d'évaluation si candidature acceptée</li>
+                            <li>Si moyenne ≥ 70% → Devenir Agent GRH</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="contact" class="section" style="background: linear-gradient(135deg, #667eea05 0%, #764ba205 100%);">
+        <div class="container">
+            <div class="section-title">
+                <h2>Contactez-nous</h2>
+                <p class="mt-3">Notre équipe est à votre disposition pour toute information</p>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="contact-card">
+                        <div class="contact-avatar">JD</div>
+                        <div class="contact-name">Jean De Dieu</div>
+                        <div class="contact-title">Directeur Général</div>
+                        <div class="contact-info"><i class="fas fa-phone"></i> +243 812 345 678</div>
+                        <div class="contact-info"><i class="fas fa-envelope"></i> jddi@grh-engineering.com</div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="contact-card">
+                        <div class="contact-avatar">MP</div>
+                        <div class="contact-name">Marie Paule</div>
+                        <div class="contact-title">Responsable RH</div>
+                        <div class="contact-info"><i class="fas fa-phone"></i> +243 823 456 789</div>
+                        <div class="contact-info"><i class="fas fa-envelope"></i> mpaule@grh-engineering.com</div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="contact-card">
+                        <div class="contact-avatar">KM</div>
+                        <div class="contact-name">Kambale Mahoridi</div>
+                        <div class="contact-title">IT Manager</div>
+                        <div class="contact-info"><i class="fas fa-phone"></i> +243 974 310 720</div>
+                        <div class="contact-info"><i class="fas fa-envelope"></i> kmahoridi@grh-engineering.com</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-md-6 mx-auto">
+                    <div class="contact-card">
+                        <div class="contact-info"><i class="fas fa-map-marker-alt"></i> Quartier Himbi, Avenue du Travail, N°15, Goma, RDC</div>
+                        <div class="contact-info"><i class="fas fa-phone"></i> +243 813 456 789 (Standard)</div>
+                        <div class="contact-info"><i class="fas fa-envelope"></i> contact@grh-engineering.com</div>
+                        <div class="contact-info"><i class="fas fa-globe"></i> www.grh-engineering.com</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <h3><i class="fas fa-building"></i> GRH ENGINEERING</h3>
+                    <p>Votre partenaire emploi en RDC</p>
+                </div>
+                <div class="footer-links">
+                    <h4>Liens rapides</h4>
+                    <ul>
+                        <li><a href="#accueil">Accueil</a></li>
+                        <li><a href="#offres">Offres</a></li>
+                        <li><a href="#about">À propos</a></li>
+                        <li><a href="#help">Aide</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Horaires</h4>
+                    <ul>
+                        <li>Lundi - Vendredi: 8h - 17h</li>
+                        <li>Samedi: 9h - 13h</li>
+                        <li>Dimanche: Fermé</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 GRH ENGINEERING SARL - Tous droits réservés. RDC, Goma</p>
+            </div>
+        </div>
     </footer>
     
     <!-- Modal Postuler -->
@@ -398,8 +888,12 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
     
     <script>
+        // Initialiser AOS
+        AOS.init({ duration: 800, once: true });
+        
         // Thème (sombre/clair)
         function toggleTheme() {
             const body = document.body;
@@ -425,14 +919,45 @@
         if (savedTheme === 'dark') {
             document.body.classList.remove('light-mode');
             document.body.classList.add('dark-mode');
-            document.getElementById('themeIcon').classList.remove('fa-moon');
-            document.getElementById('themeIcon').classList.add('fa-sun');
+            const icon = document.getElementById('themeIcon');
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
         }
         
-        // Fonction pour ouvrir le fichier (comme dans ONEM)
+        // Navigation avec défilement fluide
+        document.querySelectorAll('.nav-link-custom, .footer-links a[href^="#"]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                if (targetId && targetId !== '#') {
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+            });
+        });
+        
+        // Fonction pour ouvrir le fichier
         function ouvrirFichier(offreId) {
             const url = `/api/onem/ouvrir-fichier/${offreId}/`;
             window.open(url, '_blank');
+        }
+        
+        // Charger les statistiques
+        async function chargerStats() {
+            try {
+                const response = await fetch('/api/admin/dashboard-stats/');
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('statOffres').innerText = data.total_offres || 0;
+                    document.getElementById('statCandidats').innerText = data.total_candidats || 0;
+                    document.getElementById('statAgents').innerText = data.total_agents || 0;
+                    document.getElementById('statPlacements').innerText = data.offres_acceptees || 0;
+                }
+            } catch (error) {
+                console.error('Erreur chargement stats:', error);
+            }
         }
         
         // Charger les offres
@@ -467,15 +992,13 @@
             container.innerHTML = '';
             
             offres.forEach(offre => {
-                // Déterminer le badge d'état
                 let badgeEtat = '';
                 if (offre.type_etat === 'Actif') {
                     badgeEtat = '<span class="badge-actif"><i class="fas fa-check-circle"></i> Active</span>';
                 } else if (offre.type_etat === 'Renouveler') {
-                    badgeEtat = '<span class="badge-renouveler" style="background:#3498db;color:white;padding:5px 12px;border-radius:20px;font-size:12px;"><i class="fas fa-sync-alt"></i> Renouvelée</span>';
+                    badgeEtat = '<span class="badge-actif" style="background:#3498db;"><i class="fas fa-sync-alt"></i> Renouvelée</span>';
                 }
                 
-                // Badge date d'expiration
                 let badgeExpiration = '';
                 if (offre.date_expiration) {
                     badgeExpiration = `<span class="badge-expiration ms-2"><i class="fas fa-calendar-times"></i> Expire le ${offre.date_expiration}</span>`;
@@ -496,11 +1019,11 @@
                                 ${badgeExpiration}
                             </div>
                         </div>
-                        <i class="fas fa-chevron-down" style="color: #667eea; cursor: pointer;" onclick="toggleDetails(this)"></i>
+                        <i class="fas fa-chevron-down" style="color: #667eea; cursor: pointer; font-size: 18px;" onclick="toggleDetails(this)"></i>
                     </div>
                     <div class="offre-details">
-                        <p><strong>Description :</strong><br>${offre.description || 'Veuillez consulter le fichier joint pour plus de détails.'}</p>
-                        <button class="btn-postuler" onclick="ouvrirModalPostuler('${offre.titre}')">
+                        <p><strong>Description :</strong><br>${offre.description || 'Veuillez consulter le fichier joint en cliquant sur le titre de l\'offre pour plus de détails.'}</p>
+                        <button class="btn-postuler" onclick="ouvrirModalPostuler('${offre.titre.replace(/'/g, "\\'")}')">
                             <i class="fas fa-paper-plane"></i> Postuler
                         </button>
                     </div>
@@ -512,17 +1035,36 @@
         function toggleDetails(element) {
             const details = element.closest('.offre-card').querySelector('.offre-details');
             details.classList.toggle('show');
-            element.classList.toggle('fa-chevron-down');
-            element.classList.toggle('fa-chevron-up');
+            if (element.classList.contains('fa-chevron-down')) {
+                element.classList.remove('fa-chevron-down');
+                element.classList.add('fa-chevron-up');
+            } else {
+                element.classList.remove('fa-chevron-up');
+                element.classList.add('fa-chevron-down');
+            }
         }
         
         function ouvrirModalPostuler(titre) {
-            document.getElementById('postulerModal').querySelector('.modal-title').innerHTML = `<i class="fas fa-paper-plane"></i> Postuler à "${titre}"`;
+            const modalTitle = document.querySelector('#postulerModal .modal-title');
+            modalTitle.innerHTML = `<i class="fas fa-paper-plane"></i> Postuler à "${titre}"`;
             new bootstrap.Modal(document.getElementById('postulerModal')).show();
         }
         
+        // Effet de scroll sur la navbar
+        window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+        
         // Initialiser
-        document.addEventListener('DOMContentLoaded', chargerOffres);
+        document.addEventListener('DOMContentLoaded', () => {
+            chargerOffres();
+            chargerStats();
+        });
     </script>
 </body>
 </html>
