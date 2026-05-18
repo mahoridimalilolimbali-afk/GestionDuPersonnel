@@ -378,6 +378,16 @@ urlpatterns = [
     # dashboardAdmin
     path('api/admin/dashboard-stats/', views.admin_dashboard_stats, name='admin_dashboard_stats'),
 
+
+
+    # urls.py - Ajoutez ces lignes
+
+# Communication
+    path('Communiquer/', views.ChargerCommunication, name='charger_communication'),
+    path('api/communication/utilisateurs/', views.get_utilisateurs_communication, name='get_utilisateurs_communication'),
+    path('api/communication/offres/', views.get_offres_communication, name='get_offres_communication'),
+    path('api/communication/envoyer/', views.envoyer_communication, name='envoyer_communication'),
+
 ]
 # Servir les fichiers média en développement
 if settings.DEBUG:

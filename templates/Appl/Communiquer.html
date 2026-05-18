@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>Communication - GRH ENGINEERING</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { max-width: 1200px; margin: auto; }
+        .main-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .card-header-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px 35px;
+            color: white;
+        }
+        .header-title {
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .header-title i { font-size: 32px; }
+        .card-body-custom { padding: 35px; background: #f8f9fa; }
+        
+        .form-group-custom { margin-bottom: 25px; }
+        .form-label-custom {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .form-label-custom i { margin-right: 6px; color: #667eea; }
+        .form-control-custom, .form-select-custom {
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            padding: 12px 15px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        .form-control-custom:focus, .form-select-custom:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            outline: none;
+        }
+        textarea.form-control-custom { resize: vertical; min-height: 150px; }
+        
+        .btn-submit {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            padding: 12px 35px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+        }
+        
+        .info-box {
+            background: #e8f0fe;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .loading-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .destinataire-group {
+            background: white;
+            border: 2px solid #e1e8ed;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .destinataire-group:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        .destinataire-group.selected {
+            border-color: #27ae60;
+            background: #e8f5e9;
+        }
+        .destinataire-group h5 { margin: 0 0 5px 0; font-size: 16px; }
+        .destinataire-group p { margin: 0; font-size: 12px; color: #7f8c8d; }
+        
+        .group-options { display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e1e8ed; }
+        .group-options.active { display: block; }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Envoi du message en cours...</p>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="main-card">
+            <div class="card-header-custom">
+                <div class="header-title">
+                    <i class="fas fa-envelope-open-text"></i>
+                    <span>Centre de Communication</span>
+                </div>
+            </div>
+            
+            <div class="card-body-custom">
+                <div class="info-box">
+                    <i class="fas fa-info-circle"></i> 
+                    <strong>Informations :</strong> Vous pouvez envoyer des messages par email à :
+                    <ul class="mt-2 mb-0">
+                        <li>Un utilisateur spécifique</li>
+                        <li>Tous les membres d'un groupe (CANDIDAT, AGENT, ONEM)</li>
+                        <li>Les candidats dont la candidature a été acceptée pour une offre</li>
+                    </ul>
+                </div>
+                
+                <form id="communicationForm" onsubmit="return false;">
+                    <!-- Type de destinataire -->
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="fas fa-users"></i> Type de destinataire</label>
+                        <select class="form-select-custom" id="typeDestinataire">
+                            <option value="utilisateur">🔹 Un utilisateur spécifique</option>
+                            <option value="groupe">🔸 Tous les membres d'un groupe</option>
+                            <option value="candidats_acceptes">📋 Candidats acceptés pour une offre</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Options pour utilisateur spécifique -->
+                    <div id="utilisateurSection" class="group-options active">
+                        <div class="form-group-custom">
+                            <label class="form-label-custom"><i class="fas fa-user"></i> Choisir un utilisateur</label>
+                            <select class="form-select-custom" id="selectUtilisateur">
+                                <option value="">-- Chargement des utilisateurs... --</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Options pour groupe -->
+                    <div id="groupeSection" class="group-options">
+                        <div class="form-group-custom">
+                            <label class="form-label-custom"><i class="fas fa-layer-group"></i> Choisir un groupe</label>
+                            <select class="form-select-custom" id="selectGroupe">
+                                <option value="CANDIDAT">📋 CANDIDAT - Tous les candidats</option>
+                                <option value="AGENT">👔 AGENT - Tous les agents</option>
+                                <option value="ONEM">🏢 ONEM - Tous les membres ONEM</option>
+                                <option value="ADMIN">⚙️ ADMIN - Tous les administrateurs</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Options pour candidats acceptés -->
+                    <div id="candidatsAcceptesSection" class="group-options">
+                        <div class="form-group-custom">
+                            <label class="form-label-custom"><i class="fas fa-briefcase"></i> Choisir une offre</label>
+                            <select class="form-select-custom" id="selectOffre">
+                                <option value="">-- Chargement des offres... --</option>
+                            </select>
+                        </div>
+                        <div class="info-box" style="background: #fff3cd; border-left-color: #f39c12;">
+                            <i class="fas fa-info-circle"></i> 
+                            Le message sera envoyé à tous les candidats dont la candidature a été ACCEPTÉE pour cette offre.
+                        </div>
+                    </div>
+                    
+                    <!-- Objet du message -->
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="fas fa-tag"></i> Objet du message</label>
+                        <input type="text" class="form-control-custom" id="objetMessage" placeholder="Ex: Information importante concernant votre dossier">
+                    </div>
+                    
+                    <!-- Contenu du message -->
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="fas fa-comment"></i> Message</label>
+                        <textarea class="form-control-custom" id="contenuMessage" placeholder="Saisissez votre message ici..."></textarea>
+                    </div>
+                    
+                    <!-- Bouton d'envoi -->
+                    <div class="text-center mt-4">
+                        <button type="button" class="btn-submit" onclick="envoyerMessage()">
+                            <i class="fas fa-paper-plane"></i> Envoyer le message
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script>
+        function getCSRFToken() {
+            return document.querySelector('[name=csrf-token]').getAttribute('content');
+        }
+        
+        function showLoading() { $('#loadingOverlay').fadeIn(300); }
+        function hideLoading() { $('#loadingOverlay').fadeOut(300); }
+        
+        function showSuccess(message) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Message envoyé !',
+                html: message,
+                timer: 4000,
+                showConfirmButton: true,
+                confirmButtonColor: '#27ae60'
+            });
+        }
+        
+        function showError(message) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Erreur',
+                text: message,
+                confirmButtonColor: '#e74c3c'
+            });
+        }
+        
+        // Afficher/masquer les sections selon le type de destinataire
+        $('#typeDestinataire').on('change', function() {
+            const value = $(this).val();
+            $('.group-options').removeClass('active');
+            if (value === 'utilisateur') $('#utilisateurSection').addClass('active');
+            else if (value === 'groupe') $('#groupeSection').addClass('active');
+            else if (value === 'candidats_acceptes') $('#candidatsAcceptesSection').addClass('active');
+        });
+        
+        // Charger les utilisateurs
+        function chargerUtilisateurs() {
+            $.ajax({
+                url: '/api/communication/utilisateurs/',
+                method: 'GET',
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                success: function(response) {
+                    if (response.success) {
+                        const select = $('#selectUtilisateur');
+                        select.empty();
+                        select.append('<option value="">-- Sélectionnez un utilisateur --</option>');
+                        response.utilisateurs.forEach(user => {
+                            select.append(`<option value="${user.id}">${user.nom} (${user.email}) - [${user.groupes}]</option>`);
+                        });
+                    }
+                },
+                error: function() {
+                    $('#selectUtilisateur').html('<option value="">Erreur de chargement</option>');
+                }
+            });
+        }
+        
+        // Charger les offres
+        function chargerOffres() {
+            $.ajax({
+                url: '/api/communication/offres/',
+                method: 'GET',
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                success: function(response) {
+                    if (response.success) {
+                        const select = $('#selectOffre');
+                        select.empty();
+                        select.append('<option value="">-- Sélectionnez une offre --</option>');
+                        response.offres.forEach(offre => {
+                            select.append(`<option value="${offre.id}">${offre.titre} (${offre.nb_candidats} candidats acceptés)</option>`);
+                        });
+                    }
+                }
+            });
+        }
+        
+        // Envoyer le message
+        function envoyerMessage() {
+            const typeDestinataire = $('#typeDestinataire').val();
+            let destinataireId = null;
+            let groupe = null;
+            let offreId = null;
+            const objet = $('#objetMessage').val().trim();
+            const contenu = $('#contenuMessage').val().trim();
+            
+            if (!objet) {
+                showError('Veuillez saisir un objet');
+                return;
+            }
+            
+            if (!contenu) {
+                showError('Veuillez saisir un message');
+                return;
+            }
+            
+            if (typeDestinataire === 'utilisateur') {
+                destinataireId = $('#selectUtilisateur').val();
+                if (!destinataireId) {
+                    showError('Veuillez sélectionner un utilisateur');
+                    return;
+                }
+            } else if (typeDestinataire === 'groupe') {
+                groupe = $('#selectGroupe').val();
+            } else if (typeDestinataire === 'candidats_acceptes') {
+                offreId = $('#selectOffre').val();
+                if (!offreId) {
+                    showError('Veuillez sélectionner une offre');
+                    return;
+                }
+            }
+            
+            showLoading();
+            
+            $.ajax({
+                url: '/api/communication/envoyer/',
+                method: 'POST',
+                data: JSON.stringify({
+                    type: typeDestinataire,
+                    destinataire_id: destinataireId,
+                    groupe: groupe,
+                    offre_id: offreId,
+                    objet: objet,
+                    contenu: contenu
+                }),
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'Content-Type': 'application/json'
+                },
+                success: function(response) {
+                    hideLoading();
+                    if (response.success) {
+                        showSuccess(response.message);
+                        $('#communicationForm')[0].reset();
+                        $('#typeDestinataire').trigger('change');
+                    } else {
+                        showError(response.message);
+                    }
+                },
+                error: function(xhr) {
+                    hideLoading();
+                    const message = xhr.responseJSON?.message || 'Erreur lors de l\'envoi';
+                    showError(message);
+                }
+            });
+        }
+        
+        $(document).ready(function() {
+            chargerUtilisateurs();
+            chargerOffres();
+            $('#typeDestinataire').trigger('change');
+        });
+    </script>
+</body>
+</html>

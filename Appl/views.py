@@ -14,6 +14,12 @@ from django.contrib.auth import login, authenticate
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from datetime import datetime
+# views.py - Au début du fichier, avec les autres imports
+from django.conf import settings  # ← AJOUTEZ CETTE LIGNE
+# En haut de views.py, vous devez avoir :
+from django.conf import settings  # ← TRÈS IMPORTANT
+from django.core.mail import send_mail, EmailMultiAlternatives
+from django.utils.html import strip_tags
 
 # Create your views here.
 
@@ -5006,3 +5012,254 @@ def admin_dashboard_stats(request):
         })
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+
+
+#COMMUNIQUE
+
+
+# views.py - Ajoutez ces fonctions
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_utilisateurs_communication(request):
+    """API: Récupérer tous les utilisateurs pour la communication"""
+    try:
+        from django.contrib.auth.models import User
+        
+        utilisateurs = User.objects.filter(is_active=True).exclude(is_superuser=True)
+        data = []
+        
+        for user in utilisateurs:
+            groupes = [g.name for g in user.groups.all()]
+            data.append({
+                'id': user.id,
+                'nom': f"{user.first_name} {user.last_name}" if user.first_name else user.username,
+                'email': user.email,
+                'groupes': ', '.join(groupes) if groupes else 'Aucun'
+            })
+        
+        return JsonResponse({'success': True, 'utilisateurs': data})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_offres_communication(request):
+    """API: Récupérer les offres avec nombre de candidats acceptés"""
+    try:
+        type_decision_accepter = TypeDecision.objects.filter(Description__icontains='Accepter').first()
+        
+        offres = OffreEmploie.objects.all()
+        data = []
+        
+        for offre in offres:
+            if type_decision_accepter:
+                nb_candidats = Decision.objects.filter(
+                    candidature__offre=offre,
+                    type_decision=type_decision_accepter
+                ).count()
+            else:
+                nb_candidats = 0
+            
+            data.append({
+                'id': offre.id,
+                'titre': offre.titre,
+                'nb_candidats': nb_candidats
+            })
+        
+        return JsonResponse({'success': True, 'offres': data})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def envoyer_communication(request):
+    """API: Envoyer un message par email"""
+    try:
+        from django.core.mail import EmailMultiAlternatives
+        from django.utils.html import strip_tags
+        from django.contrib.auth.models import User
+        from django.core.mail import send_mail
+        
+        data = json.loads(request.body)
+        type_dest = data.get('type')
+        objet = data.get('objet', '').strip()
+        contenu = data.get('contenu', '').strip()
+        
+        if not objet or not contenu:
+            return JsonResponse({'success': False, 'message': 'Objet et message requis'}, status=400)
+        
+        destinataires_emails = []
+        message_detail = ""
+        
+        if type_dest == 'utilisateur':
+            # Envoyer à un utilisateur spécifique
+            user_id = data.get('destinataire_id')
+            user = User.objects.get(id=user_id)
+            if user.email:
+                destinataires_emails.append(user.email)
+                message_detail = f"à {user.get_full_name() or user.username} ({user.email})"
+            else:
+                return JsonResponse({'success': False, 'message': 'Cet utilisateur n\'a pas d\'email'}, status=400)
+        
+        elif type_dest == 'groupe':
+            # Envoyer à tout un groupe
+            groupe_nom = data.get('groupe')
+            utilisateurs = User.objects.filter(groups__name=groupe_nom, is_active=True)
+            
+            for user in utilisateurs:
+                if user.email:
+                    destinataires_emails.append(user.email)
+            
+            if not destinataires_emails:
+                return JsonResponse({'success': False, 'message': f'Aucun utilisateur trouvé dans le groupe {groupe_nom}'}, status=400)
+            
+            message_detail = f"au groupe {groupe_nom} ({len(destinataires_emails)} destinataires)"
+        
+        elif type_dest == 'candidats_acceptes':
+            # Envoyer aux candidats acceptés pour une offre
+            offre_id = data.get('offre_id')
+            offre = OffreEmploie.objects.get(id=offre_id)
+            
+            type_decision_accepter = TypeDecision.objects.get(Description__icontains='Accepter')
+            decisions = Decision.objects.filter(
+                candidature__offre=offre,
+                type_decision=type_decision_accepter
+            ).select_related('candidature__candidat__user')
+            
+            for decision in decisions:
+                user = decision.candidature.candidat.user
+                if user.email:
+                    destinataires_emails.append(user.email)
+            
+            if not destinataires_emails:
+                return JsonResponse({'success': False, 'message': f'Aucun candidat accepté pour l\'offre "{offre.titre}"'}, status=400)
+            
+            message_detail = f"aux candidats acceptés pour l'offre \"{offre.titre}\" ({len(destinataires_emails)} destinataires)"
+        
+        else:
+            return JsonResponse({'success': False, 'message': 'Type de destinataire invalide'}, status=400)
+        
+        # Construction du message HTML
+        base_url = "https://mahoridi.pythonanywhere.com"
+        
+        html_message = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>{objet}</title>
+            <style>
+                body {{
+                    font-family: 'Poppins', Arial, sans-serif;
+                    background-color: #f4f4f4;
+                    margin: 0;
+                    padding: 20px;
+                }}
+                .container {{
+                    max-width: 600px;
+                    margin: 0 auto;
+                    background: white;
+                    border-radius: 15px;
+                    overflow: hidden;
+                    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+                }}
+                .header {{
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 30px;
+                    text-align: center;
+                }}
+                .header h1 {{ margin: 0; font-size: 24px; }}
+                .content {{ padding: 30px; }}
+                .message-box {{
+                    background: #f8f9fa;
+                    padding: 20px;
+                    border-radius: 10px;
+                    margin: 20px 0;
+                    font-size: 14px;
+                    line-height: 1.6;
+                }}
+                .footer {{
+                    background: #f8f9fa;
+                    padding: 20px;
+                    text-align: center;
+                    font-size: 12px;
+                    color: #999;
+                }}
+                .btn {{
+                    display: inline-block;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 10px 25px;
+                    text-decoration: none;
+                    border-radius: 25px;
+                    margin-top: 15px;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>📧 GRH ENGINEERING</h1>
+                    <p>Communication officielle</p>
+                </div>
+                <div class="content">
+                    <h2>Bonjour,</h2>
+                    <div class="message-box">
+                        {contenu.replace(chr(10), '<br>')}
+                    </div>
+                    <p style="text-align: center;">
+                        <a href="{base_url}/Appl/login" class="btn">🔗 Se connecter</a>
+                    </p>
+                </div>
+                <div class="footer">
+                    <p>GRH ENGINEERING SARL - RDC, Goma</p>
+                    <p>Cet email est automatique, merci de ne pas y répondre.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Envoyer les emails
+        emails_envoyes = 0
+        erreurs = []
+        
+        for email in destinataires_emails:
+            try:
+                plain_message = strip_tags(html_message)
+                email_msg = EmailMultiAlternatives(
+                    subject=objet,
+                    body=plain_message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to=[email]
+                )
+                email_msg.attach_alternative(html_message, "text/html")
+                email_msg.send()
+                emails_envoyes += 1
+            except Exception as e:
+                erreurs.append(f"{email}: {str(e)}")
+        
+        if emails_envoyes > 0:
+            return JsonResponse({
+                'success': True,
+                'message': f'✅ Message envoyé {message_detail}<br>📧 {emails_envoyes} email(s) envoyé(s) avec succès'
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'message': f'❌ Aucun email envoyé. Erreurs: {", ".join(erreurs)}'
+            }, status=400)
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+def ChargerCommunication(request):
+    """Page de communication"""
+    return render(request, "Appl/Communiquer.html")
