@@ -36,6 +36,7 @@ urlpatterns = [
     path('ResultatTest', ChargerResultatTest),
     path('InfoPersonnel', ChargerInfoPersonnel),
     path('Messagerie', ChargerMessagerie),
+    path('TypeDecisionOffre', ChargerTypeDecisionOffre),
     # ACTION DE DOMAINE
 
     path('domaines/', views.liste_domaines, name='liste_domaines'),

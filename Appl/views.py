@@ -28,6 +28,9 @@ from django.utils.html import strip_tags
 def ChargerIndex(request):
     return render (request,"Appl/index.html")
 
+def ChargerTypeDecisionOffre(request):
+    return render (request, "Appl/TypeDecisionOffre.html")
+
 def ChargerDomaine(request):
     return render (request,"Appl/Domaine.html")
 
