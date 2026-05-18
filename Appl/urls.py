@@ -388,6 +388,17 @@ urlpatterns = [
     path('api/communication/offres/', views.get_offres_communication, name='get_offres_communication'),
     path('api/communication/envoyer/', views.envoyer_communication, name='envoyer_communication'),
 
+
+
+
+    # ==================== URLs POUR LES TYPES DE DÉCISION ====================
+    path('TypeDecisionOffre/', views.TypeDecisionOffrePage, name='TypeDecisionOffrePage'),
+    path('api/type-decisions/lister/', views.TypeDecisionOffreLister, name='TypeDecisionOffreLister'),
+    path('api/type-decisions/ajouter/', views.TypeDecisionOffreAjouter, name='TypeDecisionOffreAjouter'),
+    path('api/type-decisions/modifier/<int:id_type_decision>/', views.TypeDecisionOffreModifier, name='TypeDecisionOffreModifier'),
+    path('api/type-decisions/supprimer/<int:id_type_decision>/', views.TypeDecisionOffreSupprimer, name='TypeDecisionOffreSupprimer'),
+    path('api/type-decisions/selectionner/<int:id_type_decision>/', views.TypeDecisionOffreSelectionner, name='TypeDecisionOffreSelectionner'),
+
 ]
 # Servir les fichiers média en développement
 if settings.DEBUG:

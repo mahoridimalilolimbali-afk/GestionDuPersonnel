@@ -5263,3 +5263,133 @@ def envoyer_communication(request):
 def ChargerCommunication(request):
     """Page de communication"""
     return render(request, "Appl/Communiquer.html")
+
+
+
+
+# TYPE DECISION OFFRE
+
+# ==================== GESTION DES TYPES DE DÉCISION ====================
+
+def TypeDecisionOffrePage(request):
+    """Affiche la page principale des types de décision"""
+    return render(request, 'TypeDecisionOffre.html')
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def TypeDecisionOffreLister(request):
+    """API: Récupérer tous les types de décision"""
+    try:
+        types_decision = TypeDecision.objects.all().order_by('-id')
+        data = [{
+            'id': td.id,
+            'Description': td.Description,
+        } for td in types_decision]
+        
+        return JsonResponse({
+            'success': True,
+            'type_decisions': data,
+            'total': len(data)
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def TypeDecisionOffreAjouter(request):
+    """API: Ajouter un nouveau type de décision"""
+    try:
+        data = json.loads(request.body)
+        description = data.get('Description', '').strip()
+        
+        if not description:
+            return JsonResponse({'success': False, 'message': 'La description est requise'}, status=400)
+        
+        # Vérifier si le type de décision existe déjà
+        if TypeDecision.objects.filter(Description__iexact=description).exists():
+            return JsonResponse({'success': False, 'message': 'Ce type de décision existe déjà'}, status=400)
+        
+        type_decision = TypeDecision.objects.create(Description=description)
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Type de décision "{description}" ajouté avec succès',
+            'type_decision': {
+                'id': type_decision.id,
+                'Description': type_decision.Description,
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def TypeDecisionOffreModifier(request, id_type_decision):
+    """API: Modifier un type de décision existant"""
+    try:
+        type_decision = get_object_or_404(TypeDecision, id=id_type_decision)
+        data = json.loads(request.body)
+        description = data.get('Description', '').strip()
+        
+        if not description:
+            return JsonResponse({'success': False, 'message': 'La description est requise'}, status=400)
+        
+        # Vérifier si une autre décision a déjà cette description
+        if TypeDecision.objects.filter(Description__iexact=description).exclude(id=id_type_decision).exists():
+            return JsonResponse({'success': False, 'message': 'Ce type de décision existe déjà'}, status=400)
+        
+        ancienne_description = type_decision.Description
+        type_decision.Description = description
+        type_decision.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Type de décision "{ancienne_description}" modifié avec succès',
+            'type_decision': {
+                'id': type_decision.id,
+                'Description': type_decision.Description,
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def TypeDecisionOffreSupprimer(request, id_type_decision):
+    """API: Supprimer un type de décision"""
+    try:
+        type_decision = get_object_or_404(TypeDecision, id=id_type_decision)
+        description = type_decision.Description
+        type_decision.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Type de décision "{description}" supprimé avec succès'
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def TypeDecisionOffreSelectionner(request, id_type_decision):
+    """API: Sélectionner un type de décision spécifique"""
+    try:
+        type_decision = get_object_or_404(TypeDecision, id=id_type_decision)
+        
+        return JsonResponse({
+            'success': True,
+            'type_decision': {
+                'id': type_decision.id,
+                'Description': type_decision.Description,
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
