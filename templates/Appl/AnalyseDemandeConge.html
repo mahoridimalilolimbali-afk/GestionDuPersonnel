@@ -533,7 +533,7 @@
                                 const periode = `${a.date_debut} → ${a.date_fin}`;
                                 const decisionBadge = getDecisionBadge(a.decision);
                                 const actionsHtml = a.decision === 'approuve' ? `
-                                    <button class="btn-action btn-recu" onclick="voirAttestation(${a.demande_id})"><i class="fas fa-file-alt"></i> Reçu</button>
+                                    <button class="btn-action btn-recu" onclick="voirAttestation(${a.demande_id})"><i class="fas fa-file-alt"></i> Attestation de congé</button>
                                     <button class="btn-action btn-modifier" onclick="ouvrirModalModifierAnalyse(${a.id})"><i class="fas fa-edit"></i> Modifier</button>
                                 ` : `
                                     <button class="btn-action btn-modifier" onclick="ouvrirModalModifierAnalyse(${a.id})"><i class="fas fa-edit"></i> Modifier</button>
@@ -648,7 +648,7 @@
                         <h3>ATTESTATION DE CONGÉ</h3>
                     </div>
                     <div class="attestation-body">
-                        <p>Je soussigné(e), <strong>Le Directeur Général de l'entreprise GRH ENGENEERING/strong>, certifie que :</p>
+                        <p>Je soussigné(e), <strong>Le Directeur Général de l'entreprise GRH ENGENEERING</strong>, certifie que :</p>
                         <p style="margin: 20px 0;"><strong>Monsieur/Madame ${escapeHtml(demande.agent_nom)}</strong><br>est autorisé(e) à prendre un congé de <strong>${demande.nombre_jours} jours</strong> à compter du <strong>${dateDebutStr}</strong> au <strong>${dateFinStr}</strong>.</p>
                         <p>Type de congé : <strong>${escapeHtml(demande.type_conge)}</strong></p>
                         <p>Motif : <strong>${escapeHtml(demande.motif_analyse || 'Non spécifié')}</strong></p>
