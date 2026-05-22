@@ -400,6 +400,12 @@ urlpatterns = [
     path('api/type-decisions/supprimer/<int:id_type_decision>/', views.TypeDecisionOffreSupprimer, name='TypeDecisionOffreSupprimer'),
     path('api/type-decisions/selectionner/<int:id_type_decision>/', views.TypeDecisionOffreSelectionner, name='TypeDecisionOffreSelectionner'),
 
+
+
+    # urls.py - Ajoutez ces lignes
+    path('api/candidats/non-agents/', views.get_candidats_non_agents, name='get_candidats_non_agents'),
+    path('api/agents/ajouter/', views.ajouter_agent, name='ajouter_agent'),
+
 ]
 # Servir les fichiers média en développement
 if settings.DEBUG:

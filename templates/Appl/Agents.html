@@ -31,6 +31,21 @@
         }
         .card-header h2 { margin: 0; }
         .card-header p { margin: 5px 0 0; opacity: 0.9; }
+        .btn-add {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+        }
+        .btn-add:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+            color: white;
+        }
         .table { margin: 0; }
         .table thead { background: #f8f9fa; }
         .table thead th { font-weight: 600; padding: 15px; }
@@ -49,6 +64,14 @@
         }
         .badge-actif {
             background: #27ae60;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-candidat {
+            background: #f39c12;
             color: white;
             padding: 5px 15px;
             border-radius: 20px;
@@ -123,9 +146,16 @@
             border-radius: 10px;
             font-weight: 600;
         }
+        .btn-submit {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
         
         /* ========== CARTE AGENT CORRIGÉE ========== */
-        /* Structure: gauche (infos) + droite (QR + dates) */
         .carte-agent {
             max-width: 600px;
             margin: 0 auto;
@@ -150,7 +180,6 @@
             opacity: 0.8;
         }
         
-        /* NOUVEAU: layout à 2 colonnes */
         .carte-body {
             padding: 20px;
             display: flex;
@@ -158,7 +187,6 @@
             flex-wrap: wrap;
         }
         
-        /* COLONNE GAUCHE: photo + informations */
         .carte-left {
             flex: 2;
             min-width: 200px;
@@ -215,7 +243,6 @@
             font-size: 11px;
         }
         
-        /* COLONNE DROITE: QR code + dates */
         .carte-right {
             flex: 1.2;
             min-width: 130px;
@@ -253,10 +280,6 @@
             padding: 4px 8px;
             border-radius: 20px;
         }
-        .date-item i {
-            margin-right: 4px;
-            font-size: 8px;
-        }
         .badge-status {
             background: #27ae60;
             padding: 3px 12px;
@@ -283,9 +306,28 @@
                 gap: 15px;
                 justify-content: space-around;
             }
-            .dates-wrapper {
-                text-align: left;
-            }
+        }
+
+        .form-group-custom {
+            margin-bottom: 20px;
+        }
+        .form-label-custom {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .form-control-custom, .form-select-custom {
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            padding: 12px 15px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        .form-control-custom:focus, .form-select-custom:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            outline: none;
         }
     </style>
 </head>
@@ -293,12 +335,20 @@
     <div class="container">
         <div class="card">
             <div class="card-header">
-                <h2><i class="fas fa-users"></i> Liste des Agents</h2>
-                <div>
-                        <i class="fas fa-chart-line"></i>
-                        <a href="/Appl/dashboardAdmin">Retourner à l'accueil</a>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2><i class="fas fa-users"></i> Liste des Agents</h2>
+                        <p>Gestion du personnel - RDC, Goma</p>
                     </div>
-                <p>Gestion du personnel</p>
+                    <div>
+                        <a href="/Appl/dashboardAdmin" class="btn btn-outline-light me-2">
+                            <i class="fas fa-arrow-left"></i> Retour
+                        </a>
+                        <button class="btn-add" data-bs-toggle="modal" data-bs-target="#ajouterAgentModal">
+                            <i class="fas fa-plus-circle"></i> Ajouter un agent
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <div class="card-body">
@@ -321,10 +371,57 @@
                                 <td colspan="8" class="text-center py-5">
                                     <div class="loading-spinner"></div>
                                     <p class="mt-2">Chargement des agents...</p>
-                                 </div>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Ajouter Agent -->
+    <div class="modal fade" id="ajouterAgentModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title">
+                        <i class="fas fa-user-plus"></i> Ajouter un agent
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body modal-body-custom">
+                    <form id="ajouterAgentForm" onsubmit="return false;">
+                        <div class="form-group-custom">
+                            <label class="form-label-custom">
+                                <i class="fas fa-user"></i> Sélectionner un candidat <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select-custom" id="candidatSelect" required>
+                                <option value="">-- Chargement des candidats... --</option>
+                            </select>
+                            <small class="text-muted">Seuls les candidats non encore agents sont affichés</small>
+                        </div>
+                        <div class="form-group-custom">
+                            <label class="form-label-custom">
+                                <i class="fas fa-calendar"></i> Date de recrutement <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" class="form-control-custom" id="dateRecrutement" required>
+                            <small class="text-muted">Date à laquelle l'agent a été recruté</small>
+                        </div>
+                        <div class="alert alert-info mt-2">
+                            <i class="fas fa-info-circle"></i> 
+                            <strong>Information :</strong> L'agent pourra se connecter avec ses identifiants actuels 
+                            et aura accès à l'espace AGENT.
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer modal-footer-custom">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                    <button type="button" class="btn-submit" onclick="ajouterAgent()">
+                        <i class="fas fa-save"></i> Enregistrer l'agent
+                    </button>
                 </div>
             </div>
         </div>
@@ -361,10 +458,13 @@
     
     <script>
         let currentAgent = null;
-        let qrcodeInstance = null; // Pour éviter les doublons
         
         function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
         
+        function showLoading() { $('#loadingOverlay').fadeIn(300); }
+        function hideLoading() { $('#loadingOverlay').fadeOut(300); }
+        
+        // Charger la liste des agents
         async function chargerAgents() {
             try {
                 const response = await fetch('/api/agents/');
@@ -391,8 +491,8 @@
                 const row = `
                     <tr>
                         <td><strong>#${agent.id}</strong></td>
-                        <td><div class="avatar">${agent.prenom.charAt(0)}${agent.nom.charAt(0)}</div></td>
-                        <td><strong>${agent.nom} ${agent.postnom} ${agent.prenom}</strong></td>
+                        <td><div class="avatar">${agent.prenom ? agent.prenom.charAt(0) : 'A'}${agent.nom ? agent.nom.charAt(0) : 'G'}</div></td>
+                        <td><strong>${agent.nom} ${agent.postnom || ''} ${agent.prenom}</strong></td>
                         <td>${agent.sexe === 'Masculin' ? '<i class="fas fa-mars" style="color:#3498db;"></i> M' : '<i class="fas fa-venus" style="color:#e91e63;"></i> F'}</td>
                         <td><i class="fas fa-phone-alt"></i> ${agent.telephone}</td>
                         <td><i class="fas fa-calendar"></i> ${agent.date_retenu}</td>
@@ -404,6 +504,91 @@
             });
         }
         
+        // Charger les candidats non encore agents
+        async function chargerCandidatsDisponibles() {
+            try {
+                const response = await fetch('/api/candidats/non-agents/');
+                const data = await response.json();
+                const select = document.getElementById('candidatSelect');
+                select.innerHTML = '<option value="">-- Sélectionnez un candidat --</option>';
+                
+                if (data.success && data.candidats.length > 0) {
+                    data.candidats.forEach(candidat => {
+                        select.innerHTML += `<option value="${candidat.id}" data-nom="${candidat.nom}" data-prenom="${candidat.prenom}" data-postnom="${candidat.postnom}" data-sexe="${candidat.sexe}" data-telephone="${candidat.telephone}">
+                            ${candidat.nom} ${candidat.postnom} ${candidat.prenom} - ${candidat.email || 'Pas d\'email'}
+                        </option>`;
+                    });
+                } else {
+                    select.innerHTML = '<option value="">Aucun candidat disponible</option>';
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                document.getElementById('candidatSelect').innerHTML = '<option value="">Erreur de chargement</option>';
+            }
+        }
+        
+        // Ajouter un agent
+        async function ajouterAgent() {
+            const candidatId = document.getElementById('candidatSelect').value;
+            const dateRecrutement = document.getElementById('dateRecrutement').value;
+            
+            if (!candidatId) {
+                Swal.fire({ icon: 'error', title: 'Erreur', text: 'Veuillez sélectionner un candidat' });
+                return;
+            }
+            
+            if (!dateRecrutement) {
+                Swal.fire({ icon: 'error', title: 'Erreur', text: 'Veuillez saisir la date de recrutement' });
+                return;
+            }
+            
+            Swal.fire({
+                title: 'Confirmation',
+                text: 'Voulez-vous vraiment ajouter cet agent ?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#27ae60',
+                cancelButtonColor: '#e74c3c',
+                confirmButtonText: 'Oui, ajouter',
+                cancelButtonText: 'Annuler'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const response = await fetch('/api/agents/ajouter/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': getCSRFToken()
+                            },
+                            body: JSON.stringify({
+                                candidat_id: candidatId,
+                                date_retenu: dateRecrutement
+                            })
+                        });
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Succès !',
+                                html: data.message,
+                                timer: 3000,
+                                showConfirmButton: false
+                            });
+                            $('#ajouterAgentModal').modal('hide');
+                            document.getElementById('ajouterAgentForm').reset();
+                            chargerAgents();
+                            chargerCandidatsDisponibles();
+                        } else {
+                            Swal.fire({ icon: 'error', title: 'Erreur', text: data.message });
+                        }
+                    } catch (error) {
+                        Swal.fire({ icon: 'error', title: 'Erreur', text: 'Erreur lors de l\'ajout' });
+                    }
+                }
+            });
+        }
+        
         function genererCodeValidation(agent) {
             const date = new Date();
             return `GRH-${agent.id}-${date.getFullYear()}${(date.getMonth()+1).toString().padStart(2,'0')}${date.getDate().toString().padStart(2,'0')}`;
@@ -411,7 +596,6 @@
         
         function genererUrlValidation(agent) {
             const baseUrl = window.location.origin;
-            // URL fonctionnelle pour la validation (à adapter selon vos routes)
             return `${baseUrl}/api/agents/valider/${agent.id}/`;
         }
         
@@ -435,13 +619,11 @@
                     document.getElementById('recuContent').innerHTML = html;
                     $('#recuModal').modal('show');
                     
-                    // Générer le QR code APRÈS que le DOM soit prêt
                     setTimeout(() => {
                         const urlValidation = genererUrlValidation(agent);
                         const qrContainer = document.getElementById('qrcode-container');
                         if (qrContainer) {
-                            qrContainer.innerHTML = ''; // Nettoyer
-                            // Utilisation correcte de QRCode.js
+                            qrContainer.innerHTML = '';
                             new QRCode(qrContainer, {
                                 text: urlValidation,
                                 width: 100,
@@ -458,13 +640,6 @@
         
         function genererCarteAgent(agent, photoUrl) {
             const dateActuelle = new Date().toLocaleDateString('fr-FR');
-            // Date d'expiration : 1 an après la date de recrutement ou 1 an après aujourd'hui
-            let expiryDate = new Date(agent.date_retenu);
-            if (isNaN(expiryDate.getTime())) {
-                expiryDate = new Date();
-            }
-            expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-            const dateExpiration = expiryDate.toLocaleDateString('fr-FR');
             const codeValidation = genererCodeValidation(agent);
             
             const photoHtml = photoUrl ? 
@@ -474,11 +649,10 @@
             return `
                 <div class="carte-agent" id="attestationPrintArea">
                     <div class="carte-header">
-                        <h3><i class="fas fa-building"></i> GRH ENGENNERING SARL</h3>
-                        <small>RDC - Goma - N°${agent.id}</small>
+                        <h3><i class="fas fa-building"></i> GRH ENGINEERING SARL</h3>
+                        <small>RDC - Goma - Matricule: ${codeValidation}</small>
                     </div>
                     <div class="carte-body">
-                        <!-- COLONNE GAUCHE : photo + infos -->
                         <div class="carte-left">
                             <div class="carte-photo">
                                 ${photoHtml}
@@ -487,11 +661,9 @@
                                 <div class="nom">${agent.nom} ${agent.postnom || ''} ${agent.prenom}</div>
                                 <div class="info-row"><span class="info-label"><i class="fas fa-venus-mars"></i> Sexe :</span> <span class="info-value">${agent.sexe}</span></div>
                                 <div class="info-row"><span class="info-label"><i class="fas fa-phone"></i> Tél :</span> <span class="info-value">${agent.telephone}</span></div>
-                               
+                                <div class="info-row"><span class="info-label"><i class="fas fa-calendar"></i> Recruté le :</span> <span class="info-value">${agent.date_retenu}</span></div>
                             </div>
                         </div>
-                        
-                        <!-- COLONNE DROITE : QR code + dates -->
                         <div class="carte-right">
                             <div class="qr-code-wrapper">
                                 <div id="qrcode-container"></div>
@@ -499,9 +671,6 @@
                             <div class="dates-wrapper">
                                 <div class="date-item">
                                     <i class="fas fa-calendar-alt"></i> <strong>Émis le :</strong> ${dateActuelle}
-                                </div>
-                                <div class="date-item">
-                                    <i class="fas fa-hourglass-half"></i> <strong>Signature et saut du directeur
                                 </div>
                                 <div class="badge-status">
                                     <i class="fas fa-check-circle"></i> ACTIF
@@ -531,7 +700,10 @@
             html2pdf().set(opt).from(element).save();
         }
         
-        document.addEventListener('DOMContentLoaded', chargerAgents);
+        document.addEventListener('DOMContentLoaded', () => {
+            chargerAgents();
+            chargerCandidatsDisponibles();
+        });
     </script>
 </body>
 </html>

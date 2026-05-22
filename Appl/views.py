@@ -27,88 +27,88 @@ from django.utils.html import strip_tags
 
 def ChargerIndex(request):
     return render (request,"Appl/index.html")
-
+@login_required
 def ChargerTypeDecisionOffre(request):
     return render (request, "Appl/TypeDecisionOffre.html")
-
+@login_required
 def ChargerDomaine(request):
     return render (request,"Appl/Domaine.html")
-
+@login_required
 def ChargerTest(request):
     return render (request,"Appl/Test.html")
-
+@login_required
 def ChargerDashboardCandidat(request):
     return render (request,"Appl/dashboardCandidat.html")
-
+@login_required
 def ChargerDecision(request):
     return render (request,"Appl/Decision.html")
-
+@login_required
 def ChargerReglageOffre(request):
     return render (request,"Appl/ReglageOffre.html")
-
+@login_required
 def ChargerDashboardAdmin(request):
     return render (request,"Appl/dashboardAdmin.html")
-
+@login_required
 def ChargerInfoPersonnel(request):
     return render (request,"Appl/InfoPersonnel.html")
-
+@login_required
 def ChargerOffreEmploi(request):
     return render (request,"Appl/offreEmploi.html")
-
+@login_required
 def ChargerResultatTest(request):
     return render (request,"Appl/ResultatTest.html")
-
+@login_required
 def ChargerDecisionOnem(request):
     return render (request,"Appl/DecisionOnem.html")
-
+@login_required
 def ChargerAnalyseDemandeConge(request):
     return render (request,"Appl/AnalyseDemandeConge.html")
-
+@login_required
 def ChargerInfoOffre(request):
     return render (request,"Appl/InfoOffre.html")
-
+@login_required
 def ChargerDemandeConge(request):
     return render (request,"Appl/DemandeConge.html")
-
+@login_required
 def ChargerTypeDecision(request):
     return render (request,"Appl/TypeDecision.html")
-
+@login_required
 def ChargerTypeConge(request):
     return render (request,"Appl/TypeConge.html")
-
+@login_required
 def ChargerOnem(request):
     return render (request,"Appl/Onem.html")
-
+@login_required
 def ChargerListeCandidat(request):
     return render (request,"Appl/ListeCandidat.html")
-
+@login_required
 def ChargerCandidat(request):
     return render (request,"Appl/Candidat.html")
 
 def ChargerLogin(request):
     return render (request,"Appl/login.html")
-
+@login_required
 def ChargerEvaluation(request):
     return render (request,"Appl/Evaluation.html")
-
+@login_required
 def ChargerTypeEtatOffre(request):
     return render (request,"Appl/TypeEtatOffre.html")
-
+@login_required
 def ChargerDemandeConge(request):
     return render (request,"Appl/DemandeConge.html")
-
+@login_required
 def ChargerAgent(request):
     return render (request,"Appl/Agents.html")
-
+@login_required
 def ChargerReglageOffre(request):
     return render (request,"Appl/ReglageOffre.html")
-
+@login_required
 def ChargerDashboardOnem(request):
     return render (request,"Appl/dashboardOnem.html")
-
+@login_required
 def ChargerDashboardAgent(request):
     return render (request,"Appl/dashboardAgent.html")
-
+@login_required
 def ChargerMessagerie(request):
     return render (request,"Appl/Messagerie.html")
 
@@ -174,7 +174,7 @@ def ConnectUtilisateur(request):
 
 
 logger = logging.getLogger(__name__)
-
+@login_required
 def liste_domaines(request):
     """Affiche la page principale avec la liste des domaines"""
     try:
@@ -208,6 +208,7 @@ def liste_domaines(request):
         })
 
 @csrf_exempt
+@login_required
 @require_http_methods(["GET"])
 def get_all_domaines(request):
     """API pour récupérer tous les domaines (AJAX)"""
@@ -231,6 +232,7 @@ def get_all_domaines(request):
         }, status=500)
 
 @csrf_exempt
+@login_required
 @require_http_methods(["POST"])
 def ajouter_domaine(request):
     """Ajouter un nouveau domaine"""
@@ -318,7 +320,7 @@ def supprimer_domaine(request, id_domaine):
 
 
     # ACTION OFFRE EMPLOI
-
+@login_required
 def liste_offres(request):
     """Affiche la page principale des offres d'emploi"""
     domaines = Domaine.objects.all().order_by('NomDomaine')
@@ -327,6 +329,7 @@ def liste_offres(request):
 # ==================== API DOMAINES ====================
 
 @csrf_exempt
+@login_required
 @require_http_methods(["GET"])
 def get_all_domaines(request):
     """API pour récupérer tous les domaines"""
@@ -352,6 +355,7 @@ def get_all_domaines(request):
 # ==================== API OFFRES ====================
 
 @csrf_exempt
+@login_required
 @require_http_methods(["GET"])
 def get_all_offres(request):
     """API pour récupérer toutes les offres d'emploi"""
@@ -380,6 +384,7 @@ def get_all_offres(request):
 
 
 @csrf_exempt
+@login_required
 @require_http_methods(["POST"])
 def ajouter_offre(request):
     """API: Ajouter une offre d'emploi et notifier les utilisateurs ONEM"""
@@ -435,6 +440,7 @@ def ajouter_offre(request):
 
 
 @csrf_exempt
+@login_required
 @require_http_methods(["POST"])
 def modifier_offre(request, id_offre):
     """API: Modifier une offre d'emploi et notifier les utilisateurs ONEM"""
@@ -494,6 +500,7 @@ def modifier_offre(request, id_offre):
 
 
 @csrf_exempt
+@login_required
 @require_http_methods(["POST"])
 def supprimer_offre(request, id_offre):
     """Supprimer une offre d'emploi"""
@@ -534,7 +541,7 @@ def telecharger_fichier(request, id_offre):
 
 
 # ==================== PAGE PRINCIPALE ====================
-
+@login_required
 def liste_decisions(request):
     """Affiche la page principale des décisions ONEM"""
     return render(request, 'DecisionOnem.html')
@@ -542,6 +549,7 @@ def liste_decisions(request):
 # ==================== API DECISIONS ONEM ====================
 
 @csrf_exempt
+@login_required
 @require_http_methods(["GET"])
 def get_all_decisions(request):
     """API pour récupérer toutes les décisions ONEM"""
@@ -638,7 +646,7 @@ import json
 import os
 
 # ==================== PAGE ONEM ====================
-
+@login_required
 def page_onem(request):
     """Affiche la page principale ONEM avec les décisions"""
     # Récupérer TOUTES les décisions
@@ -655,6 +663,7 @@ def page_onem(request):
 # ==================== API ONEM ====================
 
 @csrf_exempt
+@login_required
 @require_http_methods(["GET"])
 def get_offres_a_traiter(request):
     """Récupérer les offres non encore traitées"""
@@ -675,6 +684,7 @@ def get_offres_a_traiter(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 @csrf_exempt
+@login_required
 @require_http_methods(["GET"])
 def get_offres_traitees(request):
     """Récupérer les offres déjà traitées"""
@@ -902,6 +912,7 @@ def inscriptionCandidat(request):
 # ==================== PAGE DASHBOARD CANDIDAT ====================
 
 @login_required
+@login_required
 def dashboardCandidat(request):
     """Affiche le tableau de bord du candidat avec les offres acceptées"""
     
@@ -927,6 +938,7 @@ def dashboardCandidat(request):
 # ==================== API: Récupérer les offres acceptées ====================
 
 @csrf_exempt
+@login_required
 @require_http_methods(["GET"])
 def get_offres_acceptees(request):
     """API pour récupérer les offres acceptées, actives (Actif ou Renouveler) et non expirées"""
@@ -1111,7 +1123,7 @@ def ouvrir_fichier_candidat(request, id_offre):
 # TYPE DE DECISION ADMIN POUR L'ANALYSE DE LA CANDIDATURE
 
 
-
+@login_required
 def liste_type_decisions(request):
     """Affiche la page principale des types de décision"""
     return render(request, 'TypeDecision.html')
@@ -1120,6 +1132,7 @@ def liste_type_decisions(request):
 # ==================== API TYPE DECISION ====================
 
 @csrf_exempt
+@login_required
 @require_http_methods(["GET"])
 def get_all_type_decisions(request):
     """API pour récupérer tous les types de décision"""
@@ -1227,7 +1240,8 @@ def supprimer_type_decision(request, id_type_decision):
 # ============================================================================
 # SECTION: DECISIONS SUR CANDIDATURES AVEC ENVOI D'EMAIL
 # ============================================================================
-
+@login_required
+@login_required
 def liste_decisions_candidature(request):
     """Affiche la page principale des décisions sur candidatures"""
     types_decision = TypeDecision.objects.all().order_by('Description')
@@ -1235,6 +1249,7 @@ def liste_decisions_candidature(request):
 
 
 @csrf_exempt
+@login_required
 @require_http_methods(["GET"])
 def get_candidatures_a_traiter(request):
     """API: Récupérer les candidatures sans décision"""
@@ -1262,6 +1277,7 @@ def get_candidatures_a_traiter(request):
 
 
 @csrf_exempt
+@login_required
 @require_http_methods(["GET"])
 def get_candidatures_traitees(request):
     """API: Récupérer les candidatures avec décision"""
@@ -1292,7 +1308,7 @@ def get_candidatures_traitees(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-
+@login_required
 @require_http_methods(["GET"])
 def ouvrir_cv_candidat(request, id_candidature):
     """Ouvrir le CV d'un candidat"""
@@ -1713,6 +1729,7 @@ def get_candidatures_acceptees(request):
 # ==================== API RECUPERER TESTS D'UNE OFFRE ====================
 
 @csrf_exempt
+@login_required
 @require_http_methods(["GET"])
 def get_tests_by_offre(request, id_offre):
     """API pour récupérer tous les tests d'une offre"""
@@ -1885,7 +1902,7 @@ def get_candidat_status(request, candidature_id):
 
 
 # ==================== PAGE TYPE CONGE ====================
-
+@login_required
 def liste_type_conge(request):
     """Affiche la page principale des types de congé"""
     return render(request, 'TypeConge.html')
@@ -2035,7 +2052,7 @@ def supprimer_type_conge(request, id_type_conge):
 
 
 # ==================== PAGE DEMANDE CONGE ====================
-
+@login_required
 def liste_demandes_conge(request):
     """Affiche la page principale des demandes de congé"""
     agents = Agent.objects.select_related('candidat').all().order_by('candidat__nom')
@@ -2335,7 +2352,7 @@ from .models import TypeEtatOffre
 import json
 
 # ==================== PAGE TYPE ETAT OFFRE ====================
-
+@login_required
 def liste_type_etat_offre(request):
     """Affiche la page principale des types d'états d'offre"""
     return render(request, 'TypeEtatOffre.html')
@@ -2556,6 +2573,7 @@ def get_offres_avec_decision(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 @csrf_exempt
+@login_required
 @require_http_methods(["GET"])
 def get_reglage_by_offre(request, id_offre):
     """API pour récupérer le réglage d'une offre spécifique"""
@@ -2674,7 +2692,7 @@ import json
 import os
 
 # ==================== PAGE ONEM (TRAITEMENT DES OFFRES) ====================
-
+@login_required
 def page_onem_traitement(request):
     """Affiche la page principale ONEM pour le traitement des offres"""
     return render(request, 'Onem.html')
@@ -2683,6 +2701,7 @@ def page_onem_traitement(request):
 # ==================== API ONEM - OFFRES À TRAITER ====================
 
 @csrf_exempt
+@login_required
 @require_http_methods(["GET"])
 def get_offres_non_traitees(request):
     """API pour récupérer les offres non encore traitées par l'ONEM"""
@@ -2754,6 +2773,7 @@ def ouvrir_fichier_offre_onem(request, id_offre):
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
+@login_required
 @csrf_exempt
 @require_http_methods(["POST"])
 def enregistrer_decision_onem(request):
@@ -2860,6 +2880,7 @@ import os
 
 # ==================== PAGE ANALYSE ONEM ====================
 
+@login_required
 def page_analyse_onem(request):
     """Affiche la page principale d'analyse ONEM pour le traitement des offres"""
     return render(request, 'AnalyseOnem.html')
@@ -2915,7 +2936,7 @@ def get_offres_analysees(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-
+@login_required
 @require_http_methods(["GET"])
 def ouvrir_fichier_analyse_onem(request, id_offre):
     """Ouvrir le fichier d'une offre pour l'analyse ONEM"""
@@ -3333,6 +3354,7 @@ def get_all_demandes_conge_admin(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
+@login_required
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_types_conge(request):
@@ -3349,6 +3371,7 @@ def get_types_conge(request):
         return JsonResponse({'success': True, 'types_conge': data, 'total': len(data)})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
 
 
 @csrf_exempt
@@ -3487,7 +3510,7 @@ def supprimer_demande_conge(request, id_demande):
 
 
 # ==================== API CANDIDAT - INFOS ====================
-
+@login_required
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_candidat_infos(request):
@@ -3519,7 +3542,7 @@ def get_candidat_infos(request):
 
 
 # ==================== API CANDIDAT - MES EVALUATIONS ====================
-
+@login_required
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_mes_evaluations(request):
@@ -3571,14 +3594,14 @@ from datetime import datetime
 import json
 
 # ==================== PAGE ANALYSE DEMANDES CONGE ====================
-
+@login_required
 def page_analyse_demandes_conge(request):
     """Affiche la page principale d'analyse des demandes de congé"""
     return render(request, 'AnalyseDemandeConge.html')
 
 
 # ==================== API DEMANDES NON ANALYSEES ====================
-
+@login_required
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_demandes_non_analysees(request):
@@ -3613,7 +3636,7 @@ def get_demandes_non_analysees(request):
 
 
 # ==================== API DEMANDES ANALYSEES ====================
-
+@login_required
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_demandes_analysees(request):
@@ -3761,7 +3784,7 @@ def supprimer_analyse_demande(request, id_analyse):
 # ANALYSE PERSONNELLE
 
 
-
+@login_required
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_analyse_by_demande(request, id_demande):
@@ -3787,7 +3810,7 @@ def get_analyse_by_demande(request, id_demande):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
-
+@login_required
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_mes_demandes_conge(request):
@@ -3843,7 +3866,7 @@ def get_mes_demandes_conge(request):
 
 
 # ==================== API UTILISATEUR CONNECTÉ ====================
-
+@login_required
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_utilisateur_infos(request):
@@ -3896,6 +3919,8 @@ def get_utilisateur_infos(request):
         return JsonResponse({'success': True, 'data': data})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
 
 
 @csrf_exempt
@@ -4001,7 +4026,7 @@ import json
 import os
 
 # ==================== PERMISSIONS MESSAGERIE ====================
-
+@login_required
 def get_groupes_utilisateur(user):
     return [g.name for g in user.groups.all()]
 
@@ -4844,7 +4869,7 @@ def modifier_evaluation(request, id_evaluation):
 
 
 # ==================== API: LISTE DES ÉVALUATIONS EFFECTUÉES ====================
-
+@login_required
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_evaluations_effectuees(request):
@@ -4883,6 +4908,7 @@ def get_evaluations_effectuees(request):
 
 
 # CADRE DE DEMANDE CONGE AGENT
+@login_required
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_agent_infos(request):
@@ -4913,6 +4939,7 @@ def get_agent_infos(request):
 # dashboard admin
 
 @csrf_exempt
+@login_required
 @require_http_methods(["GET"])
 def admin_dashboard_stats(request):
     """API pour récupérer toutes les statistiques du dashboard admin"""
@@ -5025,6 +5052,7 @@ def admin_dashboard_stats(request):
 # views.py - Ajoutez ces fonctions
 
 @csrf_exempt
+@login_required
 @require_http_methods(["GET"])
 def get_utilisateurs_communication(request):
     """API: Récupérer tous les utilisateurs pour la communication"""
@@ -5273,13 +5301,14 @@ def ChargerCommunication(request):
 # TYPE DECISION OFFRE
 
 # ==================== GESTION DES TYPES DE DÉCISION ====================
-
+@login_required
 def TypeDecisionOffrePage(request):
     """Affiche la page principale des types de décision"""
     return render(request, 'TypeDecisionOffre.html')
 
 
 @csrf_exempt
+@login_required
 @require_http_methods(["GET"])
 def TypeDecisionOffreLister(request):
     """API: Récupérer tous les types de décision"""
@@ -5303,6 +5332,7 @@ def TypeDecisionOffreLister(request):
 
 
 @csrf_exempt
+@login_required
 @require_http_methods(["POST"])
 def TypeDecisionOffreAjouter(request):
     """API: Ajouter un nouveau type de décision"""
@@ -5394,5 +5424,112 @@ def TypeDecisionOffreSelectionner(request, id_type_decision):
                 'Description': type_decision.Description,
             }
         })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+
+# ENREGISTREMENT AGENT MANUELLEMENT
+
+# views.py - Ajoutez ces fonctions
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_candidats_non_agents(request):
+    """API: Récupérer les candidats qui ne sont pas encore agents"""
+    try:
+        # Récupérer les IDs des candidats qui sont déjà agents
+        agents_ids = Agent.objects.values_list('candidat_id', flat=True)
+        
+        # Récupérer les candidats qui ne sont pas agents
+        candidats = Candidat.objects.exclude(id__in=agents_ids).select_related('user')
+        
+        data = []
+        for c in candidats:
+            data.append({
+                'id': c.id,
+                'nom': c.nom,
+                'postnom': c.postnom,
+                'prenom': c.prenom,
+                'sexe': c.sexe,
+                'telephone': c.numeroTelephone,
+                'email': c.user.email if c.user else None
+            })
+        
+        return JsonResponse({'success': True, 'candidats': data, 'total': len(data)})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def ajouter_agent(request):
+    """API: Ajouter un agent à partir d'un candidat existant"""
+    try:
+        from django.contrib.auth.models import Group
+        from datetime import datetime
+        
+        data = json.loads(request.body)
+        candidat_id = data.get('candidat_id')
+        date_retenu = data.get('date_retenu')
+        
+        if not candidat_id:
+            return JsonResponse({'success': False, 'message': 'Candidat non spécifié'}, status=400)
+        
+        if not date_retenu:
+            return JsonResponse({'success': False, 'message': 'Date de recrutement requise'}, status=400)
+        
+        # Récupérer le candidat
+        candidat = get_object_or_404(Candidat, id=candidat_id)
+        
+        # Vérifier si le candidat est déjà agent
+        if Agent.objects.filter(candidat=candidat).exists():
+            return JsonResponse({'success': False, 'message': 'Ce candidat est déjà agent'}, status=400)
+        
+        # Convertir la date
+        try:
+            date_retenu_obj = datetime.strptime(date_retenu, '%Y-%m-%d').date()
+        except ValueError:
+            return JsonResponse({'success': False, 'message': 'Format de date invalide'}, status=400)
+        
+        # Générer un matricule unique
+        import random
+        matricule = f"GRH-{candidat.id}-{random.randint(1000, 9999)}"
+        while Agent.objects.filter(matricule=matricule).exists():
+            matricule = f"GRH-{candidat.id}-{random.randint(1000, 9999)}"
+        
+        # Créer l'agent
+        agent = Agent.objects.create(
+            candidat=candidat,
+            date_retenu=date_retenu_obj,
+            statut='Approuvé',
+            contrat_signe=False,
+            matricule=matricule
+        )
+        
+        # Changer le groupe de l'utilisateur de CANDIDAT à AGENT
+        user = candidat.user
+        if user:
+            # Retirer du groupe CANDIDAT
+            groupe_candidat = Group.objects.filter(name='CANDIDAT').first()
+            if groupe_candidat:
+                user.groups.remove(groupe_candidat)
+            
+            # Ajouter au groupe AGENT
+            groupe_agent, _ = Group.objects.get_or_create(name='AGENT')
+            user.groups.add(groupe_agent)
+            user.is_staff = True
+            user.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Agent ajouté avec succès ! Matricule: {matricule}',
+            'agent': {
+                'id': agent.id,
+                'matricule': agent.matricule,
+                'date_retenu': agent.date_retenu.strftime('%d/%m/%Y')
+            }
+        })
+        
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
