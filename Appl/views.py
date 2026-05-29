@@ -5533,3 +5533,46 @@ def ajouter_agent(request):
         
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def modifier_date_recrutement(request):
+    """API: Modifier la date de recrutement d'un agent"""
+    try:
+        data = json.loads(request.body)
+        agent_id = data.get('agent_id')
+        date_retenu = data.get('date_retenu')
+        
+        if not agent_id:
+            return JsonResponse({'success': False, 'message': 'Agent non spécifié'}, status=400)
+        
+        if not date_retenu:
+            return JsonResponse({'success': False, 'message': 'Date de recrutement requise'}, status=400)
+        
+        agent = get_object_or_404(Agent, id=agent_id)
+        
+        # Convertir la date
+        try:
+            from datetime import datetime
+            date_retenu_obj = datetime.strptime(date_retenu, '%Y-%m-%d').date()
+        except ValueError:
+            return JsonResponse({'success': False, 'message': 'Format de date invalide'}, status=400)
+        
+        # Mettre à jour la date (contourner auto_now_add)
+        agent.date_retenu = date_retenu_obj
+        agent.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Date de recrutement modifiée avec succès : {date_retenu_obj.strftime("%d/%m/%Y")}',
+            'agent': {
+                'id': agent.id,
+                'date_retenu': agent.date_retenu.strftime('%d/%m/%Y')
+            }
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)

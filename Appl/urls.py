@@ -405,6 +405,7 @@ urlpatterns = [
     # urls.py - Ajoutez ces lignes
     path('api/candidats/non-agents/', views.get_candidats_non_agents, name='get_candidats_non_agents'),
     path('api/agents/ajouter/', views.ajouter_agent, name='ajouter_agent'),
+    path('api/agents/modifier-date/', views.modifier_date_recrutement, name='modifier_date_recrutement'),
 
 ]
 # Servir les fichiers média en développement

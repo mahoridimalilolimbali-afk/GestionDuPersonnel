@@ -107,6 +107,22 @@
             box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
             color: white;
         }
+        .btn-edit-date {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-left: 5px;
+        }
+        .btn-edit-date:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.4);
+            color: white;
+        }
         
         .modal-content-custom {
             border-radius: 25px;
@@ -363,7 +379,7 @@
                                 <th>Téléphone</th>
                                 <th>Date recrutement</th>
                                 <th>Statut</th>
-                                <th>Action</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="agentsTableBody">
@@ -406,7 +422,7 @@
                                 <i class="fas fa-calendar"></i> Date de recrutement <span class="text-danger">*</span>
                             </label>
                             <input type="date" class="form-control-custom" id="dateRecrutement" required>
-                            <small class="text-muted">Date à laquelle l'agent a été recruté (peut être une date antérieure)</small>
+                            <small class="text-muted">Date à laquelle l'agent a été recruté</small>
                         </div>
                         <div class="alert alert-info mt-2">
                             <i class="fas fa-info-circle"></i> 
@@ -421,6 +437,44 @@
                     </button>
                     <button type="button" class="btn-submit" onclick="ajouterAgent()">
                         <i class="fas fa-save"></i> Enregistrer l'agent
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Modifier Date de Recrutement -->
+    <div class="modal fade" id="modifierDateModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title">
+                        <i class="fas fa-calendar-edit"></i> Modifier la date de recrutement
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body modal-body-custom">
+                    <form id="modifierDateForm" onsubmit="return false;">
+                        <input type="hidden" id="modifierAgentId">
+                        <div class="form-group-custom">
+                            <label class="form-label-custom">
+                                <i class="fas fa-calendar"></i> Nouvelle date de recrutement <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" class="form-control-custom" id="nouvelleDateRecrutement" required>
+                            <small class="text-muted">Modifiez la date de recrutement de l'agent</small>
+                        </div>
+                        <div class="alert alert-warning mt-2">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            <strong>Attention :</strong> Cette modification affectera l'ancienneté de l'agent pour le calcul des congés.
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer modal-footer-custom">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                    <button type="button" class="btn-submit" onclick="modifierDateRecrutement()">
+                        <i class="fas fa-save"></i> Enregistrer
                     </button>
                 </div>
             </div>
@@ -461,9 +515,6 @@
         
         function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
         
-        function showLoading() { $('#loadingOverlay').fadeIn(300); }
-        function hideLoading() { $('#loadingOverlay').fadeOut(300); }
-        
         // Charger la liste des agents
         async function chargerAgents() {
             try {
@@ -472,11 +523,11 @@
                 if (data.success) {
                     afficherAgents(data.agents);
                 } else {
-                    document.getElementById('agentsTableBody').innerHTML = `<table><td colspan="8" class="text-center py-5 text-danger"><i class="fas fa-exclamation-triangle"></i> Erreur de chargement</td></tr>`;
+                    document.getElementById('agentsTableBody').innerHTML = `<td><td colspan="8" class="text-center py-5 text-danger"><i class="fas fa-exclamation-triangle"></i> Erreur de chargement</div></tr>`;
                 }
             } catch (error) {
                 console.error('Erreur:', error);
-                document.getElementById('agentsTableBody').innerHTML = `<tr><td colspan="8" class="text-center py-5 text-danger"><i class="fas fa-exclamation-triangle"></i> Erreur de connexion</td></tr>`;
+                document.getElementById('agentsTableBody').innerHTML = `<tr><td colspan="8" class="text-center py-5 text-danger"><i class="fas fa-exclamation-triangle"></i> Erreur de connexion</div></tr>`;
             }
         }
         
@@ -484,7 +535,7 @@
             const tbody = document.getElementById('agentsTableBody');
             tbody.innerHTML = '';
             if (agents.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5"><i class="fas fa-users-slash fa-3x text-muted"></i><p class="mt-2">Aucun agent enregistré</p></td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5"><i class="fas fa-users-slash fa-3x text-muted"></i><p class="mt-2">Aucun agent enregistré</p></div></tr>`;
                 return;
             }
             agents.forEach(agent => {
@@ -495,12 +546,83 @@
                         <td><strong>${agent.nom} ${agent.postnom || ''} ${agent.prenom}</strong></td>
                         <td>${agent.sexe === 'Masculin' ? '<i class="fas fa-mars" style="color:#3498db;"></i> M' : '<i class="fas fa-venus" style="color:#e91e63;"></i> F'}</td>
                         <td><i class="fas fa-phone-alt"></i> ${agent.telephone}</td>
-                        <td><i class="fas fa-calendar"></i> ${agent.date_retenu}</td>
+                        <td>
+                            <i class="fas fa-calendar"></i> ${agent.date_retenu}
+                            <button class="btn-edit-date" onclick="ouvrirModalModifierDate(${agent.id}, '${agent.date_retenu}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
                         <td><span class="badge-actif"><i class="fas fa-check-circle"></i> Actif</span></td>
-                        <td><button class="btn-recu" onclick="voirRecu(${agent.id})"><i class="fas fa-id-card"></i> Voir carte</button></td>
+                        <td>
+                            <button class="btn-recu" onclick="voirRecu(${agent.id})">
+                                <i class="fas fa-id-card"></i> Carte
+                            </button>
+                        </td>
                     </tr>
                 `;
                 tbody.innerHTML += row;
+            });
+        }
+        
+        // Ouvrir modal pour modifier la date
+        function ouvrirModalModifierDate(agentId, dateActuelle) {
+            $('#modifierAgentId').val(agentId);
+            $('#nouvelleDateRecrutement').val(dateActuelle.split('/').reverse().join('-'));
+            $('#modifierDateModal').modal('show');
+        }
+        
+        // Modifier la date de recrutement
+        async function modifierDateRecrutement() {
+            const agentId = $('#modifierAgentId').val();
+            const nouvelleDate = $('#nouvelleDateRecrutement').val();
+            
+            if (!nouvelleDate) {
+                Swal.fire({ icon: 'error', title: 'Erreur', text: 'Veuillez sélectionner une date' });
+                return;
+            }
+            
+            Swal.fire({
+                title: 'Confirmation',
+                text: `Voulez-vous vraiment modifier la date de recrutement ?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#f39c12',
+                cancelButtonColor: '#e74c3c',
+                confirmButtonText: 'Oui, modifier',
+                cancelButtonText: 'Annuler'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const response = await fetch('/api/agents/modifier-date/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': getCSRFToken()
+                            },
+                            body: JSON.stringify({
+                                agent_id: agentId,
+                                date_retenu: nouvelleDate
+                            })
+                        });
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Succès !',
+                                html: data.message,
+                                timer: 3000,
+                                showConfirmButton: false
+                            });
+                            $('#modifierDateModal').modal('hide');
+                            chargerAgents();
+                        } else {
+                            Swal.fire({ icon: 'error', title: 'Erreur', text: data.message });
+                        }
+                    } catch (error) {
+                        Swal.fire({ icon: 'error', title: 'Erreur', text: 'Erreur lors de la modification' });
+                    }
+                }
             });
         }
         
@@ -514,7 +636,7 @@
                 
                 if (data.success && data.candidats.length > 0) {
                     data.candidats.forEach(candidat => {
-                        select.innerHTML += `<option value="${candidat.id}" data-nom="${candidat.nom}" data-prenom="${candidat.prenom}" data-postnom="${candidat.postnom}" data-sexe="${candidat.sexe}" data-telephone="${candidat.telephone}">
+                        select.innerHTML += `<option value="${candidat.id}">
                             ${candidat.nom} ${candidat.postnom} ${candidat.prenom} - ${candidat.email || 'Pas d\'email'}
                         </option>`;
                     });
@@ -527,7 +649,7 @@
             }
         }
         
-        // Ajouter un agent - CORRIGÉ : utilise la date saisie par l'utilisateur
+        // Ajouter un agent
         async function ajouterAgent() {
             const candidatId = document.getElementById('candidatSelect').value;
             const dateRecrutement = document.getElementById('dateRecrutement').value;
@@ -544,7 +666,7 @@
             
             Swal.fire({
                 title: 'Confirmation',
-                text: `Voulez-vous vraiment ajouter cet agent avec la date de recrutement : ${dateRecrutement} ?`,
+                text: `Voulez-vous vraiment ajouter cet agent ?`,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#27ae60',
@@ -561,13 +683,26 @@
                                 'X-CSRFToken': getCSRFToken()
                             },
                             body: JSON.stringify({
-                                candidat_id: candidatId,
-                                date_retenu: dateRecrutement  // ← Utilisation de la date saisie
+                                candidat_id: candidatId
                             })
                         });
                         const data = await response.json();
                         
                         if (data.success) {
+                            // Après création, modifier la date
+                            const dateResponse = await fetch('/api/agents/modifier-date/', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': getCSRFToken()
+                                },
+                                body: JSON.stringify({
+                                    agent_id: data.agent_id,
+                                    date_retenu: dateRecrutement
+                                })
+                            });
+                            await dateResponse.json();
+                            
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Succès !',
@@ -662,7 +797,7 @@
                                 <div class="nom">${agent.nom} ${agent.postnom || ''} ${agent.prenom}</div>
                                 <div class="info-row"><span class="info-label"><i class="fas fa-venus-mars"></i> Sexe :</span> <span class="info-value">${agent.sexe}</span></div>
                                 <div class="info-row"><span class="info-label"><i class="fas fa-phone"></i> Tél :</span> <span class="info-value">${agent.telephone}</span></div>
-                               
+                                
                             </div>
                         </div>
                         <div class="carte-right">
