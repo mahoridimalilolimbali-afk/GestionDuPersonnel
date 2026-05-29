@@ -27,6 +27,28 @@
             color: white;
             padding: 30px;
             text-align: center;
+            position: relative;
+        }
+        .back-home {
+            position: absolute;
+            left: 25px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            background: rgba(255,255,255,0.2);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        .back-home:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-50%) scale(1.1);
+            color: white;
         }
         .card-header h2 { font-weight: 700; margin: 0; }
         .card-header p { margin: 10px 0 0; opacity: 0.9; }
@@ -60,11 +82,16 @@
             font-size: 16px;
             width: 100%;
             transition: all 0.3s ease;
+            position: relative;
         }
         .btn-inscription:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
             color: white;
+        }
+        .btn-inscription:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
         }
         .login-link {
             text-align: center;
@@ -98,16 +125,94 @@
             border-color: #667eea;
             background: #f8f9ff;
         }
+        
+        /* Loader overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(3px);
+        }
+        .loading-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            animation: fadeInUp 0.3s ease;
+        }
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        .loading-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .loading-subtext {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 8px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
         @media (max-width: 768px) {
             .card-body { padding: 25px; }
             .form-label { font-size: 14px; }
+            .back-home {
+                left: 15px;
+                width: 35px;
+                height: 35px;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Loader Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">
+                <i class="fas fa-user-plus"></i> Traitement d'inscription en cours...
+            </div>
+            <div class="loading-subtext">Veuillez patienter quelques instants</div>
+        </div>
+    </div>
+
     <div class="container">
         <div class="card">
             <div class="card-header">
+                <a href="/" class="back-home" title="Retour à l'accueil">
+                    <i class="fas fa-home"></i>
+                </a>
                 <h2><i class="fas fa-user-graduate"></i> Inscription Candidat</h2>
                 <p>Créez votre compte pour postuler aux offres d'emploi</p>
             </div>
@@ -254,7 +359,7 @@
                         </div>
                     </div>
                     
-                    <button type="submit" class="btn-inscription mt-3">
+                    <button type="submit" class="btn-inscription mt-3" id="submitBtn">
                         <i class="fas fa-user-plus me-2"></i> S'inscrire
                     </button>
                     
@@ -278,10 +383,12 @@
             }
         }
         
-        // Validation du formulaire
+        // Afficher le loader lors de la soumission du formulaire
         document.getElementById('inscriptionForm').addEventListener('submit', function(e) {
             const password = document.querySelector('input[name="password"]').value;
             const confirm = document.querySelector('input[name="confirm_password"]').value;
+            const submitBtn = document.getElementById('submitBtn');
+            const loader = document.getElementById('loadingOverlay');
             
             if (password !== confirm) {
                 e.preventDefault();
@@ -294,6 +401,11 @@
                 alert('Le mot de passe doit contenir au moins 6 caractères');
                 return false;
             }
+            
+            // Afficher le loader et désactiver le bouton
+            loader.style.display = 'flex';
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Inscription en cours...';
         });
     </script>
 </body>
