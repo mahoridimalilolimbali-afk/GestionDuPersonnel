@@ -81,7 +81,7 @@ def ChargerOnem(request):
 @login_required
 def ChargerListeCandidat(request):
     return render (request,"Appl/ListeCandidat.html")
-@login_required
+
 def ChargerCandidat(request):
     return render (request,"Appl/Candidat.html")
 
