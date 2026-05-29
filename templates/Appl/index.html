@@ -27,37 +27,91 @@
             color: #2c3e50;
         }
         
-        /* Thème sombre */
+        /* Thème sombre - AMÉLIORÉ */
         body.dark-mode {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #eee;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+            color: #e0e0e0;
         }
         
         body.dark-mode .navbar {
             background: #1a1a2e !important;
-            box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.5);
+        }
+        
+        body.dark-mode .navbar.scrolled {
+            background: rgba(26,26,46,0.98) !important;
         }
         
         body.dark-mode .offre-card {
-            background: #2d3436;
-            border-color: #444;
+            background: #242b2e;
+            border-color: #2d3436;
         }
         
-        body.dark-mode .modal-content {
-            background: #2d3436;
-            color: #eee;
+        body.dark-mode .offre-card h3 {
+            color: #8e9eeb;
+        }
+        
+        body.dark-mode .offre-card .badge-domaine {
+            background: rgba(102, 126, 234, 0.2);
+            color: #8e9eeb;
         }
         
         body.dark-mode .offre-details {
-            border-top-color: #444;
+            border-top-color: #2d3436;
+        }
+        
+        body.dark-mode .modal-content {
+            background: #242b2e;
+            color: #e0e0e0;
+        }
+        
+        body.dark-mode .modal-header {
+            background: linear-gradient(135deg, #2c3e50 0%, #1a1a2e 100%);
         }
         
         body.dark-mode .contact-card {
-            background: #2d3436;
+            background: #242b2e;
+            border: 1px solid #2d3436;
+        }
+        
+        body.dark-mode .contact-card .contact-info {
+            color: #b0b0b0;
         }
         
         body.dark-mode .footer {
-            background: #1a1a2e;
+            background: #0f0f1a;
+            border-top-color: #2d3436;
+        }
+        
+        body.dark-mode .help-card {
+            background: #242b2e;
+            border: 1px solid #2d3436;
+        }
+        
+        body.dark-mode .help-card .help-text {
+            color: #c0c0c0;
+        }
+        
+        body.dark-mode .stat-item {
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        body.dark-mode .stat-item .stat-number {
+            color: #8e9eeb;
+        }
+        
+        body.dark-mode .theme-toggle {
+            background: #2d3436;
+        }
+        
+        body.dark-mode .btn-login {
+            border-color: #8e9eeb;
+            color: #8e9eeb;
+        }
+        
+        body.dark-mode .btn-login:hover {
+            background: #8e9eeb;
+            color: #1a1a2e;
         }
         
         /* Navbar */
@@ -70,11 +124,8 @@
         
         .navbar.scrolled {
             padding: 10px 0;
-            background: rgba(255,255,255,0.95);
-        }
-        
-        body.dark-mode .navbar.scrolled {
-            background: rgba(26,26,46,0.95);
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(10px);
         }
         
         .navbar-brand {
@@ -92,6 +143,14 @@
             transition: all 0.3s;
             cursor: pointer;
             position: relative;
+        }
+        
+        body.light-mode .nav-link-custom {
+            color: #2c3e50;
+        }
+        
+        body.dark-mode .nav-link-custom {
+            color: #e0e0e0;
         }
         
         .nav-link-custom:hover {
@@ -163,10 +222,6 @@
             transition: all 0.3s;
         }
         
-        body.dark-mode .theme-toggle {
-            background: #2d3436;
-        }
-        
         .theme-toggle:hover {
             transform: rotate(15deg);
         }
@@ -185,9 +240,9 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23667eea" fill-opacity="0.05" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,165.3C1248,149,1344,107,1392,85.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat bottom;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23667eea" fill-opacity="0.08" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,165.3C1248,149,1344,107,1392,85.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat bottom;
             background-size: cover;
-            opacity: 0.3;
+            opacity: 0.4;
             z-index: 0;
         }
         
@@ -204,7 +259,7 @@
         
         .hero p {
             font-size: 18px;
-            opacity: 0.8;
+            opacity: 0.9;
             max-width: 600px;
             margin: 0 auto;
             animation: fadeInUp 0.8s ease 0.2s both;
@@ -248,6 +303,12 @@
             height: 4px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 2px;
+        }
+        
+        .section-title p {
+            margin-top: 20px;
+            font-size: 16px;
+            opacity: 0.8;
         }
         
         /* Cartes offres */
@@ -382,61 +443,96 @@
             margin-top: 10px;
         }
         
-        /* Contact */
+        /* Contact - AVEC PHOTOS */
         .contact-card {
             background: white;
-            border-radius: 20px;
-            padding: 25px;
+            border-radius: 25px;
+            padding: 30px 25px;
             text-align: center;
             transition: all 0.3s;
             height: 100%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
         }
         
         .contact-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.2);
         }
         
-        .contact-avatar {
-            width: 100px;
-            height: 100px;
+        .contact-photo {
+            width: 130px;
+            height: 130px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
             margin: 0 auto 15px;
-            font-size: 40px;
-            font-weight: bold;
-            color: white;
+            overflow: hidden;
+            border: 4px solid #667eea;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+        
+        .contact-card:hover .contact-photo {
+            transform: scale(1.05);
+            border-color: #764ba2;
+        }
+        
+        .contact-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         
         .contact-name {
             font-size: 18px;
             font-weight: 700;
             margin-bottom: 5px;
+            color: #2c3e50;
+        }
+        
+        body.dark-mode .contact-name {
+            color: #e0e0e0;
         }
         
         .contact-title {
-            font-size: 12px;
+            font-size: 13px;
             color: #667eea;
             margin-bottom: 15px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        
+        .contact-divider {
+            width: 50px;
+            height: 2px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 15px auto;
+            border-radius: 2px;
         }
         
         .contact-info {
-            font-size: 12px;
-            margin-bottom: 8px;
+            font-size: 13px;
+            margin-bottom: 10px;
+            padding: 8px 10px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            display: inline-block;
+            width: 90%;
+            transition: all 0.3s;
+        }
+        
+        body.dark-mode .contact-info {
+            background: #1a1a2e;
+            color: #b0b0b0;
         }
         
         .contact-info i {
-            width: 25px;
+            width: 28px;
             color: #667eea;
         }
         
         /* Aide */
         .help-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 30px;
         }
         
@@ -446,15 +542,12 @@
             padding: 30px;
             text-align: center;
             transition: all 0.3s;
-        }
-        
-        body.dark-mode .help-card {
-            background: #2d3436;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
         }
         
         .help-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
         }
         
         .help-icon {
@@ -547,26 +640,32 @@
         /* Footer */
         .footer {
             background: white;
-            padding: 40px 0 20px;
+            padding: 50px 0 20px;
             margin-top: 50px;
             border-top: 1px solid #e1e8ed;
-        }
-        
-        body.dark-mode .footer {
-            background: #1a1a2e;
-            border-top-color: #2d3436;
         }
         
         .footer-content {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
+            gap: 40px;
             margin-bottom: 30px;
         }
         
         .footer-logo h3 {
             font-size: 20px;
             font-weight: 700;
+            margin-bottom: 15px;
+        }
+        
+        .footer-logo p {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .footer-links h4 {
+            font-size: 16px;
+            font-weight: 600;
             margin-bottom: 15px;
         }
         
@@ -583,6 +682,7 @@
             text-decoration: none;
             color: inherit;
             transition: color 0.3s;
+            font-size: 14px;
         }
         
         .footer-links ul li a:hover {
@@ -601,6 +701,7 @@
             .navbar-brand { font-size: 18px; }
             .btn-outline-custom { padding: 5px 15px; font-size: 12px; }
             .section-title h2 { font-size: 28px; }
+            .contact-photo { width: 100px; height: 100px; }
         }
     </style>
 </head>
@@ -714,9 +815,10 @@
         <div class="container">
             <div class="section-title">
                 <h2>Centre d'aide</h2>
+                <p>Tout ce que vous devez savoir pour utiliser notre plateforme</p>
             </div>
             <div class="help-grid">
-                <div class="help-card">
+                <div class="help-card" data-aos="fade-up" data-aos-delay="0">
                     <div class="help-icon">
                         <i class="fas fa-user-plus"></i>
                     </div>
@@ -731,7 +833,7 @@
                     </div>
                 </div>
                 
-                <div class="help-card">
+                <div class="help-card" data-aos="fade-up" data-aos-delay="100">
                     <div class="help-icon">
                         <i class="fas fa-briefcase"></i>
                     </div>
@@ -746,7 +848,7 @@
                     </div>
                 </div>
                 
-                <div class="help-card">
+                <div class="help-card" data-aos="fade-up" data-aos-delay="200">
                     <div class="help-icon">
                         <i class="fas fa-chart-line"></i>
                     </div>
@@ -761,7 +863,7 @@
                     </div>
                 </div>
                 
-                <div class="help-card">
+                <div class="help-card" data-aos="fade-up" data-aos-delay="300">
                     <div class="help-icon">
                         <i class="fas fa-gavel"></i>
                     </div>
@@ -783,46 +885,67 @@
         <div class="container">
             <div class="section-title">
                 <h2>Contactez-nous</h2>
-                <p class="mt-3">Notre équipe est à votre disposition pour toute information</p>
+                <p>Notre équipe est à votre disposition pour toute information</p>
             </div>
             
-            <div class="row">
-                <div class="col-md-4 mb-4">
+            <div class="row g-4">
+                <!-- Contact 1 - Directeur Général avec photo -->
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="0">
                     <div class="contact-card">
-                        <div class="contact-avatar">JD</div>
-                        <div class="contact-name">GUSTAVE</div>
+                        <div class="contact-photo">
+                            <img src="/media/contacts/DORCAS.PNG" alt="DORCAS">
+                        </div>
+                        <div class="contact-name">DORCA SWEDI Thabita</div>
                         <div class="contact-title">Directeur Général</div>
+                        <div class="contact-divider"></div>
                         <div class="contact-info"><i class="fas fa-phone"></i> +243 812 345 678</div>
-                        <div class="contact-info"><i class="fas fa-envelope"></i> gistave@gmail.com</div>
+                        <div class="contact-info"><i class="fas fa-envelope"></i> dorcasthabita@gmail.com</div>
                     </div>
                 </div>
-                <div class="col-md-4 mb-4">
+                
+                <!-- Contact 2 - Responsable RH avec photo -->
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
                     <div class="contact-card">
-                        <div class="contact-avatar">MP</div>
+                        <div class="contact-photo">
+                            <img src="/media/contacts/MAHORIDI.PNG" alt="MAHORIDI">
+                        </div>
                         <div class="contact-name">MAHORIDI MALILO Limbali</div>
                         <div class="contact-title">Responsable RH</div>
-                        <div class="contact-info"><i class="fas fa-phone"></i> +243 823 456 789</div>
+                        <div class="contact-divider"></div>
+                        <div class="contact-info"><i class="fas fa-phone"></i> +243 835 137 057</div>
                         <div class="contact-info"><i class="fas fa-envelope"></i> mahoridimalilolimbali@gmail.com</div>
                     </div>
                 </div>
-                <div class="col-md-4 mb-4">
+                
+                <!-- Contact 3 - IT Manager avec photo -->
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
                     <div class="contact-card">
-                        <div class="contact-avatar">KM</div>
-                        <div class="contact-name">Kambale Mahoridi</div>
+                        <div class="contact-photo">
+                            <img src="/media/contacts/OMARI.jpg" alt="OMARI">
+                        </div>
+                        <div class="contact-name">OMARI MUKACHO Levis</div>
                         <div class="contact-title">IT Manager</div>
+                        <div class="contact-divider"></div>
                         <div class="contact-info"><i class="fas fa-phone"></i> +243 974 310 720</div>
-                        <div class="contact-info"><i class="fas fa-envelope"></i> kmahoridi@grh-engineering.com</div>
+                        <div class="contact-info"><i class="fas fa-envelope"></i> omarimukacholevis@gmail.com</div>
                     </div>
                 </div>
             </div>
             
-            <div class="row mt-4">
-                <div class="col-md-6 mx-auto">
-                    <div class="contact-card">
-                        <div class="contact-info"><i class="fas fa-map-marker-alt"></i> Quartier Himbi, Avenue du Travail, N°15, Goma, RDC</div>
-                        <div class="contact-info"><i class="fas fa-phone"></i> +243 813 456 789 (Standard)</div>
-                        <div class="contact-info"><i class="fas fa-envelope"></i> contact@grh-engineering.com</div>
-                        <div class="contact-info"><i class="fas fa-globe"></i> www.grh-engineering.com</div>
+            <!-- Informations générales -->
+            <div class="row mt-5" data-aos="fade-up" data-aos-delay="300">
+                <div class="col-md-8 mx-auto">
+                    <div class="contact-card" style="background: linear-gradient(135deg, #667eea10 0%, #764ba210 100%);">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="contact-info"><i class="fas fa-map-marker-alt"></i> Situé à Goma, précisément dans la commune de KARISIMBI dans la province du Nord-Kivu.</div>
+                                <div class="contact-info"><i class="fas fa-phone"></i> +243 835 137 057 (Standard)</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="contact-info"><i class="fas fa-envelope"></i> contact@grh-gh_engineering.com</div>
+                                <div class="contact-info"><i class="fas fa-globe"></i> www.grh-engineering.com</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -834,7 +957,7 @@
         <div class="container">
             <div class="footer-content">
                 <div class="footer-logo">
-                    <h3><i class="fas fa-building"></i> GRH ENGINEERING</h3>
+                    <h3><i class="fas fa-building"></i> GH ENGINEERING</h3>
                     <p>Votre partenaire emploi en RDC</p>
                 </div>
                 <div class="footer-links">
@@ -857,7 +980,7 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2026 GRH ENGINEERING SARL - Tous droits réservés. RDC, Goma</p>
+                <p>&copy; 2026 GH ENGINEERING SARL - Tous droits réservés. RDC, Goma</p>
             </div>
         </div>
     </footer>

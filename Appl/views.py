@@ -4179,34 +4179,65 @@ def get_messages(request, user_id):
 @login_required
 @require_http_methods(["GET"])
 def get_destinataires_possibles(request):
+    """API: Récupérer les destinataires possibles pour la messagerie"""
     try:
-        user = request.user
-        destinataires = []
+        from django.db.models import Q
         
-        if user.is_superuser or user.groups.filter(name='ADMIN').exists():
+        user = request.user
+        destinataires = None
+        
+        # SUPERUSER peut parler avec TOUS les utilisateurs
+        if user.is_superuser:
             destinataires = User.objects.exclude(id=user.id)
         else:
             groupes = get_groupes_utilisateur(user)
+            
             if 'CANDIDAT' in groupes:
-                destinataires = User.objects.filter(is_superuser=True)
+                # CANDIDAT peut parler UNIQUEMENT avec les superusers
+                destinataires = User.objects.filter(is_superuser=True).exclude(id=user.id)
+            
             elif 'AGENT' in groupes:
-                destinataires = User.objects.filter(groups__name='AGENT') | User.objects.filter(is_superuser=True)
+                # AGENT peut parler avec les autres AGENTS et les superusers
+                destinataires = User.objects.filter(
+                    Q(groups__name='AGENT') | Q(is_superuser=True)
+                ).exclude(id=user.id).distinct()
+            
             elif 'ONEM' in groupes:
-                destinataires = User.objects.filter(groups__name='ONEM') | User.objects.filter(is_superuser=True)
-            destinataires = destinataires.exclude(id=user.id)
+                # ONEM peut parler avec les autres ONEM et les superusers
+                destinataires = User.objects.filter(
+                    Q(groups__name='ONEM') | Q(is_superuser=True)
+                ).exclude(id=user.id).distinct()
+            
+            else:
+                # Aucun groupe reconnu, pas de destinataires
+                destinataires = User.objects.none()
         
-        data = [{
-            'id': d.id,
-            'nom': d.get_full_name() or d.username,
-            'username': d.username,
-            'email': d.email,
-            'groups': [g.name for g in d.groups.all()]
-        } for d in destinataires]
+        # S'assurer que destinataires n'est pas None
+        if destinataires is None:
+            destinataires = User.objects.none()
         
-        return JsonResponse({'success': True, 'destinataires': data, 'total': len(data)})
+        # Construction des données
+        data = []
+        for d in destinataires:
+            data.append({
+                'id': d.id,
+                'nom': d.get_full_name() or d.username,
+                'username': d.username,
+                'email': d.email,
+                'groups': [g.name for g in d.groups.all()]
+            })
+        
+        return JsonResponse({
+            'success': True, 
+            'destinataires': data, 
+            'total': len(data)
+        })
+        
     except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
-
+        return JsonResponse({
+            'success': False, 
+            'error': str(e)
+        }, status=500)
 
 # ==================== API ENVOYER MESSAGE ====================
 

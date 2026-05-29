@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion - GRH ENGENEERING</title>
+    <title>Connexion - GRH ENGINEERING SARL</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -13,50 +14,69 @@
         }
 
         :root {
-            --bg-primary: #f0f0f0;
+            --bg-primary: #f8f9fa;
             --bg-secondary: #ffffff;
-            --text-primary: #333333;
-            --text-secondary: #666666;
-            --header-bg: #1a5f7a;
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+            --header-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             --card-bg: #ffffff;
-            --border-color: #dddddd;
-            --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            --border-color: #e1e8ed;
+            --shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            --input-bg: #f8f9fa;
         }
 
         body.dark-mode {
             --bg-primary: #1a1a2e;
             --bg-secondary: #16213e;
             --text-primary: #ffffff;
-            --text-secondary: #cccccc;
-            --header-bg: #0f3460;
+            --text-secondary: #b0b0b0;
+            --header-bg: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
             --card-bg: #1a1a2e;
             --border-color: #2c2c3e;
+            --input-bg: #2d2d3e;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a5f7a 0%, #0e3d50 100%);
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Background animation */
+        body::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23ffffff" fill-opacity="0.05" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,165.3C1248,149,1344,107,1392,85.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat bottom;
+            background-size: cover;
+            opacity: 0.3;
+            pointer-events: none;
         }
 
         .login-container {
             background: var(--card-bg);
-            border-radius: 20px;
+            border-radius: 30px;
             box-shadow: var(--shadow);
             width: 100%;
-            max-width: 450px;
+            max-width: 480px;
             overflow: hidden;
-            animation: fadeInUp 0.5s ease;
+            animation: slideInUp 0.6s ease-out;
+            position: relative;
+            z-index: 1;
+            backdrop-filter: blur(10px);
         }
 
-        @keyframes fadeInUp {
+        @keyframes slideInUp {
             from {
                 opacity: 0;
-                transform: translateY(30px);
+                transform: translateY(50px);
             }
             to {
                 opacity: 1;
@@ -65,135 +85,253 @@
         }
 
         .login-header {
-            background: linear-gradient(135deg, #1a5f7a 0%, #0e3d50 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             text-align: center;
-            padding: 30px;
+            padding: 40px 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
         }
 
         .login-header i {
-            font-size: 3rem;
-            color: #f39c12;
-            margin-bottom: 10px;
+            font-size: 3.5rem;
+            background: rgba(255,255,255,0.2);
+            padding: 20px;
+            border-radius: 50%;
+            margin-bottom: 15px;
+            display: inline-block;
         }
 
         .login-header h1 {
-            font-size: 1.8rem;
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: 1px;
         }
 
         .login-header h1 span {
             color: #f39c12;
+            font-weight: 800;
         }
 
         .login-header p {
             margin-top: 10px;
-            opacity: 0.8;
+            opacity: 0.9;
+            font-size: 14px;
         }
 
         .login-form {
-            padding: 30px;
+            padding: 35px;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             color: var(--text-primary);
             font-weight: 500;
+            font-size: 14px;
         }
 
         .form-group label i {
             margin-right: 8px;
-            color: #f39c12;
+            color: #667eea;
         }
 
         .form-group input {
             width: 100%;
-            padding: 12px 15px;
+            padding: 14px 18px;
             border: 2px solid var(--border-color);
-            border-radius: 10px;
+            border-radius: 15px;
             font-size: 14px;
-            background: var(--bg-primary);
+            background: var(--input-bg);
             color: var(--text-primary);
             transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
         }
 
         .form-group input:focus {
             outline: none;
-            border-color: #f39c12;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .btn-login {
             width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 15px;
             font-size: 16px;
-            font-weight: bold;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
         }
 
         .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(243,156,18,0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
         }
 
         .btn-login i {
             margin-right: 8px;
         }
 
+        .register-link {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .register-link p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .register-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .register-link a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
         .login-footer {
+            background: rgba(0,0,0,0.03);
             text-align: center;
             padding: 20px;
             border-top: 1px solid var(--border-color);
             color: var(--text-secondary);
+            font-size: 12px;
         }
 
-        .login-footer a {
-            color: #f39c12;
-            text-decoration: none;
+        body.dark-mode .login-footer {
+            background: rgba(0,0,0,0.2);
         }
 
-        .login-footer a:hover {
-            text-decoration: underline;
+        .login-footer i {
+            margin-right: 5px;
+            color: #667eea;
         }
 
         .dark-mode-toggle {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: rgba(0,0,0,0.5);
-            border: none;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
             color: white;
-            padding: 10px 15px;
-            border-radius: 25px;
+            padding: 10px 18px;
+            border-radius: 30px;
             cursor: pointer;
             z-index: 100;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .dark-mode-toggle:hover {
+            background: rgba(0,0,0,0.8);
+            transform: scale(1.05);
         }
 
         .message-error {
-            background: #e74c3c;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
             color: white;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+            padding: 12px 18px;
+            border-radius: 12px;
+            margin-bottom: 25px;
             text-align: center;
+            font-size: 14px;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .message-error i {
+            margin-right: 8px;
+        }
+
+        /* Password visibility toggle */
+        .password-wrapper {
+            position: relative;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: var(--text-secondary);
+            background: transparent;
+            border: none;
+            font-size: 16px;
         }
 
         @media (max-width: 480px) {
             .login-form {
-                padding: 20px;
+                padding: 25px;
             }
             
             .login-header {
-                padding: 20px;
+                padding: 30px 20px;
             }
+            
+            .login-header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .login-header i {
+                font-size: 2.5rem;
+                padding: 15px;
+            }
+        }
+
+        /* Loading effect */
+        .btn-loading {
+            opacity: 0.7;
+            cursor: wait;
+        }
+
+        .btn-loading i {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -204,46 +342,57 @@
 
     <div class="login-container">
         <div class="login-header">
-            <i class="fas fa-lock"></i>
-            <h1>GRH ENGINEERING<span>Goma</span></h1>
-            <p>Connectez-vous à votre compte</p>
+            <i class="fas fa-building"></i>
+            <h1>GRH ENGINEERING<span> SARL</span></h1>
+            <p>Gestion des Ressources Humaines</p>
+            <p style="font-size: 12px; margin-top: 5px;">RDC - Goma</p>
         </div>
 
         <div class="login-form">
-    {% if messages %}
-        {% for message in messages %}
-            <div class="message-error">
-                <i class="fas fa-exclamation-triangle"></i> {{ message }}
-            </div>
-        {% endfor %}
-    {% endif %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="message-error">
+                        <i class="fas fa-exclamation-triangle"></i> {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
 
-    <form method="post" action="{% url 'ConnectUtilisateur' %}">
-        {% csrf_token %}
-        <div class="form-group">
-            <label><i class="fas fa-envelope"></i> Email ou Nom d'utilisateur</label>
-            <input type="text" name="txtUt" placeholder="exemple@email.com ou nom_utilisateur" required>
+            <form method="post" action="{% url 'ConnectUtilisateur' %}" id="loginForm">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label><i class="fas fa-envelope"></i> Email ou Nom d'utilisateur</label>
+                    <input type="text" name="txtUt" placeholder="exemple@email.com ou nom_utilisateur" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-key"></i> Mot de passe</label>
+                    <div class="password-wrapper">
+                        <input type="password" name="txtPas" id="password" placeholder="Entrez votre mot de passe" required autocomplete="current-password">
+                        <button type="button" class="toggle-password" onclick="togglePassword()">
+                            <i class="fas fa-eye-slash"></i>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" class="btn-login" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i> Se connecter
+                </button>
+            </form>
+            
+            <div class="register-link">
+                <p>Pas encore inscrit ? <a href="/Appl/Candidat"><i class="fas fa-user-plus"></i> Créer un compte</a></p>
+                <p style="margin-top: 10px; font-size: 12px;">
+                    <a href="/"><i class="fas fa-home"></i> Retour à l'accueil</a>
+                </p>
+            </div>
         </div>
-        <div class="form-group">
-            <label><i class="fas fa-key"></i> Mot de passe</label>
-            <input type="password" name="txtPas" placeholder="Entrez votre mot de passe" required>
-        </div>
-        <button type="submit" class="btn-login">
-            <i class="fas fa-sign-in-alt"></i> Se connecter
-        </button>
-    </form>
-    
-    <div class="register-link">
-        <p>Pas encore inscrit ? <a href="/Appl/Candidat">Créer un compte</a></p>
-    </div>
-</div>
 
         <div class="login-footer">
-            <p><i class="fas fa-phone"></i> +243 835137057 | <i class="fas fa-envelope"></i> infogrhengeneering.com</p>
+            <p><i class="fas fa-phone-alt"></i> +243 813 456 789 | <i class="fas fa-envelope"></i> contact@grh-engineering.com</p>
+            <p style="margin-top: 8px;">&copy; 2026 GRH ENGINEERING SARL - Tous droits réservés</p>
         </div>
     </div>
 
     <script>
+        // Dark mode
         function toggleDarkMode() {
             document.body.classList.toggle('dark-mode');
             const btn = document.querySelector('.dark-mode-toggle');
@@ -263,6 +412,30 @@
                 if (btn) btn.innerHTML = '<i class="fas fa-sun"></i> Mode clair';
             }
         }
+
+        // Toggle password visibility
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleBtn = document.querySelector('.toggle-password i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleBtn.classList.remove('fa-eye-slash');
+                toggleBtn.classList.add('fa-eye');
+            } else {
+                passwordInput.type = 'password';
+                toggleBtn.classList.remove('fa-eye');
+                toggleBtn.classList.add('fa-eye-slash');
+            }
+        }
+
+        // Loading effect on form submit
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            const btn = document.getElementById('loginBtn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion en cours...';
+            btn.classList.add('btn-loading');
+            btn.disabled = true;
+        });
 
         loadDarkMode();
     </script>
