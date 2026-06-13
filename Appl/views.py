@@ -6394,14 +6394,20 @@ def enregistrer_interview(request):
         if not candidature_id or not decision:
             return JsonResponse({'success': False, 'message': 'Données incomplètes'}, status=400)
         
+        # Récupérer la candidature (qui contient déjà le candidat via la relation)
         candidature = get_object_or_404(Candidature, id=candidature_id)
         
+        # Vérifier si une interview existe déjà
         if Interview.objects.filter(candidature=candidature).exists():
             return JsonResponse({'success': False, 'message': 'Ce candidat a déjà été interviewé'}, status=400)
         
+        # Récupérer l'offre
+        offre = get_object_or_404(OffreEmploie, id=offre_id) if offre_id else candidature.offre
+        
+        # Créer l'interview - PAS BESOIN de champ candidat car il est accessible via candidature
         interview = Interview.objects.create(
             candidature=candidature,
-            offre_id=offre_id or candidature.offre.id,
+            offre=offre,
             observation=observation,
             decision=decision,
             motif_rejet=motif_rejet
@@ -6419,5 +6425,6 @@ def enregistrer_interview(request):
             'email_envoye': email_envoye,
             'email_message': email_message
         })
+        
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)

@@ -473,8 +473,8 @@ class Interview(models.Model):
         ordering = ['-date_interview']
     
     def __str__(self):
-        return f"Interview {self.candidat.nom} - {self.offre.titre} - {self.decision}"
-
+        # Correction : utiliser candidature.candidat au lieu de candidat
+        return f"Interview {self.candidature.candidat.nom} {self.candidature.candidat.prenom} - {self.offre.titre} - {self.decision}"
 
 # models.py - Modèle Contrat corrigé
 
