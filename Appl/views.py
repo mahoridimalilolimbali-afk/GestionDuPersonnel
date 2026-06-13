@@ -28,8 +28,8 @@ from django.utils.html import strip_tags
 def ChargerIndex(request):
     return render (request,"Appl/index.html")
 @login_required   
-def ChargerContratAdmin(request):
-    return render (request,"Appl/ContratsAdmin.html")
+def ChargerInterviews(request):
+    return render (request,"Appl/Interviews.html")
 @login_required
 def ChargerTypeDecisionOffre(request):
     return render (request, "Appl/TypeDecisionOffre.html")
@@ -5596,9 +5596,10 @@ def modifier_date_recrutement(request):
 
 
 # ==================== GESTION DES INTERVIEWS ====================
+# ==================== GESTION DES INTERVIEWS ====================
 
 def page_interviews(request):
-    """Page de gestion des interviews"""
+    """Affiche la page principale des interviews"""
     offres = OffreEmploie.objects.filter(onem__decision__Description__icontains='Accepter')
     return render(request, 'Appl/Interviews.html', {'offres': offres})
 
@@ -5608,8 +5609,6 @@ def page_interviews(request):
 def get_candidats_admissibles_par_offre(request, id_offre):
     """API: Récupérer les candidats admissibles (moyenne ≥ 70%) pour une offre"""
     try:
-        from django.db.models import Avg
-        
         # Récupérer les candidatures acceptées pour cette offre
         type_decision_accepter = TypeDecision.objects.filter(Description__icontains='Accepter').first()
         
@@ -5652,10 +5651,59 @@ def get_candidats_admissibles_par_offre(request, id_offre):
 
 
 @csrf_exempt
+@require_http_methods(["GET"])
+def get_interviews_list(request):
+    """API: Récupérer toutes les interviews"""
+    try:
+        interviews = Interview.objects.select_related('candidature', 'candidature__candidat', 'offre').all().order_by('-date_interview')
+        
+        data = []
+        for i in interviews:
+            data.append({
+                'id': i.id,
+                'candidature_id': i.candidature.id,
+                'candidat_nom': f"{i.candidature.candidat.nom} {i.candidature.candidat.postnom} {i.candidature.candidat.prenom}",
+                'offre_titre': i.offre.titre,
+                'date_interview': i.date_interview.strftime('%d/%m/%Y à %H:%M'),
+                'observation': i.observation or '',
+                'decision': i.decision,
+                'motif_rejet': i.motif_rejet or '',
+                'date_decision': i.date_decision.strftime('%d/%m/%Y à %H:%M')
+            })
+        
+        return JsonResponse({'success': True, 'interviews': data, 'total': len(data)})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_interview_by_id(request, id_interview):
+    """API: Récupérer une interview spécifique"""
+    try:
+        interview = get_object_or_404(Interview, id=id_interview)
+        
+        return JsonResponse({
+            'success': True,
+            'interview': {
+                'id': interview.id,
+                'candidature_id': interview.candidature.id,
+                'observation': interview.observation or '',
+                'decision': interview.decision,
+                'motif_rejet': interview.motif_rejet or ''
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
 @require_http_methods(["POST"])
 def enregistrer_interview(request):
-    """API: Enregistrer une décision d'interview"""
+    """API: Enregistrer une interview pour un candidat admissible"""
     try:
+        from datetime import datetime
+        
         data = json.loads(request.body)
         candidature_id = data.get('candidature_id')
         decision = data.get('decision')
@@ -5671,31 +5719,40 @@ def enregistrer_interview(request):
         if Interview.objects.filter(candidature=candidature).exists():
             return JsonResponse({'success': False, 'message': 'Ce candidat a déjà été interviewé'}, status=400)
         
+        # Récupérer la moyenne pour vérifier l'admissibilité
+        evaluations = Evaluation.objects.filter(candidature=candidature)
+        if evaluations.exists():
+            moyenne = sum(e.note for e in evaluations) / evaluations.count()
+        else:
+            moyenne = 0
+        
+        if moyenne < 70:
+            return JsonResponse({'success': False, 'message': 'Ce candidat n\'est pas admissible (moyenne < 70%)'}, status=400)
+        
         # Créer l'interview
         interview = Interview.objects.create(
             candidature=candidature,
             offre=candidature.offre,
-            candidat=candidature.candidat,
             decision=decision,
             observation=observation,
-            motif_rejet=motif_rejet if decision == 'rejete' else ''
+            motif_rejet=motif_rejet
         )
         
         email_envoye = False
         email_message = ""
         
+        # Envoyer l'email de notification
         from .utils import notifier_resultat_interview
         base_url = "https://mahoridi.pythonanywhere.com"
         
         if decision == 'accepte':
-            # Créer un contrat VIDE pour le candidat (il devra le compléter)
+            # Créer un contrat pour le candidat retenu
             contrat = Contrat.objects.create(
-                interview=interview,
                 candidature=candidature,
                 candidat=candidature.candidat,
                 offre=candidature.offre,
                 titre_contrat=f"Proposition de contrat - {candidature.offre.titre}",
-                description=f"Nous avons le plaisir de vous proposer un contrat pour le poste de {candidature.offre.titre}. Veuillez choisir le type de contrat et consulter les détails ci-dessous."
+                description=f"Nous avons le plaisir de vous informer que votre candidature pour le poste de {candidature.offre.titre} a été retenue après l'interview."
             )
             email_envoye, email_message = notifier_resultat_interview(candidature, 'accepte', observation, base_url, contrat.id)
         else:
@@ -5706,8 +5763,7 @@ def enregistrer_interview(request):
             'message': f'Interview enregistrée avec succès. Décision: {decision}',
             'interview': {
                 'id': interview.id,
-                'decision': interview.decision,
-                'contrat_id': contrat.id if decision == 'accepte' else None
+                'decision': interview.decision
             },
             'email_envoye': email_envoye,
             'email_message': email_message
@@ -5716,6 +5772,55 @@ def enregistrer_interview(request):
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def modifier_interview(request, id_interview):
+    """API: Modifier une interview existante"""
+    try:
+        data = json.loads(request.body)
+        interview = get_object_or_404(Interview, id=id_interview)
+        
+        observation = data.get('observation', '').strip()
+        decision = data.get('decision')
+        motif_rejet = data.get('motif_rejet', '').strip() if decision == 'rejete' else ''
+        
+        ancienne_decision = interview.decision
+        interview.observation = observation
+        interview.decision = decision
+        interview.motif_rejet = motif_rejet
+        interview.save()
+        
+        # Envoyer un email en cas de modification de décision (optionnel)
+        email_envoye = False
+        email_message = ""
+        
+        if ancienne_decision != decision:
+            from .utils import notifier_resultat_interview
+            base_url = "https://mahoridi.pythonanywhere.com"
+            email_envoye, email_message = notifier_resultat_interview(interview.candidature, decision, observation, base_url)
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Interview modifiée avec succès',
+            'email_envoye': email_envoye,
+            'email_message': email_message
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def supprimer_interview(request, id_interview):
+    """API: Supprimer une interview"""
+    try:
+        interview = get_object_or_404(Interview, id=id_interview)
+        interview.delete()
+        return JsonResponse({'success': True, 'message': 'Interview supprimée avec succès'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
 # ==================== GESTION DES CONTRATS ====================
 
 @login_required

@@ -10,7 +10,7 @@ urlpatterns = [
     #LIEN VERS PAGES
 
     path('', ChargerIndex),
-    path('ContratsAdmin', ChargerContratAdmin),
+    path('Interviews', ChargerInterviews),
     path('ContratsAdmin/', views.contrats_admin, name='contrats_admin'),
     path('Domaine',ChargerDomaine),
     path('AnalyseDemandeConge', ChargerAnalyseDemandeConge),
@@ -409,14 +409,17 @@ urlpatterns = [
     path('api/agents/ajouter/', views.ajouter_agent, name='ajouter_agent'),
     path('api/agents/modifier-date/', views.modifier_date_recrutement, name='modifier_date_recrutement'),
 
-    # urls.py - Ajoutez ces lignes
+    
 
-# urls.py - Ajoutez toutes ces lignes
-
-    # ==================== INTERVIEWS ====================
+    # Interviews
     path('interviews/', views.page_interviews, name='page_interviews'),
     path('api/interviews/candidats-admissibles/<int:id_offre>/', views.get_candidats_admissibles_par_offre, name='get_candidats_admissibles_par_offre'),
+    path('api/interviews/liste/', views.get_interviews_list, name='get_interviews_list'),
+    path('api/interviews/get/<int:id_interview>/', views.get_interview_by_id, name='get_interview_by_id'),
     path('api/interviews/enregistrer/', views.enregistrer_interview, name='enregistrer_interview'),
+    path('api/interviews/modifier/<int:id_interview>/', views.modifier_interview, name='modifier_interview'),
+    path('api/interviews/supprimer/<int:id_interview>/', views.supprimer_interview, name='supprimer_interview'),
+
 
     # ==================== CONTRATS ====================
     path('mes-contrats/', views.mes_contrats, name='mes_contrats'),

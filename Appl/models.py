@@ -461,13 +461,10 @@ class Interview(models.Model):
     
     candidature = models.OneToOneField('Candidature', on_delete=models.CASCADE, related_name='interview')
     offre = models.ForeignKey('OffreEmploie', on_delete=models.CASCADE, related_name='interviews')
-    candidat = models.ForeignKey('Candidat', on_delete=models.CASCADE, related_name='interviews')
-    
     date_interview = models.DateTimeField(auto_now_add=True)
     observation = models.TextField(blank=True, null=True)
     decision = models.CharField(max_length=20, choices=STATUT_CHOICES, default='en_attente')
     motif_rejet = models.TextField(blank=True, null=True)
-    
     date_decision = models.DateTimeField(auto_now=True)
     
     class Meta:
