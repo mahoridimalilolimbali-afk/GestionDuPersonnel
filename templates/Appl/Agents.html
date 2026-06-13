@@ -649,81 +649,78 @@
             }
         }
         
-        // Ajouter un agent
-        async function ajouterAgent() {
-            const candidatId = document.getElementById('candidatSelect').value;
-            const dateRecrutement = document.getElementById('dateRecrutement').value;
-            
-            if (!candidatId) {
-                Swal.fire({ icon: 'error', title: 'Erreur', text: 'Veuillez sélectionner un candidat' });
-                return;
-            }
-            
-            if (!dateRecrutement) {
-                Swal.fire({ icon: 'error', title: 'Erreur', text: 'Veuillez saisir la date de recrutement' });
-                return;
-            }
-            
-            Swal.fire({
-                title: 'Confirmation',
-                text: `Voulez-vous vraiment ajouter cet agent ?`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#27ae60',
-                cancelButtonColor: '#e74c3c',
-                confirmButtonText: 'Oui, ajouter',
-                cancelButtonText: 'Annuler'
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    try {
-                        const response = await fetch('/api/agents/ajouter/', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRFToken': getCSRFToken()
-                            },
-                            body: JSON.stringify({
-                                candidat_id: candidatId
-                            })
-                        });
-                        const data = await response.json();
-                        
-                        if (data.success) {
-                            // Après création, modifier la date
-                            const dateResponse = await fetch('/api/agents/modifier-date/', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRFToken': getCSRFToken()
-                                },
-                                body: JSON.stringify({
-                                    agent_id: data.agent_id,
-                                    date_retenu: dateRecrutement
-                                })
-                            });
-                            await dateResponse.json();
-                            
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Succès !',
-                                html: data.message,
-                                timer: 3000,
-                                showConfirmButton: false
-                            });
-                            $('#ajouterAgentModal').modal('hide');
-                            document.getElementById('ajouterAgentForm').reset();
-                            chargerAgents();
-                            chargerCandidatsDisponibles();
-                        } else {
-                            Swal.fire({ icon: 'error', title: 'Erreur', text: data.message });
-                        }
-                    } catch (error) {
-                        console.error('Erreur:', error);
-                        Swal.fire({ icon: 'error', title: 'Erreur', text: 'Erreur lors de l\'ajout' });
-                    }
+        // Dans votre fichier Agents.html, modifiez la fonction ajouterAgent()
+async function ajouterAgent() {
+    const candidatId = document.getElementById('candidatSelect').value;
+    const dateRecrutement = document.getElementById('dateRecrutement').value;
+    
+    // Ajoutez ce console.log pour déboguer
+    console.log("Candidat ID:", candidatId);
+    console.log("Date recrutement brute:", dateRecrutement);
+    
+    if (!candidatId) {
+        Swal.fire({ icon: 'error', title: 'Erreur', text: 'Veuillez sélectionner un candidat' });
+        return;
+    }
+    
+    if (!dateRecrutement) {
+        Swal.fire({ icon: 'error', title: 'Erreur', text: 'Veuillez saisir la date de recrutement' });
+        return;
+    }
+    
+    Swal.fire({
+        title: 'Confirmation',
+        text: `Voulez-vous vraiment ajouter cet agent ?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#27ae60',
+        cancelButtonColor: '#e74c3c',
+        confirmButtonText: 'Oui, ajouter',
+        cancelButtonText: 'Annuler'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                // Afficher un loader
+                Swal.fire({ title: 'Traitement...', text: 'Ajout en cours', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                
+                const response = await fetch('/api/agents/ajouter/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    body: JSON.stringify({
+                        candidat_id: parseInt(candidatId),
+                        date_retenu: dateRecrutement  // ← Assurez-vous que le nom correspond à l'API
+                    })
+                });
+                const data = await response.json();
+                
+                Swal.close();
+                
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Succès !',
+                        html: data.message,
+                        timer: 3000,
+                        showConfirmButton: false
+                    });
+                    $('#ajouterAgentModal').modal('hide');
+                    document.getElementById('ajouterAgentForm').reset();
+                    chargerAgents();
+                    chargerCandidatsDisponibles();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Erreur', text: data.message });
                 }
-            });
+            } catch (error) {
+                Swal.close();
+                console.error('Erreur:', error);
+                Swal.fire({ icon: 'error', title: 'Erreur', text: 'Erreur lors de l\'ajout' });
+            }
         }
+    });
+}
         
         function genererCodeValidation(agent) {
             const date = new Date();
