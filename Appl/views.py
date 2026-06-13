@@ -6309,7 +6309,7 @@ def get_candidatures_tests_par_offre(request, id_offre):
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_candidatures_tests(request):
-    """API: Récupérer les candidatures acceptées avec leurs tests"""
+    """API: Récupérer les candidatures acceptées avec leurs tests et interviews"""
     try:
         type_decision_accepter = TypeDecision.objects.filter(Description__icontains='Accepter').first()
         
@@ -6325,6 +6325,7 @@ def get_candidatures_tests(request):
             candidature = d.candidature
             offre = candidature.offre
             
+            # Récupérer tous les tests de l'offre
             tous_les_tests = Test.objects.filter(offre=offre).order_by('date_test')
             
             tests_data = []
@@ -6353,6 +6354,19 @@ def get_candidatures_tests(request):
             else:
                 moyenne = 0
             
+            # ========== RÉCUPÉRER L'INTERVIEW SI ELLE EXISTE ==========
+            interview = Interview.objects.filter(candidature=candidature).first()
+            interview_data = None
+            if interview:
+                interview_data = {
+                    'id': interview.id,
+                    'decision': interview.decision,
+                    'observation': interview.observation,
+                    'motif_rejet': interview.motif_rejet,
+                    'date_interview': interview.date_interview.strftime('%d/%m/%Y à %H:%M')
+                }
+            # =========================================================
+            
             data.append({
                 'id': candidature.id,
                 'candidat_id': candidature.candidat.id,
@@ -6366,7 +6380,8 @@ def get_candidatures_tests(request):
                 'nombre_tests': nombre_tests,
                 'tests_evalues': tests_evalues,
                 'evaluation_complete': evaluation_complete,
-                'moyenne': round(moyenne, 2)
+                'moyenne': round(moyenne, 2),
+                'interview': interview_data  # ← AJOUTER LES DONNÉES INTERVIEW
             })
         
         return JsonResponse({

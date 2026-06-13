@@ -636,54 +636,103 @@
     }
 
     function afficherEtatCandidats(candidatures) {
-        const tbody = $('#etatCandidatsBody');
-        tbody.empty();
+    const tbody = $('#etatCandidatsBody');
+    tbody.empty();
+    
+    candidatures.forEach(c => {
+        const moyenne = c.moyenne || 0;
+        const testsEvalues = c.tests_evalues;
+        const totalTests = c.nombre_tests;
+        const testsComplete = testsEvalues === totalTests && totalTests > 0;
+        const estAdmissible = moyenne >= 70 && testsComplete;
         
-        candidatures.forEach(c => {
-            const moyenne = c.moyenne || 0;
-            const testsEvalues = c.tests_evalues;
-            const totalTests = c.nombre_tests;
-            const testsComplete = testsEvalues === totalTests && totalTests > 0;
-            const estAdmissible = moyenne >= 70 && testsComplete;
-            
-            let testStatutHtml = '';
-            if (!testsComplete) {
-                testStatutHtml = '<span class="badge-attente">⏳ En attente</span>';
-            } else if (estAdmissible) {
-                testStatutHtml = '<span class="badge-admissible">✅ Admissible</span>';
+        let testStatutHtml = '';
+        if (!testsComplete) {
+            testStatutHtml = '<span class="badge-attente">⏳ En attente</span>';
+        } else if (estAdmissible) {
+            testStatutHtml = '<span class="badge-admissible">✅ Admissible</span>';
+        } else {
+            testStatutHtml = '<span class="badge-non-admissible">❌ Non admissible</span>';
+        }
+        
+        // ========== GESTION DE L'INTERVIEW EXISTANTE ==========
+        let interviewStatutHtml = '';
+        let interviewActionHtml = '';
+        const interview = c.interview; // Récupérer l'interview depuis les données
+        
+        if (interview) {
+            // Une interview existe déjà
+            if (interview.decision === 'accepte') {
+                interviewStatutHtml = '<span class="badge-interview-accepte">✅ Accepté</span>';
+                interviewActionHtml = `<button class="btn-action btn-modifier" onclick="ouvrirModalModifierInterview(${interview.id})">
+                                            <i class="fas fa-edit"></i> Modifier
+                                        </button>`;
+            } else if (interview.decision === 'rejete') {
+                interviewStatutHtml = '<span class="badge-interview-rejete">❌ Rejeté</span>';
+                interviewActionHtml = `<button class="btn-action btn-modifier" onclick="ouvrirModalModifierInterview(${interview.id})">
+                                            <i class="fas fa-edit"></i> Modifier
+                                        </button>`;
             } else {
-                testStatutHtml = '<span class="badge-non-admissible">❌ Non admissible</span>';
+                interviewStatutHtml = '<span class="badge-interview-attente">⏳ En attente</span>';
+                interviewActionHtml = `<button class="btn-action btn-evaluer" onclick="ouvrirModalInterview(${c.id}, ${c.offre_id}, '${escapeHtml(c.candidat_nom)}', '${escapeHtml(c.offre_titre)}', ${moyenne})">
+                                            <i class="fas fa-calendar-alt"></i> Évaluer
+                                        </button>`;
             }
-            
-            // Vérifier si une interview existe déjà
-            let interviewStatutHtml = '<span class="text-muted">-</span>';
-            let interviewActionHtml = '<span class="text-muted">-</span>';
-            
-            if (estAdmissible) {
-                interviewStatutHtml = '<span class="badge-interview-attente">⏳ À programmer</span>';
-                interviewActionHtml = `<button class="btn-action btn-interview" onclick="ouvrirModalInterview(${c.id}, ${c.offre_id}, '${escapeHtml(c.candidat_nom)}', '${escapeHtml(c.offre_titre)}', ${moyenne})">
+        } else if (estAdmissible) {
+            // Pas d'interview, mais candidat admissible
+            interviewStatutHtml = '<span class="badge-interview-attente">⏳ À programmer</span>';
+            interviewActionHtml = `<button class="btn-action btn-interview" onclick="ouvrirModalInterview(${c.id}, ${c.offre_id}, '${escapeHtml(c.candidat_nom)}', '${escapeHtml(c.offre_titre)}', ${moyenne})">
                                         <i class="fas fa-calendar-alt"></i> Évaluer interview
                                     </button>`;
-            }
-            
-            const noteClass = moyenne >= 70 ? 'eleve' : (moyenne >= 50 ? 'moyen' : 'faible');
-            
-            tbody.append(`
-                <tr>
-                    <td><strong>${escapeHtml(c.candidat_nom)}</strong></td>
-                    <td>${testsEvalues}/${totalTests} test(s)</div>
-                    <td><span class="badge-note ${noteClass}">${moyenne.toFixed(1)}%</span></div>
-                    <td>${testStatutHtml}</div>
-                    <td>${interviewStatutHtml}</div>
-                    <td>${interviewActionHtml}</div>
-                </tr>
-            `);
-        });
-        
-        if (candidatures.length === 0) {
-            tbody.html('<tr><td colspan="6" class="text-center py-5">Aucune candidature acceptée pour cette offre</td></tr>');
+        } else {
+            interviewStatutHtml = '<span class="text-muted">-</span>';
+            interviewActionHtml = '<span class="text-muted">Non admissible</span>';
         }
+        // =====================================================
+        
+        const noteClass = moyenne >= 70 ? 'eleve' : (moyenne >= 50 ? 'moyen' : 'faible');
+        
+        tbody.append(`
+            <tr>
+                <td><strong>${escapeHtml(c.candidat_nom)}</strong></td>
+                <td>${testsEvalues}/${totalTests} test(s)</div>
+                <td><span class="badge-note ${noteClass}">${moyenne.toFixed(1)}%</span></div>
+                <td>${testStatutHtml}</div>
+                <td>${interviewStatutHtml}</div>
+                <td>${interviewActionHtml}</div>
+            </tr>
+        `);
+    });
+    
+    if (candidatures.length === 0) {
+        tbody.html('<tr><td colspan="6" class="text-center py-5">Aucune candidature acceptée pour cette offre</div><\/tr>');
     }
+}
+
+function ouvrirModalModifierInterview(interviewId) {
+    $.ajax({
+        url: `/api/interviews/get/${interviewId}/`,
+        method: 'GET',
+        success: function(response) {
+            if (response.success) {
+                const i = response.interview;
+                $('#modifierInterviewId').val(i.id);
+                $('#modifierInterviewObservation').val(i.observation);
+                $('#modifierInterviewDecision').val(i.decision);
+                if (i.decision === 'rejete') {
+                    $('#modifierMotifRejetDiv').show();
+                    $('#modifierInterviewMotifRejet').val(i.motif_rejet);
+                } else {
+                    $('#modifierMotifRejetDiv').hide();
+                }
+                $('#modifierInterviewModal').modal('show');
+            }
+        },
+        error: function() {
+            showError('Erreur lors du chargement');
+        }
+    });
+}
 
     // Modal évaluation test
     function ouvrirModalEvaluation(candidatureId, testId, candidatNom, offreTitre, testDate) {
