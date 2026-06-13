@@ -6306,6 +6306,78 @@ def get_candidatures_tests_par_offre(request, id_offre):
 
 
 
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_candidatures_tests(request):
+    """API: Récupérer les candidatures acceptées avec leurs tests"""
+    try:
+        type_decision_accepter = TypeDecision.objects.filter(Description__icontains='Accepter').first()
+        
+        if not type_decision_accepter:
+            return JsonResponse({'success': True, 'candidatures': [], 'total': 0})
+        
+        decisions_acceptees = Decision.objects.filter(
+            type_decision=type_decision_accepter
+        ).select_related('candidature', 'candidature__candidat', 'candidature__offre', 'candidature__offre__domaine')
+        
+        data = []
+        for d in decisions_acceptees:
+            candidature = d.candidature
+            offre = candidature.offre
+            
+            tous_les_tests = Test.objects.filter(offre=offre).order_by('date_test')
+            
+            tests_data = []
+            for test in tous_les_tests:
+                evaluation = Evaluation.objects.filter(candidature=candidature, test=test).first()
+                
+                tests_data.append({
+                    'id': test.id,
+                    'date_test': test.date_test.strftime('%d/%m/%Y à %H:%M'),
+                    'nom_fichier': test.filename(),
+                    'est_evalue': evaluation is not None,
+                    'evaluation_id': evaluation.id if evaluation else None,
+                    'note': evaluation.note if evaluation else None,
+                    'observation': evaluation.observation if evaluation else None,
+                    'date_evaluation': evaluation.date_evaluation.strftime('%d/%m/%Y') if evaluation else None
+                })
+            
+            tests_evalues = len([t for t in tests_data if t['est_evalue']])
+            nombre_tests = len(tests_data)
+            evaluation_complete = tests_evalues >= nombre_tests if nombre_tests > 0 else True
+            
+            # Calculer la moyenne
+            if evaluation_complete and nombre_tests > 0:
+                evaluations = Evaluation.objects.filter(candidature=candidature)
+                moyenne = sum(e.note for e in evaluations) / evaluations.count()
+            else:
+                moyenne = 0
+            
+            data.append({
+                'id': candidature.id,
+                'candidat_id': candidature.candidat.id,
+                'candidat_nom': f"{candidature.candidat.nom} {candidature.candidat.postnom} {candidature.candidat.prenom}",
+                'offre_id': offre.id,
+                'offre_titre': offre.titre,
+                'offre_domaine': offre.domaine.NomDomaine,
+                'date_candidature': candidature.date_soumission.strftime('%d/%m/%Y'),
+                'cv_url': candidature.cv.url if candidature.cv else None,
+                'tests': tests_data,
+                'nombre_tests': nombre_tests,
+                'tests_evalues': tests_evalues,
+                'evaluation_complete': evaluation_complete,
+                'moyenne': round(moyenne, 2)
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'candidatures': data,
+            'total': len(data)
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
 
 @csrf_exempt
 @require_http_methods(["POST"])

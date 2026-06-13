@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token }}">
-    <title>Gestion des Évaluations - GRH</title>
+    <title>Gestion des Évaluations & Interviews - GRH</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -222,11 +222,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .empty-state {
-            text-align: center;
-            padding: 50px;
-            color: #999;
-        }
         
         .section-title {
             font-size: 18px;
@@ -291,7 +286,6 @@
                                 <span><i class="fas fa-clock"></i> Tests à traiter: <strong id="aTraiterCount">0</strong></span>
                                 <span><i class="fas fa-check-circle"></i> Tests traités: <strong id="traitesCount">0</strong></span>
                                 <span><i class="fas fa-star"></i> Admissibles: <strong id="admissiblesCount">0</strong></span>
-                                <span><i class="fas fa-calendar-alt"></i> Interviews: <strong id="interviewCount">0</strong></span>
                             </div>
                         </div>
                     </div>
@@ -313,7 +307,7 @@
                                 </tr>
                             </thead>
                             <tbody id="aTraiterBody">
-                                <tr><td colspan="4" class="text-center py-5">Sélectionnez une offre</td></tr>
+                                <tr><td colspan="4" class="text-center py-5">Sélectionnez une offre</td><\/tr>
                             </tbody>
                         </table>
                     </div>
@@ -335,7 +329,7 @@
                                 </tr>
                             </thead>
                             <tbody id="traitesBody">
-                                <tr><td colspan="6" class="text-center py-5">Sélectionnez une offre</td></tr>
+                                <tr><td colspan="6" class="text-center py-5">Sélectionnez une offre</td><\/tr>
                             </tbody>
                         </table>
                     </div>
@@ -357,7 +351,7 @@
                                 </tr>
                             </thead>
                             <tbody id="etatCandidatsBody">
-                                <tr><td colspan="6" class="text-center py-5">Sélectionnez une offre</td></tr>
+                                <tr><td colspan="6" class="text-center py-5">Sélectionnez une offre</td><\/tr>
                             </tbody>
                         </table>
                     </div>
@@ -471,43 +465,6 @@
         </div>
     </div>
 
-    <!-- Modal Modification Interview -->
-    <div class="modal fade" id="modifierInterviewModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content modal-content-custom">
-                <div class="modal-header modal-header-custom">
-                    <h5 class="modal-title"><i class="fas fa-edit"></i> Modifier l'interview</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <input type="hidden" id="modifierInterviewId">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold"><i class="fas fa-comment"></i> Observations</label>
-                        <textarea class="form-control-custom" id="modifierInterviewObservation" rows="3"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold"><i class="fas fa-gavel"></i> Décision</label>
-                        <select class="form-select-custom" id="modifierInterviewDecision">
-                            <option value="en_attente">⏳ En attente</option>
-                            <option value="accepte">✅ Accepter</option>
-                            <option value="rejete">❌ Rejeter</option>
-                        </select>
-                    </div>
-                    <div id="modifierMotifRejetDiv" style="display: none;">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold"><i class="fas fa-info-circle"></i> Motif du rejet</label>
-                            <textarea class="form-control-custom" id="modifierInterviewMotifRejet" rows="2"></textarea>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">Annuler</button>
-                    <button type="button" class="btn-submit" onclick="updateInterview()">Mettre à jour</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -565,36 +522,45 @@
         
         showLoading();
         $('#offreContent').hide();
+        $('#offreStats').hide();
         
+        // Utiliser l'API existante qui fonctionnait avant
         $.ajax({
-            url: `/api/evaluations/candidatures-tests-offre/${offreId}/`,
+            url: `/api/evaluations/candidatures-tests/`,
             method: 'GET',
             success: function(response) {
                 hideLoading();
                 if (response.success) {
+                    // Filtrer les candidatures par offre
+                    const candidaturesFiltrees = response.candidatures.filter(c => c.offre_id == offreId);
+                    
+                    if (candidaturesFiltrees.length === 0) {
+                        showError('Aucune candidature acceptée pour cette offre');
+                        $('#offreContent').hide();
+                        return;
+                    }
+                    
                     const offre = offresData.find(o => o.id == offreId);
                     $('#offreDomaine').text(offre ? offre.domaine_nom : '');
                     $('#offreStatut').text('Gestion des évaluations');
                     $('#offreStats').show();
                     $('#offreContent').show();
                     
-                    afficherATraiter(response.candidatures);
-                    afficherTraites(response.candidatures);
-                    afficherEtatCandidats(response.candidatures);
+                    afficherATraiter(candidaturesFiltrees);
+                    afficherTraites(candidaturesFiltrees);
+                    afficherEtatCandidats(candidaturesFiltrees);
                     
-                    let aTraiter = 0, traites = 0, admissibles = 0, interviews = 0;
-                    response.candidatures.forEach(c => {
+                    let aTraiter = 0, traites = 0, admissibles = 0;
+                    candidaturesFiltrees.forEach(c => {
                         c.tests.forEach(t => {
                             if (!t.est_evalue) aTraiter++;
                             else traites++;
                         });
                         if (c.moyenne >= 70 && c.tests_evalues === c.nombre_tests && c.nombre_tests > 0) admissibles++;
-                        if (c.interview_statut && c.interview_statut !== 'en_attente') interviews++;
                     });
                     $('#aTraiterCount').text(aTraiter);
                     $('#traitesCount').text(traites);
                     $('#admissiblesCount').text(admissibles);
-                    $('#interviewCount').text(interviews);
                 } else {
                     showError(response.message || 'Erreur de chargement');
                 }
@@ -618,13 +584,13 @@
                     tbody.append(`
                         <tr>
                             <td><strong>${escapeHtml(c.candidat_nom)}</strong></td>
-                            <td>${test.nom_fichier}</td>
-                            <td>${test.date_test}</td>
+                            <td>${test.nom_fichier}</div>
+                            <td>${test.date_test}</div>
                             <td>
                                 <button class="btn-action btn-evaluer" onclick="ouvrirModalEvaluation(${c.id}, ${test.id}, '${escapeHtml(c.candidat_nom)}', '${escapeHtml(c.offre_titre)}', '${test.date_test}')">
                                     <i class="fas fa-star"></i> Évaluer
                                 </button>
-                            </td>
+                             </div>
                         </tr>
                     `);
                 }
@@ -649,16 +615,16 @@
                     tbody.append(`
                         <tr>
                             <td><strong>${escapeHtml(c.candidat_nom)}</strong></td>
-                            <td>${test.nom_fichier}</td>
-                            <td><span class="badge-note ${noteClass}">${test.note}%</span></td>
-                            <td><small>${escapeHtml(test.observation || '-')}</small></td>
-                            <td>${test.date_evaluation || '-'}</td>
+                            <td>${test.nom_fichier}</div>
+                            <td><span class="badge-note ${noteClass}">${test.note}%</span></div>
+                            <td><small>${escapeHtml(test.observation || '-')}</small></div>
+                            <td>${test.date_evaluation || '-'}</div>
                             <td>
                                 <button class="btn-action btn-modifier" onclick="ouvrirModalModifierEvaluation(${test.evaluation_id}, '${escapeHtml(test.observation || '')}', ${test.note})">
                                     <i class="fas fa-edit"></i> Modifier
                                 </button>
                              </div>
-                        </table>
+                        </tr>
                     `);
                 }
             });
@@ -689,27 +655,15 @@
                 testStatutHtml = '<span class="badge-non-admissible">❌ Non admissible</span>';
             }
             
-            // Statut interview
-            let interviewStatutHtml = '';
-            let interviewActionHtml = '';
+            // Vérifier si une interview existe déjà
+            let interviewStatutHtml = '<span class="text-muted">-</span>';
+            let interviewActionHtml = '<span class="text-muted">-</span>';
             
-            if (c.interview_id) {
-                if (c.interview_decision === 'accepte') {
-                    interviewStatutHtml = '<span class="badge-interview-accepte">✅ Accepté</span>';
-                    interviewActionHtml = '<button class="btn-action btn-modifier" onclick="ouvrirModalModifierInterview(' + c.interview_id + ')"><i class="fas fa-edit"></i> Modifier</button>';
-                } else if (c.interview_decision === 'rejete') {
-                    interviewStatutHtml = '<span class="badge-interview-rejete">❌ Rejeté</span>';
-                    interviewActionHtml = '<button class="btn-action btn-modifier" onclick="ouvrirModalModifierInterview(' + c.interview_id + ')"><i class="fas fa-edit"></i> Modifier</button>';
-                } else {
-                    interviewStatutHtml = '<span class="badge-interview-attente">⏳ En attente</span>';
-                    interviewActionHtml = '<button class="btn-action btn-evaluer" onclick="ouvrirModalInterview(' + c.id + ', ' + c.offre_id + ', \'' + escapeHtml(c.candidat_nom) + '\', \'' + escapeHtml(c.offre_titre) + '\', ' + moyenne + ')"><i class="fas fa-calendar-alt"></i> Évaluer</button>';
-                }
-            } else if (estAdmissible) {
+            if (estAdmissible) {
                 interviewStatutHtml = '<span class="badge-interview-attente">⏳ À programmer</span>';
-                interviewActionHtml = '<button class="btn-action btn-interview" onclick="ouvrirModalInterview(' + c.id + ', ' + c.offre_id + ', \'' + escapeHtml(c.candidat_nom) + '\', \'' + escapeHtml(c.offre_titre) + '\', ' + moyenne + ')"><i class="fas fa-calendar-alt"></i> Évaluer interview</button>';
-            } else {
-                interviewStatutHtml = '<span class="text-muted">-</span>';
-                interviewActionHtml = '<span class="text-muted">Non admissible</span>';
+                interviewActionHtml = `<button class="btn-action btn-interview" onclick="ouvrirModalInterview(${c.id}, ${c.offre_id}, '${escapeHtml(c.candidat_nom)}', '${escapeHtml(c.offre_titre)}', ${moyenne})">
+                                        <i class="fas fa-calendar-alt"></i> Évaluer interview
+                                    </button>`;
             }
             
             const noteClass = moyenne >= 70 ? 'eleve' : (moyenne >= 50 ? 'moyen' : 'faible');
@@ -717,11 +671,11 @@
             tbody.append(`
                 <tr>
                     <td><strong>${escapeHtml(c.candidat_nom)}</strong></td>
-                    <td>${testsEvalues}/${totalTests} test(s)</td>
-                    <td><span class="badge-note ${noteClass}">${moyenne.toFixed(1)}%</span></td>
-                    <td>${testStatutHtml}</td>
-                    <td>${interviewStatutHtml}</td>
-                    <td>${interviewActionHtml}</td>
+                    <td>${testsEvalues}/${totalTests} test(s)</div>
+                    <td><span class="badge-note ${noteClass}">${moyenne.toFixed(1)}%</span></div>
+                    <td>${testStatutHtml}</div>
+                    <td>${interviewStatutHtml}</div>
+                    <td>${interviewActionHtml}</div>
                 </tr>
             `);
         });
@@ -875,73 +829,6 @@
                 if (response.success) {
                     showSuccess(response.message, response.email_envoye ? response.email_message : null);
                     $('#interviewModal').modal('hide');
-                    chargerOffreComplete();
-                } else {
-                    showError(response.message);
-                }
-            },
-            error: function(xhr) {
-                hideLoading();
-                showError(xhr.responseJSON?.message || 'Erreur');
-            }
-        });
-    }
-
-    function ouvrirModalModifierInterview(interviewId) {
-        $.ajax({
-            url: `/api/interviews/get/${interviewId}/`,
-            method: 'GET',
-            success: function(response) {
-                if (response.success) {
-                    const i = response.interview;
-                    $('#modifierInterviewId').val(i.id);
-                    $('#modifierInterviewObservation').val(i.observation);
-                    $('#modifierInterviewDecision').val(i.decision);
-                    if (i.decision === 'rejete') {
-                        $('#modifierMotifRejetDiv').show();
-                        $('#modifierInterviewMotifRejet').val(i.motif_rejet);
-                    } else {
-                        $('#modifierMotifRejetDiv').hide();
-                    }
-                    $('#modifierInterviewModal').modal('show');
-                }
-            },
-            error: function() {
-                showError('Erreur lors du chargement');
-            }
-        });
-    }
-
-    $('#modifierInterviewDecision').on('change', function() {
-        if ($(this).val() === 'rejete') {
-            $('#modifierMotifRejetDiv').show();
-        } else {
-            $('#modifierMotifRejetDiv').hide();
-        }
-    });
-
-    function updateInterview() {
-        const interviewId = $('#modifierInterviewId').val();
-        const observation = $('#modifierInterviewObservation').val();
-        const decision = $('#modifierInterviewDecision').val();
-        const motifRejet = $('#modifierInterviewMotifRejet').val();
-        
-        showLoading();
-        
-        $.ajax({
-            url: `/api/interviews/modifier/${interviewId}/`,
-            method: 'POST',
-            data: JSON.stringify({
-                observation: observation,
-                decision: decision,
-                motif_rejet: motifRejet
-            }),
-            headers: { 'X-CSRFToken': getCSRFToken(), 'Content-Type': 'application/json' },
-            success: function(response) {
-                hideLoading();
-                if (response.success) {
-                    showSuccess(response.message);
-                    $('#modifierInterviewModal').modal('hide');
                     chargerOffreComplete();
                 } else {
                     showError(response.message);
