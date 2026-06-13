@@ -425,9 +425,12 @@ urlpatterns = [
     # urls.py - Ajoutez ces lignes pour l'admin
 
     # Contrats admin
-    path('contrats-admin/', views.contrats_admin, name='contrats_admin'),
-    path('api/contrats-admin/', views.get_contrats_admin, name='get_contrats_admin'),
-    path('api/contrat-admin/modifier/<int:id_contrat>/', views.modifier_contrat_admin, name='modifier_contrat_admin'),
+# urls.py - Ajoutez ces lignes
+
+    # Contrats admin
+    path('api/contrats/candidats-par-offre/<int:id_offre>/', views.get_candidats_par_offre_pour_contrat, name='get_candidats_par_offre_pour_contrat'),
+    path('api/contrats-admin/creer/', views.creer_contrat_admin, name='creer_contrat_admin'),
+    path('api/contrat-admin/supprimer/<int:id_contrat>/', views.supprimer_contrat_admin, name='supprimer_contrat_admin'),
 
 ]
 # Servir les fichiers média en développement

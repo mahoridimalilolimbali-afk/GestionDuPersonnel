@@ -26,6 +26,20 @@
             color: white;
             padding: 20px 30px;
         }
+        .btn-add {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-add:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+            color: white;
+        }
         .contrat-card {
             background: white;
             border-radius: 20px;
@@ -33,25 +47,17 @@
             margin-bottom: 25px;
             box-shadow: 0 5px 20px rgba(0,0,0,0.08);
             border-left: 5px solid #667eea;
+            transition: all 0.3s;
+        }
+        .contrat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
         }
         .badge-attente { background: #f39c12; color: white; padding: 5px 12px; border-radius: 20px; font-size: 11px; }
         .badge-accepte { background: #27ae60; color: white; padding: 5px 12px; border-radius: 20px; font-size: 11px; }
         .badge-refuse { background: #e74c3c; color: white; padding: 5px 12px; border-radius: 20px; font-size: 11px; }
         .badge-cdd { background: #3498db; color: white; padding: 5px 12px; border-radius: 20px; font-size: 11px; }
         .badge-cdi { background: #27ae60; color: white; padding: 5px 12px; border-radius: 20px; font-size: 11px; }
-        .loading-spinner {
-            display: inline-block;
-            width: 30px;
-            height: 30px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
         .btn-modifier {
             background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
             color: white;
@@ -59,7 +65,19 @@
             padding: 6px 15px;
             border-radius: 8px;
             font-size: 12px;
+            transition: all 0.3s;
         }
+        .btn-modifier:hover { transform: translateY(-2px); color: white; }
+        .btn-supprimer {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: none;
+            padding: 6px 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        .btn-supprimer:hover { transform: translateY(-2px); color: white; }
         .modal-content-custom {
             border-radius: 25px;
             border: none;
@@ -76,6 +94,48 @@
             border-radius: 12px;
             padding: 12px 15px;
             width: 100%;
+            transition: all 0.3s;
+        }
+        .form-control-custom:focus, .form-select-custom:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+        }
+        .btn-cancel {
+            background: #e9ecef;
+            color: #6c757d;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        .empty-state i {
+            font-size: 60px;
+            color: #ccc;
+            margin-bottom: 15px;
         }
     </style>
 </head>
@@ -85,16 +145,90 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <div>
                     <h2><i class="fas fa-file-signature"></i> Gestion des Contrats</h2>
-                    <p>Suivi des contrats proposés aux candidats</p>
+                    <p>Créez et gérez les contrats pour les candidats retenus</p>
                 </div>
-                <a href="/Appl/dashboardAdmin" class="btn btn-outline-light">
-                    <i class="fas fa-arrow-left"></i> Retour
-                </a>
+                <div>
+                    <a href="/Appl/dashboardAdmin" class="btn btn-outline-light me-2">
+                        <i class="fas fa-arrow-left"></i> Retour
+                    </a>
+                    <button class="btn-add" onclick="ouvrirModalNouveauContrat()">
+                        <i class="fas fa-plus-circle"></i> Nouveau contrat
+                    </button>
+                </div>
             </div>
             <div class="card-body p-4" id="contratsContainer">
                 <div class="text-center py-5">
                     <div class="loading-spinner"></div>
-                    <p>Chargement des contrats...</p>
+                    <p class="mt-3">Chargement des contrats...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nouveau Contrat -->
+    <div class="modal fade" id="nouveauContratModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title"><i class="fas fa-plus-circle"></i> Nouveau contrat</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold"><i class="fas fa-briefcase"></i> Offre *</label>
+                                <select class="form-select-custom" id="nouveauOffreId">
+                                    <option value="">-- Sélectionnez une offre --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold"><i class="fas fa-user"></i> Candidat *</label>
+                                <select class="form-select-custom" id="nouveauCandidatId" disabled>
+                                    <option value="">-- Sélectionnez d'abord une offre --</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="fas fa-heading"></i> Titre du contrat</label>
+                        <input type="text" class="form-control-custom" id="nouveauTitre" placeholder="Ex: Contrat d'engagement professionnel">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="fas fa-align-left"></i> Description</label>
+                        <textarea class="form-control-custom" id="nouveauDescription" rows="3" placeholder="Description du poste, missions, etc..."></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold"><i class="fas fa-money-bill-wave"></i> Salaire de base (FC)</label>
+                                <input type="number" class="form-control-custom" id="nouveauSalaire" step="1000" placeholder="Ex: 500000">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold"><i class="fas fa-gift"></i> Prime (FC)</label>
+                                <input type="number" class="form-control-custom" id="nouveauPrime" step="1000" placeholder="Ex: 50000">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="fas fa-star"></i> Avantages</label>
+                        <textarea class="form-control-custom" id="nouveauAvantages" rows="2" placeholder="Mutuelle, transport, tickets restaurant, téléphone..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="fas fa-file-pdf"></i> Fichier contrat (PDF)</label>
+                        <input type="file" class="form-control-custom" id="nouveauFichier" accept=".pdf">
+                    </div>
+                    <div class="alert alert-info mt-2">
+                        <i class="fas fa-info-circle"></i> Le candidat recevra une notification par email pour consulter et signer son contrat.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn-submit" onclick="creerContrat()">Créer le contrat</button>
                 </div>
             </div>
         </div>
@@ -102,7 +236,7 @@
 
     <!-- Modal Modification Contrat -->
     <div class="modal fade" id="editContratModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content modal-content-custom">
                 <div class="modal-header modal-header-custom">
                     <h5 class="modal-title"><i class="fas fa-edit"></i> Modifier le contrat</h5>
@@ -121,20 +255,20 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Salaire de base</label>
+                                <label class="form-label fw-bold">Salaire de base (FC)</label>
                                 <input type="number" class="form-control-custom" id="editSalaire" step="1000">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Prime</label>
+                                <label class="form-label fw-bold">Prime (FC)</label>
                                 <input type="number" class="form-control-custom" id="editPrime" step="1000">
                             </div>
                         </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">Avantages</label>
-                        <textarea class="form-control-custom" id="editAvantages" rows="2" placeholder="Mutuelle, transport, tickets restaurant..."></textarea>
+                        <textarea class="form-control-custom" id="editAvantages" rows="2"></textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">Fichier contrat (PDF)</label>
@@ -149,15 +283,98 @@
         </div>
     </div>
 
+    <!-- Modal Suppression -->
+    <div class="modal fade" id="deleteContratModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title"><i class="fas fa-trash-alt"></i> Confirmer la suppression</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 60px; color: #e74c3c; margin-bottom: 20px;"></i>
+                    <p>Êtes-vous sûr de vouloir supprimer ce contrat ?</p>
+                    <p class="text-danger">Cette action est irréversible !</p>
+                    <input type="hidden" id="deleteContratId">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn-submit" style="background:#e74c3c;" onclick="confirmerSuppression()">Supprimer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
         let contratsData = [];
+        let offresData = [];
 
         function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
 
+        // Charger toutes les offres
+        function chargerOffres() {
+            $.ajax({
+                url: '/api/offres/',
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        offresData = response.offres;
+                        const select = $('#nouveauOffreId');
+                        select.empty();
+                        select.append('<option value="">-- Sélectionnez une offre --</option>');
+                        response.offres.forEach(offre => {
+                            select.append(`<option value="${offre.id}">${offre.titre} (${offre.domaine_nom})</option>`);
+                        });
+                    }
+                },
+                error: function() {
+                    console.error('Erreur chargement offres');
+                }
+            });
+        }
+
+        // Charger les candidats d'une offre
+        function chargerCandidatsParOffre(offreId) {
+            if (!offreId) {
+                $('#nouveauCandidatId').html('<option value="">-- Sélectionnez d\'abord une offre --</option>');
+                $('#nouveauCandidatId').prop('disabled', true);
+                return;
+            }
+
+            $('#nouveauCandidatId').html('<option value="">Chargement...</option>');
+            $('#nouveauCandidatId').prop('disabled', true);
+
+            $.ajax({
+                url: `/api/contrats/candidats-par-offre/${offreId}/`,
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        const select = $('#nouveauCandidatId');
+                        select.empty();
+                        select.append('<option value="">-- Sélectionnez un candidat --</option>');
+                        
+                        if (response.candidats.length === 0) {
+                            select.append('<option value="" disabled>Aucun candidat disponible</option>');
+                        } else {
+                            response.candidats.forEach(candidat => {
+                                select.append(`<option value="${candidat.id}">${candidat.nom} ${candidat.prenom} - ${candidat.email || 'Pas d\'email'}</option>`);
+                            });
+                        }
+                        select.prop('disabled', false);
+                    }
+                },
+                error: function() {
+                    $('#nouveauCandidatId').html('<option value="">Erreur de chargement</option>');
+                    $('#nouveauCandidatId').prop('disabled', false);
+                }
+            });
+        }
+
+        // Charger tous les contrats
         function chargerContrats() {
             $.ajax({
                 url: '/api/contrats-admin/',
@@ -166,10 +383,12 @@
                     if (response.success) {
                         contratsData = response.contrats;
                         afficherContrats(response.contrats);
+                    } else {
+                        $('#contratsContainer').html('<div class="text-center py-5 text-danger">Erreur de chargement</div>');
                     }
                 },
                 error: function() {
-                    $('#contratsContainer').html('<div class="text-center py-5 text-danger">Erreur de chargement</div>');
+                    $('#contratsContainer').html('<div class="text-center py-5 text-danger">Erreur de connexion</div>');
                 }
             });
         }
@@ -179,7 +398,16 @@
             container.empty();
 
             if (contrats.length === 0) {
-                container.html('<div class="text-center py-5">Aucun contrat enregistré</div>');
+                container.html(`
+                    <div class="empty-state">
+                        <i class="fas fa-folder-open"></i>
+                        <h4>Aucun contrat</h4>
+                        <p>Cliquez sur "Nouveau contrat" pour en créer un.</p>
+                        <button class="btn-add" onclick="ouvrirModalNouveauContrat()">
+                            <i class="fas fa-plus-circle"></i> Créer un contrat
+                        </button>
+                    </div>
+                `);
                 return;
             }
 
@@ -214,26 +442,110 @@
                                     <span class="badge-attente ms-2">${contrat.candidat_nom}</span>
                                 </div>
                             </div>
-                            <small class="text-muted">Proposé le ${contrat.date_creation}</small>
+                            <small class="text-muted">Créé le ${contrat.date_creation}</small>
                         </div>
                         <div class="mt-3 row">
                             <div class="col-md-6">
-                                <p><strong>📝 Description :</strong><br>${contrat.description || 'À définir'}</p>
-                                <p><strong>💰 Salaire :</strong> ${contrat.salaire || 'À définir'} FC</p>
+                                <p><strong>📝 Titre :</strong><br>${contrat.titre_contrat || 'À définir'}</p>
+                                <p><strong>💰 Salaire :</strong> ${contrat.salaire ? contrat.salaire.toLocaleString() + ' FC' : 'À définir'}</p>
                             </div>
                             <div class="col-md-6">
-                                <p><strong>🎁 Avantages :</strong><br>${contrat.avantages || 'Non spécifiés'}</p>
+                                <p><strong>🎁 Prime :</strong> ${contrat.prime ? contrat.prime.toLocaleString() + ' FC' : '0 FC'}</p>
                                 <p><strong>📅 Durée :</strong> ${contrat.duree_texte || 'À définir'}</p>
                             </div>
                         </div>
+                        <div class="mt-2">
+                            <p><strong>📋 Description :</strong><br>${contrat.description || 'Non spécifiée'}</p>
+                        </div>
+                        ${contrat.avantages ? `<div class="mt-2"><p><strong>🎁 Avantages :</strong><br>${contrat.avantages}</p></div>` : ''}
                         ${contrat.motif_refus ? `<div class="alert alert-warning mt-2"><strong>Motif de refus :</strong><br>${contrat.motif_refus}</div>` : ''}
                         <div class="text-end mt-3">
-                            <button class="btn-modifier" onclick="ouvrirModalModifierContrat(${contrat.id})">
-                                <i class="fas fa-edit"></i> Modifier le contrat
+                            <button class="btn-modifier me-2" onclick="ouvrirModalModifierContrat(${contrat.id})">
+                                <i class="fas fa-edit"></i> Modifier
+                            </button>
+                            <button class="btn-supprimer" onclick="ouvrirModalSupprimerContrat(${contrat.id})">
+                                <i class="fas fa-trash"></i> Supprimer
                             </button>
                         </div>
                     </div>
                 `);
+            });
+        }
+
+        function ouvrirModalNouveauContrat() {
+            $('#nouveauOffreId').val('');
+            $('#nouveauCandidatId').html('<option value="">-- Sélectionnez d\'abord une offre --</option>');
+            $('#nouveauCandidatId').prop('disabled', true);
+            $('#nouveauTitre').val('');
+            $('#nouveauDescription').val('');
+            $('#nouveauSalaire').val('');
+            $('#nouveauPrime').val('');
+            $('#nouveauAvantages').val('');
+            $('#nouveauFichier').val('');
+            $('#nouveauContratModal').modal('show');
+        }
+
+        $('#nouveauOffreId').on('change', function() {
+            const offreId = $(this).val();
+            chargerCandidatsParOffre(offreId);
+        });
+
+        function creerContrat() {
+            const offreId = $('#nouveauOffreId').val();
+            const candidatId = $('#nouveauCandidatId').val();
+            const titre = $('#nouveauTitre').val();
+            const description = $('#nouveauDescription').val();
+            const salaire = $('#nouveauSalaire').val();
+            const prime = $('#nouveauPrime').val();
+            const avantages = $('#nouveauAvantages').val();
+            const fichier = $('#nouveauFichier')[0].files[0];
+
+            if (!offreId) {
+                Swal.fire({ icon: 'error', title: 'Erreur', text: 'Veuillez sélectionner une offre' });
+                return;
+            }
+            if (!candidatId) {
+                Swal.fire({ icon: 'error', title: 'Erreur', text: 'Veuillez sélectionner un candidat' });
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('offre_id', offreId);
+            formData.append('candidat_id', candidatId);
+            formData.append('titre_contrat', titre);
+            formData.append('description', description);
+            formData.append('salaire', salaire);
+            formData.append('prime', prime);
+            formData.append('avantages', avantages);
+            if (fichier) formData.append('fichier_contrat', fichier);
+
+            Swal.fire({ title: 'Création...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            $.ajax({
+                url: '/api/contrats-admin/creer/',
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                success: function(response) {
+                    Swal.close();
+                    if (response.success) {
+                        let msg = response.message;
+                        if (response.email_envoye) {
+                            msg += `<br><br><i class="fas fa-envelope text-success"></i> ${response.email_message}`;
+                        }
+                        Swal.fire({ icon: 'success', title: 'Succès !', html: msg });
+                        $('#nouveauContratModal').modal('hide');
+                        chargerContrats();
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Erreur', text: response.message });
+                    }
+                },
+                error: function(xhr) {
+                    Swal.close();
+                    Swal.fire({ icon: 'error', title: 'Erreur', text: xhr.responseJSON?.message || 'Erreur lors de la création' });
+                }
             });
         }
 
@@ -288,7 +600,39 @@
             });
         }
 
+        function ouvrirModalSupprimerContrat(contratId) {
+            $('#deleteContratId').val(contratId);
+            $('#deleteContratModal').modal('show');
+        }
+
+        function confirmerSuppression() {
+            const contratId = $('#deleteContratId').val();
+
+            Swal.fire({ title: 'Suppression...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            $.ajax({
+                url: `/api/contrat-admin/supprimer/${contratId}/`,
+                method: 'DELETE',
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                success: function(response) {
+                    Swal.close();
+                    if (response.success) {
+                        Swal.fire({ icon: 'success', title: 'Supprimé', text: response.message });
+                        $('#deleteContratModal').modal('hide');
+                        chargerContrats();
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Erreur', text: response.message });
+                    }
+                },
+                error: function() {
+                    Swal.close();
+                    Swal.fire({ icon: 'error', title: 'Erreur', text: 'Erreur lors de la suppression' });
+                }
+            });
+        }
+
         $(document).ready(function() {
+            chargerOffres();
             chargerContrats();
         });
     </script>

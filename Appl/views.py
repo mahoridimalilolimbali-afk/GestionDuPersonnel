@@ -5981,4 +5981,149 @@ def modifier_contrat_admin(request, id_contrat):
         
         return JsonResponse({'success': True, 'message': 'Contrat modifié avec succès'})
     except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)}, status=400)        
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)      
+
+
+
+        # views.py - Ajoutez ces vues
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_candidats_par_offre_pour_contrat(request, id_offre):
+    """API: Récupérer les candidats ayant réussi l'interview pour une offre"""
+    try:
+        # Récupérer les candidatures acceptées pour cette offre
+        type_decision_accepter = TypeDecision.objects.filter(Description__icontains='Accepter').first()
+        
+        if not type_decision_accepter:
+            return JsonResponse({'success': False, 'message': 'Type décision non trouvé'}, status=400)
+        
+        # Candidatures acceptées
+        candidatures = Candidature.objects.filter(
+            offre_id=id_offre,
+            decisions__type_decision=type_decision_accepter
+        ).exclude(interview__isnull=True).exclude(contrats__isnull=False).distinct()
+        
+        data = []
+        for c in candidatures:
+            data.append({
+                'id': c.candidat.id,
+                'nom': c.candidat.nom,
+                'postnom': c.candidat.postnom,
+                'prenom': c.candidat.prenom,
+                'email': c.candidat.user.email if c.candidat.user else None
+            })
+        
+        return JsonResponse({'success': True, 'candidats': data, 'total': len(data)})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def creer_contrat_admin(request):
+    """API: Créer un contrat manuellement (admin)"""
+    try:
+        from django.core.mail import EmailMultiAlternatives
+        from django.utils.html import strip_tags
+        
+        offre_id = request.POST.get('offre_id')
+        candidat_id = request.POST.get('candidat_id')
+        titre_contrat = request.POST.get('titre_contrat', '').strip()
+        description = request.POST.get('description', '').strip()
+        salaire = request.POST.get('salaire')
+        prime = request.POST.get('prime', 0)
+        avantages = request.POST.get('avantages', '').strip()
+        
+        if not offre_id or not candidat_id:
+            return JsonResponse({'success': False, 'message': 'Offre et candidat requis'}, status=400)
+        
+        offre = get_object_or_404(OffreEmploie, id=offre_id)
+        candidat = get_object_or_404(Candidat, id=candidat_id)
+        
+        # Vérifier si un contrat existe déjà
+        if Contrat.objects.filter(candidat=candidat, offre=offre).exists():
+            return JsonResponse({'success': False, 'message': 'Un contrat existe déjà pour ce candidat et cette offre'}, status=400)
+        
+        # Créer le contrat
+        contrat = Contrat.objects.create(
+            candidat=candidat,
+            offre=offre,
+            candidature=None,  # Pas de candidature associée
+            titre_contrat=titre_contrat or f"Contrat - {offre.titre}",
+            description=description,
+            salaire_base=float(salaire) if salaire else None,
+            prime=float(prime) if prime else 0,
+            avantages=avantages,
+            statut='en_attente'
+        )
+        
+        # Ajouter le fichier
+        fichier = request.FILES.get('fichier_contrat')
+        if fichier:
+            contrat.fichier_contrat = fichier
+            contrat.save()
+        
+        # Envoyer l'email au candidat
+        base_url = "https://mahoridi.pythonanywhere.com"
+        sujet = f"📄 Nouveau contrat à signer - {offre.titre}"
+        
+        html_message = f"""
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="UTF-8"><title>Contrat à signer - GRH ENGINEERING</title></head>
+        <body style="font-family: Poppins, Arial, sans-serif;">
+            <div style="max-width: 600px; margin: auto; background: white; border-radius: 15px; overflow: hidden;">
+                <div style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); padding: 30px; text-align: center;">
+                    <h1 style="color: white;">📄 Nouveau contrat</h1>
+                </div>
+                <div style="padding: 30px;">
+                    <h2>Bonjour {candidat.nom} {candidat.prenom},</h2>
+                    <p>Un contrat pour le poste <strong>"{offre.titre}"</strong> vous a été proposé.</p>
+                    <p>Veuillez vous connecter à votre espace candidat pour consulter et signer votre contrat.</p>
+                    <div style="text-align: center;">
+                        <a href="{base_url}/Appl/mes-contrats" style="background: #27ae60; color: white; padding: 12px 35px; text-decoration: none; border-radius: 25px;">📄 Voir mon contrat</a>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        try:
+            plain_message = strip_tags(html_message)
+            email = EmailMultiAlternatives(
+                subject=sujet,
+                body=plain_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[candidat.user.email]
+            )
+            email.attach_alternative(html_message, "text/html")
+            email.send()
+            email_envoye = True
+            email_message = f"Email envoyé à {candidat.user.email}"
+        except Exception as e:
+            email_envoye = False
+            email_message = str(e)
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Contrat créé avec succès pour {candidat.nom} {candidat.prenom}',
+            'email_envoye': email_envoye,
+            'email_message': email_message
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def supprimer_contrat_admin(request, id_contrat):
+    """API: Supprimer un contrat"""
+    try:
+        contrat = get_object_or_404(Contrat, id=id_contrat)
+        contrat.delete()
+        return JsonResponse({'success': True, 'message': 'Contrat supprimé avec succès'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)  
