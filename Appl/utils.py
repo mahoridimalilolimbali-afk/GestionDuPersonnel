@@ -1219,3 +1219,155 @@ def notifier_contrat_accepte(contrat, base_url=None):
     </html>
     """
     envoyer_email_async("✅ Contrat accepté - Bienvenue chez GRH ENGINEERING", html_message, [candidat.user.email])   
+
+
+
+
+
+
+
+def notifier_resultat_interview(candidature, decision, observation, base_url=None):
+    """
+    Notifie le candidat du résultat de son interview
+    """
+    from django.core.mail import EmailMultiAlternatives
+    from django.utils.html import strip_tags
+    
+    candidat = candidature.candidat
+    offre = candidature.offre
+    user = candidat.user
+    
+    email_destinataire = user.email if user and user.email else None
+    
+    if not email_destinataire:
+        return False, "Pas d'adresse email"
+    
+    if not base_url:
+        base_url = "https://mahoridi.pythonanywhere.com"
+    
+    # Sujet commun quel que soit la décision
+    sujet = f"📋 Suite de votre candidature - {offre.titre} - GRH ENGINEERING"
+    
+    # Message commun : Nous vous tiendrons au courant
+    html_message = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Suite de votre candidature - GRH ENGINEERING</title>
+        <style>
+            body {{
+                font-family: 'Poppins', Arial, sans-serif;
+                background-color: #f4f4f4;
+                margin: 0;
+                padding: 20px;
+            }}
+            .container {{
+                max-width: 600px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 15px;
+                overflow: hidden;
+                box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            }}
+            .header {{
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 30px;
+                text-align: center;
+            }}
+            .header h1 {{
+                margin: 0;
+                font-size: 24px;
+            }}
+            .content {{
+                padding: 30px;
+            }}
+            .info-box {{
+                background: #f8f9fa;
+                border-left: 4px solid #667eea;
+                padding: 15px;
+                margin: 20px 0;
+                border-radius: 8px;
+            }}
+            .info-box p {{
+                margin: 8px 0;
+            }}
+            .btn {{
+                display: inline-block;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 12px 35px;
+                text-decoration: none;
+                border-radius: 25px;
+                margin: 20px 0;
+                font-weight: bold;
+            }}
+            .footer {{
+                background: #f8f9fa;
+                padding: 20px;
+                text-align: center;
+                font-size: 12px;
+                color: #999;
+                border-top: 1px solid #eee;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>📋 GH ENGINEERING SARL</h1>
+                <p>Service des Ressources Humaines</p>
+            </div>
+            <div class="content">
+                <h2>Bonjour {candidat.nom} {candidat.postnom} {candidat.prenom},</h2>
+                
+                <p>Nous accusons bonne réception de votre participation à l'entretien pour le poste de <strong>"{offre.titre}"</strong>.</p>
+                
+                <div class="info-box">
+                    <p><strong>📋 Récapitulatif de votre candidature :</strong></p>
+                    <p>• Offre : <strong>{offre.titre}</strong></p>
+                    <p>• Domaine : <strong>{offre.domaine.NomDomaine}</strong></p>
+                    <p>• Date de l'entretien : <strong>{candidature.date_soumission.strftime('%d/%m/%Y') if candidature.date_soumission else 'Récemment'}</strong></p>
+                </div>
+                
+                <p>Nous vous remercions pour le temps que vous nous avez accordé et pour l'intérêt que vous portez à notre entreprise.</p>
+                
+                <p style="font-size: 16px; text-align: center; padding: 15px; background: #e8f0fe; border-radius: 10px;">
+                    <strong>📢 Nous vous tiendrons informé(e) de la suite dans un très bref délai.</strong>
+                </p>
+                
+                <p>Nous revenons vers vous dès qu'une décision sera prise concernant votre candidature.</p>
+                
+                <div style="text-align: center;">
+                    <a href="{base_url}" class="btn">
+                        📊 Suivre ma candidature
+                    </a>
+                </div>
+                
+                <p style="font-size: 14px; color: #666; margin-top: 20px;">
+                    Cliquez sur le bouton ci-dessus pour accéder à votre espace personnel.
+                </p>
+            </div>
+            <div class="footer">
+                <p>Cet email est automatique, merci de ne pas y répondre.</p>
+                <p>&copy; 2025 GRH ENGINEERING SARL - RDC, Goma</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    try:
+        plain_message = strip_tags(html_message)
+        email = EmailMultiAlternatives(
+            subject=sujet,
+            body=plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[email_destinataire]
+        )
+        email.attach_alternative(html_message, "text/html")
+        email.send()
+        return True, f"Email envoyé à {email_destinataire}"
+    except Exception as e:
+        return False, str(e)

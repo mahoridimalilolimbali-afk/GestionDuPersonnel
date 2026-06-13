@@ -6246,15 +6246,13 @@ def supprimer_contrat_admin(request, id_contrat):
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_candidatures_tests_par_offre(request, id_offre):
-    """API: Récupérer les candidatures acceptées pour une offre avec leurs tests"""
+    """API: Récupérer les candidatures acceptées pour une offre avec leurs tests et interviews"""
     try:
-        # Récupérer le type de décision "Accepter"
         type_decision_accepter = TypeDecision.objects.filter(Description__icontains='Accepter').first()
         
         if not type_decision_accepter:
             return JsonResponse({'success': False, 'message': 'Type décision "Accepter" non trouvé'}, status=400)
         
-        # Récupérer les candidatures acceptées pour cette offre
         candidatures = Candidature.objects.filter(
             offre_id=id_offre,
             decisions__type_decision=type_decision_accepter
@@ -6262,7 +6260,6 @@ def get_candidatures_tests_par_offre(request, id_offre):
         
         data = []
         for c in candidatures:
-            # Récupérer tous les tests de l'offre
             tous_les_tests = Test.objects.filter(offre_id=id_offre).order_by('date_test')
             
             tests_data = []
@@ -6280,7 +6277,9 @@ def get_candidatures_tests_par_offre(request, id_offre):
                     'date_evaluation': evaluation.date_evaluation.strftime('%d/%m/%Y %H:%M') if evaluation else None
                 })
             
-            # Calculer la moyenne
+            # Récupérer l'interview
+            interview = Interview.objects.filter(candidature=c).first()
+            
             evaluations_existantes = Evaluation.objects.filter(candidature=c)
             if evaluations_existantes.exists():
                 moyenne = sum(e.note for e in evaluations_existantes) / evaluations_existantes.count()
@@ -6297,9 +6296,56 @@ def get_candidatures_tests_par_offre(request, id_offre):
                 'tests': tests_data,
                 'nombre_tests': len(tous_les_tests),
                 'tests_evalues': len([t for t in tests_data if t['est_evalue']]),
-                'moyenne': round(moyenne, 2)
+                'moyenne': round(moyenne, 2),
+                'interview_id': interview.id if interview else None,
+                'interview_decision': interview.decision if interview else None,
+                'interview_observation': interview.observation if interview else None
             })
         
         return JsonResponse({'success': True, 'candidatures': data})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def enregistrer_interview(request):
+    """API: Enregistrer une interview pour un candidat admissible"""
+    try:
+        data = json.loads(request.body)
+        candidature_id = data.get('candidature_id')
+        offre_id = data.get('offre_id')
+        observation = data.get('observation', '').strip()
+        decision = data.get('decision')
+        motif_rejet = data.get('motif_rejet', '').strip() if decision == 'rejete' else ''
+        
+        if not candidature_id or not decision:
+            return JsonResponse({'success': False, 'message': 'Données incomplètes'}, status=400)
+        
+        candidature = get_object_or_404(Candidature, id=candidature_id)
+        
+        if Interview.objects.filter(candidature=candidature).exists():
+            return JsonResponse({'success': False, 'message': 'Ce candidat a déjà été interviewé'}, status=400)
+        
+        interview = Interview.objects.create(
+            candidature=candidature,
+            offre_id=offre_id or candidature.offre.id,
+            observation=observation,
+            decision=decision,
+            motif_rejet=motif_rejet
+        )
+        
+        # Envoyer l'email au candidat
+        from .utils import notifier_resultat_interview
+        base_url = "https://mahoridi.pythonanywhere.com"
+        email_envoye, email_message = notifier_resultat_interview(candidature, decision, observation, base_url)
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Interview enregistrée avec succès. Décision: {decision}',
+            'interview_id': interview.id,
+            'email_envoye': email_envoye,
+            'email_message': email_message
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)

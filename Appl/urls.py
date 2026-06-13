@@ -439,6 +439,11 @@ urlpatterns = [
 
 
     path('api/evaluations/candidatures-tests-offre/<int:id_offre>/', views.get_candidatures_tests_par_offre, name='get_candidatures_tests_par_offre'),
+
+    path('api/evaluations/candidatures-tests-offre/<int:id_offre>/', views.get_candidatures_tests_par_offre, name='get_candidatures_tests_par_offre'),
+    path('api/interviews/enregistrer/', views.enregistrer_interview, name='enregistrer_interview'),
+    path('api/interviews/get/<int:id_interview>/', views.get_interview_by_id, name='get_interview_by_id'),
+    path('api/interviews/modifier/<int:id_interview>/', views.modifier_interview, name='modifier_interview'),
 ]
 # Servir les fichiers média en développement
 if settings.DEBUG:

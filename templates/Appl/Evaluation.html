@@ -45,7 +45,6 @@
         }
         .card-body-custom { padding: 30px; background: #f8f9fa; }
         
-        /* Sélection offre */
         .offre-select-card {
             background: white;
             border-radius: 20px;
@@ -61,7 +60,6 @@
             font-size: 12px;
         }
         
-        /* Tables */
         .table-custom {
             background: white;
             border-radius: 20px;
@@ -115,6 +113,10 @@
             background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
             color: white;
         }
+        .btn-interview {
+            background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+            color: white;
+        }
         .btn-action:hover { transform: translateY(-2px); color: white; }
         
         .badge-domaine {
@@ -140,6 +142,27 @@
             font-size: 11px;
         }
         .badge-attente {
+            background: #f39c12;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+        }
+        .badge-interview-accepte {
+            background: #27ae60;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+        }
+        .badge-interview-rejete {
+            background: #e74c3c;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+        }
+        .badge-interview-attente {
             background: #f39c12;
             color: white;
             padding: 4px 10px;
@@ -216,10 +239,13 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         .offre-stats {
             display: flex;
             gap: 15px;
+            flex-wrap: wrap;
         }
         .offre-stats span {
             font-size: 12px;
@@ -231,8 +257,8 @@
         <div class="main-card">
             <div class="card-header-custom d-flex justify-content-between align-items-center">
                 <div>
-                    <h2><i class="fas fa-chart-line"></i> Gestion des Évaluations</h2>
-                    <p>Évaluez les tests des candidats acceptés</p>
+                    <h2><i class="fas fa-chart-line"></i> Gestion des Évaluations & Interviews</h2>
+                    <p>Évaluez les tests et les interviews des candidats</p>
                 </div>
                 <a href="/Appl/dashboardAdmin" class="btn-back">
                     <i class="fas fa-arrow-left"></i> Retour Dashboard
@@ -262,16 +288,17 @@
                                 <span class="offre-badge ms-2" id="offreStatut"></span>
                             </div>
                             <div class="offre-stats">
-                                <span><i class="fas fa-clock"></i> À traiter: <strong id="aTraiterCount">0</strong></span>
-                                <span><i class="fas fa-check-circle"></i> Traités: <strong id="traitesCount">0</strong></span>
+                                <span><i class="fas fa-clock"></i> Tests à traiter: <strong id="aTraiterCount">0</strong></span>
+                                <span><i class="fas fa-check-circle"></i> Tests traités: <strong id="traitesCount">0</strong></span>
                                 <span><i class="fas fa-star"></i> Admissibles: <strong id="admissiblesCount">0</strong></span>
+                                <span><i class="fas fa-calendar-alt"></i> Interviews: <strong id="interviewCount">0</strong></span>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div id="offreContent" style="display: none;">
-                    <!-- Section 1: À traiter (tests non évalués) -->
+                    <!-- Section 1: Tests à évaluer -->
                     <div class="section-title">
                         <i class="fas fa-clock"></i> 1. Tests à évaluer
                     </div>
@@ -291,7 +318,7 @@
                         </table>
                     </div>
 
-                    <!-- Section 2: Déjà traités (tests évalués avec possibilité de modifier) -->
+                    <!-- Section 2: Tests déjà évalués -->
                     <div class="section-title">
                         <i class="fas fa-check-circle"></i> 2. Tests déjà évalués
                     </div>
@@ -313,7 +340,7 @@
                         </table>
                     </div>
 
-                    <!-- Section 3: État des candidats (moyenne et admissibilité) -->
+                    <!-- Section 3: État des candidats avec Interview -->
                     <div class="section-title">
                         <i class="fas fa-chart-line"></i> 3. État des candidats
                     </div>
@@ -322,14 +349,15 @@
                             <thead>
                                 <tr>
                                     <th>Candidat</th>
-                                    <th>Tests évalués</th>
+                                    <th>Tests</th>
                                     <th>Moyenne</th>
-                                    <th>Statut</th>
+                                    <th>Statut tests</th>
+                                    <th>Interview</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody id="etatCandidatsBody">
-                                <tr><td colspan="5" class="text-center py-5">Sélectionnez une offre</td></tr>
+                                <tr><td colspan="6" class="text-center py-5">Sélectionnez une offre</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -338,7 +366,7 @@
         </div>
     </div>
 
-    <!-- Modal Évaluation -->
+    <!-- Modal Évaluation des tests -->
     <div class="modal fade" id="evaluationModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content modal-content-custom">
@@ -373,7 +401,7 @@
         </div>
     </div>
 
-    <!-- Modal Modification -->
+    <!-- Modal Modification des tests -->
     <div class="modal fade" id="modifierEvaluationModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content modal-content-custom">
@@ -395,6 +423,86 @@
                 <div class="modal-footer">
                     <button type="button" class="btn-cancel" data-bs-dismiss="modal">Annuler</button>
                     <button type="button" class="btn-submit" onclick="updateEvaluation()">Mettre à jour</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Interview -->
+    <div class="modal fade" id="interviewModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title"><i class="fas fa-calendar-alt"></i> Évaluation de l'interview</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="interviewCandidatureId">
+                    <input type="hidden" id="interviewOffreId">
+                    <div class="alert alert-info mb-3">
+                        <strong><i class="fas fa-user"></i> Candidat :</strong> <span id="interviewCandidatNom"></span><br>
+                        <strong><i class="fas fa-briefcase"></i> Offre :</strong> <span id="interviewOffreTitre"></span><br>
+                        <strong><i class="fas fa-chart-line"></i> Moyenne tests :</strong> <span id="interviewMoyenne"></span>%
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="fas fa-comment"></i> Observations de l'interview</label>
+                        <textarea class="form-control-custom" id="interviewObservation" rows="3" placeholder="Résumé de l'interview..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="fas fa-gavel"></i> Décision de l'interview</label>
+                        <select class="form-select-custom" id="interviewDecision">
+                            <option value="">-- Sélectionnez --</option>
+                            <option value="accepte">✅ Accepter - Proposer un contrat</option>
+                            <option value="rejete">❌ Rejeter</option>
+                        </select>
+                    </div>
+                    <div id="motifRejetInterviewDiv" style="display: none;">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"><i class="fas fa-info-circle"></i> Motif du rejet</label>
+                            <textarea class="form-control-custom" id="motifRejetInterview" rows="2" placeholder="Expliquez le motif du rejet..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn-submit" onclick="enregistrerInterview()">Enregistrer l'interview</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Modification Interview -->
+    <div class="modal fade" id="modifierInterviewModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title"><i class="fas fa-edit"></i> Modifier l'interview</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="modifierInterviewId">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="fas fa-comment"></i> Observations</label>
+                        <textarea class="form-control-custom" id="modifierInterviewObservation" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="fas fa-gavel"></i> Décision</label>
+                        <select class="form-select-custom" id="modifierInterviewDecision">
+                            <option value="en_attente">⏳ En attente</option>
+                            <option value="accepte">✅ Accepter</option>
+                            <option value="rejete">❌ Rejeter</option>
+                        </select>
+                    </div>
+                    <div id="modifierMotifRejetDiv" style="display: none;">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"><i class="fas fa-info-circle"></i> Motif du rejet</label>
+                            <textarea class="form-control-custom" id="modifierInterviewMotifRejet" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn-submit" onclick="updateInterview()">Mettre à jour</button>
                 </div>
             </div>
         </div>
@@ -458,7 +566,6 @@
         showLoading();
         $('#offreContent').hide();
         
-        // Récupérer les candidatures acceptées pour cette offre avec leurs évaluations
         $.ajax({
             url: `/api/evaluations/candidatures-tests-offre/${offreId}/`,
             method: 'GET',
@@ -467,7 +574,7 @@
                 if (response.success) {
                     const offre = offresData.find(o => o.id == offreId);
                     $('#offreDomaine').text(offre ? offre.domaine_nom : '');
-                    $('#offreStatut').text('En cours d\'évaluation');
+                    $('#offreStatut').text('Gestion des évaluations');
                     $('#offreStats').show();
                     $('#offreContent').show();
                     
@@ -475,18 +582,19 @@
                     afficherTraites(response.candidatures);
                     afficherEtatCandidats(response.candidatures);
                     
-                    // Mettre à jour les compteurs
-                    let aTraiter = 0, traites = 0, admissibles = 0;
+                    let aTraiter = 0, traites = 0, admissibles = 0, interviews = 0;
                     response.candidatures.forEach(c => {
                         c.tests.forEach(t => {
                             if (!t.est_evalue) aTraiter++;
                             else traites++;
                         });
-                        if (c.moyenne >= 70) admissibles++;
+                        if (c.moyenne >= 70 && c.tests_evalues === c.nombre_tests && c.nombre_tests > 0) admissibles++;
+                        if (c.interview_statut && c.interview_statut !== 'en_attente') interviews++;
                     });
                     $('#aTraiterCount').text(aTraiter);
                     $('#traitesCount').text(traites);
                     $('#admissiblesCount').text(admissibles);
+                    $('#interviewCount').text(interviews);
                 } else {
                     showError(response.message || 'Erreur de chargement');
                 }
@@ -498,12 +606,11 @@
         });
     }
 
-    // Afficher les tests à évaluer
     function afficherATraiter(candidatures) {
         const tbody = $('#aTraiterBody');
         tbody.empty();
-        
         let hasItems = false;
+        
         candidatures.forEach(c => {
             c.tests.forEach(test => {
                 if (!test.est_evalue) {
@@ -529,12 +636,11 @@
         }
     }
 
-    // Afficher les tests déjà évalués
     function afficherTraites(candidatures) {
         const tbody = $('#traitesBody');
         tbody.empty();
-        
         let hasItems = false;
+        
         candidatures.forEach(c => {
             c.tests.forEach(test => {
                 if (test.est_evalue) {
@@ -551,8 +657,8 @@
                                 <button class="btn-action btn-modifier" onclick="ouvrirModalModifierEvaluation(${test.evaluation_id}, '${escapeHtml(test.observation || '')}', ${test.note})">
                                     <i class="fas fa-edit"></i> Modifier
                                 </button>
-                            </td>
-                        </tr>
+                             </div>
+                        </table>
                     `);
                 }
             });
@@ -563,7 +669,6 @@
         }
     }
 
-    // Afficher l'état des candidats (moyenne et admissibilité)
     function afficherEtatCandidats(candidatures) {
         const tbody = $('#etatCandidatsBody');
         tbody.empty();
@@ -572,21 +677,39 @@
             const moyenne = c.moyenne || 0;
             const testsEvalues = c.tests_evalues;
             const totalTests = c.nombre_tests;
-            const estAdmissible = moyenne >= 70 && testsEvalues === totalTests && totalTests > 0;
-            const evaluationComplete = testsEvalues === totalTests && totalTests > 0;
+            const testsComplete = testsEvalues === totalTests && totalTests > 0;
+            const estAdmissible = moyenne >= 70 && testsComplete;
             
-            let statutHtml = '';
-            let badgeClass = '';
-            
-            if (!evaluationComplete) {
-                statutHtml = '<span class="badge-attente">⏳ En attente des tests</span>';
-                badgeClass = 'badge-attente';
+            let testStatutHtml = '';
+            if (!testsComplete) {
+                testStatutHtml = '<span class="badge-attente">⏳ En attente</span>';
             } else if (estAdmissible) {
-                statutHtml = '<span class="badge-admissible">✅ Admissible pour interview</span>';
-                badgeClass = 'badge-admissible';
+                testStatutHtml = '<span class="badge-admissible">✅ Admissible</span>';
             } else {
-                statutHtml = '<span class="badge-non-admissible">❌ Non admissible</span>';
-                badgeClass = 'badge-non-admissible';
+                testStatutHtml = '<span class="badge-non-admissible">❌ Non admissible</span>';
+            }
+            
+            // Statut interview
+            let interviewStatutHtml = '';
+            let interviewActionHtml = '';
+            
+            if (c.interview_id) {
+                if (c.interview_decision === 'accepte') {
+                    interviewStatutHtml = '<span class="badge-interview-accepte">✅ Accepté</span>';
+                    interviewActionHtml = '<button class="btn-action btn-modifier" onclick="ouvrirModalModifierInterview(' + c.interview_id + ')"><i class="fas fa-edit"></i> Modifier</button>';
+                } else if (c.interview_decision === 'rejete') {
+                    interviewStatutHtml = '<span class="badge-interview-rejete">❌ Rejeté</span>';
+                    interviewActionHtml = '<button class="btn-action btn-modifier" onclick="ouvrirModalModifierInterview(' + c.interview_id + ')"><i class="fas fa-edit"></i> Modifier</button>';
+                } else {
+                    interviewStatutHtml = '<span class="badge-interview-attente">⏳ En attente</span>';
+                    interviewActionHtml = '<button class="btn-action btn-evaluer" onclick="ouvrirModalInterview(' + c.id + ', ' + c.offre_id + ', \'' + escapeHtml(c.candidat_nom) + '\', \'' + escapeHtml(c.offre_titre) + '\', ' + moyenne + ')"><i class="fas fa-calendar-alt"></i> Évaluer</button>';
+                }
+            } else if (estAdmissible) {
+                interviewStatutHtml = '<span class="badge-interview-attente">⏳ À programmer</span>';
+                interviewActionHtml = '<button class="btn-action btn-interview" onclick="ouvrirModalInterview(' + c.id + ', ' + c.offre_id + ', \'' + escapeHtml(c.candidat_nom) + '\', \'' + escapeHtml(c.offre_titre) + '\', ' + moyenne + ')"><i class="fas fa-calendar-alt"></i> Évaluer interview</button>';
+            } else {
+                interviewStatutHtml = '<span class="text-muted">-</span>';
+                interviewActionHtml = '<span class="text-muted">Non admissible</span>';
             }
             
             const noteClass = moyenne >= 70 ? 'eleve' : (moyenne >= 50 ? 'moyen' : 'faible');
@@ -596,29 +719,20 @@
                     <td><strong>${escapeHtml(c.candidat_nom)}</strong></td>
                     <td>${testsEvalues}/${totalTests} test(s)</td>
                     <td><span class="badge-note ${noteClass}">${moyenne.toFixed(1)}%</span></td>
-                    <td>${statutHtml}</td>
-                    <td>
-                        ${estAdmissible ? 
-                            `<button class="btn-action btn-voir" onclick="window.location.href='/Appl/interviews?offre=${currentOffreId}&candidat=${c.candidat_id}'">
-                                <i class="fas fa-calendar-alt"></i> Programmer interview
-                            </button>` : 
-                            (evaluationComplete ? 
-                                `<span class="text-muted">Non admissible</span>` : 
-                                `<span class="text-muted">En attente</span>`)
-                        }
-                     </div>
-                </td>
+                    <td>${testStatutHtml}</td>
+                    <td>${interviewStatutHtml}</td>
+                    <td>${interviewActionHtml}</td>
+                </tr>
             `);
         });
         
         if (candidatures.length === 0) {
-            tbody.html('<tr><td colspan="5" class="text-center py-5">Aucune candidature acceptée pour cette offre</td></tr>');
+            tbody.html('<tr><td colspan="6" class="text-center py-5">Aucune candidature acceptée pour cette offre</td></tr>');
         }
     }
 
-    // Ouvrir modal d'évaluation
+    // Modal évaluation test
     function ouvrirModalEvaluation(candidatureId, testId, candidatNom, offreTitre, testDate) {
-        $('#evaluationId').val('');
         $('#evaluationCandidatureId').val(candidatureId);
         $('#evaluationTestId').val(testId);
         $('#modalCandidatNom').text(candidatNom);
@@ -629,7 +743,6 @@
         $('#evaluationModal').modal('show');
     }
 
-    // Enregistrer une évaluation
     function enregistrerEvaluation() {
         const candidatureId = $('#evaluationCandidatureId').val();
         const testId = $('#evaluationTestId').val();
@@ -656,8 +769,7 @@
             success: function(response) {
                 hideLoading();
                 if (response.success) {
-                    let emailInfo = response.email_envoye ? response.email_message : null;
-                    showSuccess(response.message, emailInfo);
+                    showSuccess(response.message, response.email_envoye ? response.email_message : null);
                     $('#evaluationModal').modal('hide');
                     chargerOffreComplete();
                 } else {
@@ -671,7 +783,6 @@
         });
     }
 
-    // Ouvrir modal de modification
     function ouvrirModalModifierEvaluation(evaluationId, observation, note) {
         $('#modifierEvaluationId').val(evaluationId);
         $('#modifierObservationText').val(observation);
@@ -679,7 +790,6 @@
         $('#modifierEvaluationModal').modal('show');
     }
 
-    // Mettre à jour une évaluation
     function updateEvaluation() {
         const evaluationId = $('#modifierEvaluationId').val();
         const observation = $('#modifierObservationText').val();
@@ -695,9 +805,143 @@
             success: function(response) {
                 hideLoading();
                 if (response.success) {
-                    let emailInfo = response.email_envoye ? response.email_message : null;
-                    showSuccess(response.message, emailInfo);
+                    showSuccess(response.message);
                     $('#modifierEvaluationModal').modal('hide');
+                    chargerOffreComplete();
+                } else {
+                    showError(response.message);
+                }
+            },
+            error: function(xhr) {
+                hideLoading();
+                showError(xhr.responseJSON?.message || 'Erreur');
+            }
+        });
+    }
+
+    // Modal interview
+    function ouvrirModalInterview(candidatureId, offreId, candidatNom, offreTitre, moyenne) {
+        $('#interviewCandidatureId').val(candidatureId);
+        $('#interviewOffreId').val(offreId);
+        $('#interviewCandidatNom').text(candidatNom);
+        $('#interviewOffreTitre').text(offreTitre);
+        $('#interviewMoyenne').text(moyenne);
+        $('#interviewObservation').val('');
+        $('#interviewDecision').val('');
+        $('#motifRejetInterviewDiv').hide();
+        $('#interviewModal').modal('show');
+    }
+
+    $('#interviewDecision').on('change', function() {
+        if ($(this).val() === 'rejete') {
+            $('#motifRejetInterviewDiv').show();
+        } else {
+            $('#motifRejetInterviewDiv').hide();
+        }
+    });
+
+    function enregistrerInterview() {
+        const candidatureId = $('#interviewCandidatureId').val();
+        const offreId = $('#interviewOffreId').val();
+        const observation = $('#interviewObservation').val();
+        const decision = $('#interviewDecision').val();
+        const motifRejet = $('#motifRejetInterview').val();
+        
+        if (!decision) {
+            showError('Veuillez sélectionner une décision');
+            return;
+        }
+        
+        if (decision === 'rejete' && !motifRejet) {
+            showError('Veuillez indiquer le motif du rejet');
+            return;
+        }
+        
+        showLoading();
+        
+        $.ajax({
+            url: '/api/interviews/enregistrer/',
+            method: 'POST',
+            data: JSON.stringify({
+                candidature_id: parseInt(candidatureId),
+                offre_id: parseInt(offreId),
+                observation: observation,
+                decision: decision,
+                motif_rejet: motifRejet
+            }),
+            headers: { 'X-CSRFToken': getCSRFToken(), 'Content-Type': 'application/json' },
+            success: function(response) {
+                hideLoading();
+                if (response.success) {
+                    showSuccess(response.message, response.email_envoye ? response.email_message : null);
+                    $('#interviewModal').modal('hide');
+                    chargerOffreComplete();
+                } else {
+                    showError(response.message);
+                }
+            },
+            error: function(xhr) {
+                hideLoading();
+                showError(xhr.responseJSON?.message || 'Erreur');
+            }
+        });
+    }
+
+    function ouvrirModalModifierInterview(interviewId) {
+        $.ajax({
+            url: `/api/interviews/get/${interviewId}/`,
+            method: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    const i = response.interview;
+                    $('#modifierInterviewId').val(i.id);
+                    $('#modifierInterviewObservation').val(i.observation);
+                    $('#modifierInterviewDecision').val(i.decision);
+                    if (i.decision === 'rejete') {
+                        $('#modifierMotifRejetDiv').show();
+                        $('#modifierInterviewMotifRejet').val(i.motif_rejet);
+                    } else {
+                        $('#modifierMotifRejetDiv').hide();
+                    }
+                    $('#modifierInterviewModal').modal('show');
+                }
+            },
+            error: function() {
+                showError('Erreur lors du chargement');
+            }
+        });
+    }
+
+    $('#modifierInterviewDecision').on('change', function() {
+        if ($(this).val() === 'rejete') {
+            $('#modifierMotifRejetDiv').show();
+        } else {
+            $('#modifierMotifRejetDiv').hide();
+        }
+    });
+
+    function updateInterview() {
+        const interviewId = $('#modifierInterviewId').val();
+        const observation = $('#modifierInterviewObservation').val();
+        const decision = $('#modifierInterviewDecision').val();
+        const motifRejet = $('#modifierInterviewMotifRejet').val();
+        
+        showLoading();
+        
+        $.ajax({
+            url: `/api/interviews/modifier/${interviewId}/`,
+            method: 'POST',
+            data: JSON.stringify({
+                observation: observation,
+                decision: decision,
+                motif_rejet: motifRejet
+            }),
+            headers: { 'X-CSRFToken': getCSRFToken(), 'Content-Type': 'application/json' },
+            success: function(response) {
+                hideLoading();
+                if (response.success) {
+                    showSuccess(response.message);
+                    $('#modifierInterviewModal').modal('hide');
                     chargerOffreComplete();
                 } else {
                     showError(response.message);
