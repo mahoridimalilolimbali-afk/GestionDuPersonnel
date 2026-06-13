@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>Gestion des Interviews - GRH</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px;
+            font-family: 'Poppins', sans-serif;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+        }
+        .table-custom {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        }
+        .table-custom thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .table-custom thead th {
+            color: white;
+            font-weight: 600;
+            padding: 15px;
+        }
+        .badge-admissible {
+            background: #27ae60;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+        }
+        .btn-interview {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 6px 15px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+        .modal-content-custom {
+            border-radius: 25px;
+            border: none;
+            overflow: hidden;
+        }
+        .modal-header-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 25px;
+            border: none;
+        }
+        .form-control-custom, .form-select-custom {
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            padding: 12px 15px;
+            width: 100%;
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+        }
+        .btn-cancel {
+            background: #e9ecef;
+            color: #6c757d;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-users"></i> Gestion des Interviews</h2>
+                    <p>Sélectionnez une offre pour voir les candidats admissibles (note ≥ 70%)</p>
+                </div>
+                <a href="/Appl/dashboardAdmin" class="btn btn-outline-light">
+                    <i class="fas fa-arrow-left"></i> Retour
+                </a>
+            </div>
+            <div class="card-body p-4">
+                <!-- Sélection de l'offre -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold"><i class="fas fa-briefcase"></i> Choisir une offre</label>
+                        <select class="form-select-custom" id="offreSelect">
+                            <option value="">-- Sélectionnez une offre --</option>
+                            {% for offre in offres %}
+                                <option value="{{ offre.id }}">{{ offre.titre }} ({{ offre.domaine.NomDomaine }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end">
+                        <button class="btn-interview" onclick="chargerCandidats()">
+                            <i class="fas fa-search"></i> Voir les candidats
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Liste des candidats -->
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Candidat</th>
+                                <th>Email</th>
+                                <th>Moyenne</th>
+                                <th>Date candidature</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="candidatsBody">
+                            <tr><td colspan="6" class="text-center py-5">Sélectionnez une offre pour voir les candidats</td><\/tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Interview -->
+    <div class="modal fade" id="interviewModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title"><i class="fas fa-calendar-alt"></i> Résultat de l'interview</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="interviewCandidatureId">
+                    <div class="alert alert-info mb-3">
+                        <strong><i class="fas fa-user"></i> Candidat :</strong> <span id="modalCandidatNom"></span><br>
+                        <strong><i class="fas fa-briefcase"></i> Offre :</strong> <span id="modalOffreTitre"></span><br>
+                        <strong><i class="fas fa-chart-line"></i> Moyenne :</strong> <span id="modalMoyenne"></span>%
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="fas fa-comment"></i> Observation / Commentaire</label>
+                        <textarea class="form-control-custom" id="observationInterview" rows="3" placeholder="Résumé de l'interview..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="fas fa-gavel"></i> Décision</label>
+                        <select class="form-select-custom" id="decisionInterview">
+                            <option value="">-- Sélectionnez --</option>
+                            <option value="accepte">✅ Accepter - Proposer un contrat</option>
+                            <option value="rejete">❌ Rejeter - Candidature non retenue</option>
+                        </select>
+                    </div>
+                    <div id="motifRejetDiv" style="display: none;">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"><i class="fas fa-info-circle"></i> Motif du rejet</label>
+                            <textarea class="form-control-custom" id="motifRejet" rows="2" placeholder="Expliquez le motif du rejet..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn-submit" onclick="enregistrerInterview()">Enregistrer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        let currentCandidats = [];
+
+        function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
+
+        function chargerCandidats() {
+            const offreId = $('#offreSelect').val();
+            if (!offreId) {
+                Swal.fire({ icon: 'warning', title: 'Attention', text: 'Veuillez sélectionner une offre' });
+                return;
+            }
+
+            $('#candidatsBody').html('<tr><td colspan="6" class="text-center py-5"><div class="loading-spinner"></div><p>Chargement...</p></td></tr>');
+
+            $.ajax({
+                url: `/api/interviews/candidats-admissibles/${offreId}/`,
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        currentCandidats = response.candidats;
+                        afficherCandidats(response.candidats);
+                    } else {
+                        $('#candidatsBody').html('<tr><td colspan="6" class="text-center text-danger">Erreur de chargement</td></tr>');
+                    }
+                },
+                error: function() {
+                    $('#candidatsBody').html('<tr><td colspan="6" class="text-center text-danger">Erreur de connexion</td></tr>');
+                }
+            });
+        }
+
+        function afficherCandidats(candidats) {
+            const tbody = $('#candidatsBody');
+            tbody.empty();
+
+            if (candidats.length === 0) {
+                tbody.html('<tr><td colspan="6" class="text-center py-5">✅ Aucun candidat admissible pour cette offre</td></tr>');
+                return;
+            }
+
+            candidats.forEach(c => {
+                tbody.append(`
+                    <tr>
+                        <td>#${c.id}</td>
+                        <td><strong>${c.candidat_nom}</strong></td>
+                        <td>${c.candidat_email || 'Non renseigné'}</td>
+                        <td><span class="badge-admissible">${c.moyenne}%</span></td>
+                        <td>${c.date_candidature}</td>
+                        <td>
+                            <button class="btn-interview" onclick="ouvrirModalInterview(${c.id}, '${c.candidat_nom}', '${c.offre_titre}', ${c.moyenne})">
+                                <i class="fas fa-calendar-alt"></i> Interview
+                            </button>
+                        </td>
+                    </tr>
+                `);
+            });
+        }
+
+        function ouvrirModalInterview(candidatureId, candidatNom, offreTitre, moyenne) {
+            $('#interviewCandidatureId').val(candidatureId);
+            $('#modalCandidatNom').text(candidatNom);
+            $('#modalOffreTitre').text(offreTitre);
+            $('#modalMoyenne').text(moyenne);
+            $('#observationInterview').val('');
+            $('#decisionInterview').val('');
+            $('#motifRejetDiv').hide();
+            $('#interviewModal').modal('show');
+        }
+
+        $('#decisionInterview').on('change', function() {
+            if ($(this).val() === 'rejete') {
+                $('#motifRejetDiv').show();
+            } else {
+                $('#motifRejetDiv').hide();
+            }
+        });
+
+        function enregistrerInterview() {
+            const candidatureId = $('#interviewCandidatureId').val();
+            const decision = $('#decisionInterview').val();
+            const observation = $('#observationInterview').val();
+            const motifRejet = $('#motifRejet').val();
+
+            if (!decision) {
+                Swal.fire({ icon: 'error', title: 'Erreur', text: 'Veuillez sélectionner une décision' });
+                return;
+            }
+
+            if (decision === 'rejete' && !motifRejet) {
+                Swal.fire({ icon: 'error', title: 'Erreur', text: 'Veuillez indiquer le motif du rejet' });
+                return;
+            }
+
+            Swal.fire({ title: 'Traitement...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            $.ajax({
+                url: '/api/interviews/enregistrer/',
+                method: 'POST',
+                data: JSON.stringify({
+                    candidature_id: candidatureId,
+                    decision: decision,
+                    observation: observation,
+                    motif_rejet: motifRejet
+                }),
+                headers: { 'X-CSRFToken': getCSRFToken(), 'Content-Type': 'application/json' },
+                success: function(response) {
+                    Swal.close();
+                    if (response.success) {
+                        let msg = response.message;
+                        if (response.email_envoye) {
+                            msg += `<br><br><i class="fas fa-envelope text-success"></i> ${response.email_message}`;
+                        }
+                        Swal.fire({ icon: 'success', title: 'Succès !', html: msg });
+                        $('#interviewModal').modal('hide');
+                        chargerCandidats();
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Erreur', text: response.message });
+                    }
+                },
+                error: function(xhr) {
+                    Swal.close();
+                    Swal.fire({ icon: 'error', title: 'Erreur', text: xhr.responseJSON?.message || 'Erreur lors de l\'enregistrement' });
+                }
+            });
+        }
+    </script>
+</body>
+</html>

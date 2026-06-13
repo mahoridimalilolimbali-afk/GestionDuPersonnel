@@ -654,10 +654,6 @@ async function ajouterAgent() {
     const candidatId = document.getElementById('candidatSelect').value;
     const dateRecrutement = document.getElementById('dateRecrutement').value;
     
-    // Ajoutez ce console.log pour déboguer
-    console.log("Candidat ID:", candidatId);
-    console.log("Date recrutement brute:", dateRecrutement);
-    
     if (!candidatId) {
         Swal.fire({ icon: 'error', title: 'Erreur', text: 'Veuillez sélectionner un candidat' });
         return;
@@ -680,7 +676,6 @@ async function ajouterAgent() {
     }).then(async (result) => {
         if (result.isConfirmed) {
             try {
-                // Afficher un loader
                 Swal.fire({ title: 'Traitement...', text: 'Ajout en cours', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
                 
                 const response = await fetch('/api/agents/ajouter/', {
@@ -691,7 +686,7 @@ async function ajouterAgent() {
                     },
                     body: JSON.stringify({
                         candidat_id: parseInt(candidatId),
-                        date_retenu: dateRecrutement  // ← Assurez-vous que le nom correspond à l'API
+                        date_retenu: dateRecrutement
                     })
                 });
                 const data = await response.json();
@@ -699,11 +694,18 @@ async function ajouterAgent() {
                 Swal.close();
                 
                 if (data.success) {
+                    let messageHtml = data.message;
+                    if (data.email_envoye) {
+                        messageHtml += `<br><br><i class="fas fa-envelope text-success"></i> ✅ ${data.email_message}`;
+                    } else if (data.email_message) {
+                        messageHtml += `<br><br><i class="fas fa-exclamation-triangle text-warning"></i> ⚠️ ${data.email_message}`;
+                    }
+                    
                     Swal.fire({
                         icon: 'success',
                         title: 'Succès !',
-                        html: data.message,
-                        timer: 3000,
+                        html: messageHtml,
+                        timer: 5000,
                         showConfirmButton: false
                     });
                     $('#ajouterAgentModal').modal('hide');

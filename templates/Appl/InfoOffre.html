@@ -534,44 +534,61 @@
     }
     
     function envoyerCandidature() {
-        const offreId = $('#postulerOffreId').val();
-        const cv = $('#cvFile')[0].files[0];
-        
-        if (!cv) {
-            showError('Veuillez importer votre CV');
-            return;
-        }
-        
-        const formData = new FormData();
-        formData.append('offre_id', offreId);
-        formData.append('cv', cv);
-        
-        showLoading();
-        
-        $.ajax({
-            url: '/api/candidature/postuler/',
-            method: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            headers: { 'X-CSRFToken': getCSRFToken() },
-            success: function(response) {
-                hideLoading();
-                if (response.success) {
-                    showSuccess(response.message);
-                    $('#postulerModal').modal('hide');
-                    chargerOffres();
-                } else {
-                    showError(response.message);
-                }
-            },
-            error: function(xhr) {
-                hideLoading();
-                const message = xhr.responseJSON?.message || 'Erreur lors de l\'envoi';
-                showError(message);
-            }
-        });
+    const offreId = $('#postulerOffreId').val();
+    const cv = $('#cvFile')[0].files[0];
+    
+    if (!cv) {
+        showError('Veuillez importer votre CV');
+        return;
     }
+    
+    const formData = new FormData();
+    formData.append('offre_id', offreId);
+    formData.append('cv', cv);
+    
+    showLoading();
+    
+    $.ajax({
+        url: '/api/candidature/postuler/',
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        headers: { 'X-CSRFToken': getCSRFToken() },
+        success: function(response) {
+            hideLoading();
+            if (response.success) {
+                let messageHtml = response.message;
+                
+                // Ajouter le statut de l'email
+                if (response.email_envoye) {
+                    messageHtml += `<br><br><i class="fas fa-envelope text-success"></i> ✅ ${response.email_message}`;
+                } else if (response.email_message) {
+                    messageHtml += `<br><br><i class="fas fa-exclamation-triangle text-warning"></i> ⚠️ ${response.email_message}`;
+                }
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Succès !',
+                    html: messageHtml,
+                    timer: 5000,
+                    showConfirmButton: true,
+                    confirmButtonColor: '#27ae60'
+                });
+                
+                $('#postulerModal').modal('hide');
+                chargerOffres();
+            } else {
+                showError(response.message);
+            }
+        },
+        error: function(xhr) {
+            hideLoading();
+            const message = xhr.responseJSON?.message || 'Erreur lors de l\'envoi';
+            showError(message);
+        }
+    });
+}
     
     function escapeHtml(text) {
         if (!text) return '';

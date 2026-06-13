@@ -6,7 +6,7 @@ import json
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import logging
 from django.core.files.storage import default_storage
-from .models import Domaine, OffreEmploie, DecisionOnem, Onem, Candidat, Candidature, TypeDecision, Decision, Test, Evaluation, Agent, TypeConge, DemandeConge, Agent, TypeEtatOffre, ReglageOffre, Notification
+from .models import Domaine, OffreEmploie, DecisionOnem, Onem, Candidat, Candidature, TypeDecision, Decision, Test, Evaluation, Agent, TypeConge, DemandeConge, Agent, TypeEtatOffre, ReglageOffre, Notification, Contrat, Interview
 import os
 from datetime import date
 from django.contrib.auth.models import User, Group
@@ -1027,7 +1027,7 @@ def get_offres_acceptees(request):
 @csrf_exempt
 @require_http_methods(["POST"])
 def postuler_candidature(request):
-    """API pour enregistrer une candidature"""
+    """API: Enregistrer une candidature et notifier le candidat par email"""
     try:
         if not request.user.is_authenticated:
             return JsonResponse({'success': False, 'message': 'Veuillez vous connecter'}, status=401)
@@ -1038,29 +1038,16 @@ def postuler_candidature(request):
         offre_id = request.POST.get('offre_id')
         cv = request.FILES.get('cv')
         
-        if not offre_id:
-            return JsonResponse({'success': False, 'message': 'Offre non spécifiée'}, status=400)
+        if not offre_id or not cv:
+            return JsonResponse({'success': False, 'message': 'Offre et CV requis'}, status=400)
         
-        if not cv:
-            return JsonResponse({'success': False, 'message': 'Veuillez importer votre CV'}, status=400)
+        candidat = get_object_or_404(Candidat, user=request.user)
+        offre = get_object_or_404(OffreEmploie, id=offre_id)
         
-        # Récupérer le candidat
-        try:
-            candidat = Candidat.objects.get(user=request.user)
-        except Candidat.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Profil candidat introuvable'}, status=400)
-        
-        # Récupérer l'offre
-        try:
-            offre = OffreEmploie.objects.get(id=offre_id)
-        except OffreEmploie.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Offre non trouvée'}, status=404)
-        
-        # Vérifier si l'offre est acceptée
+        # Vérifier que l'offre est acceptée
         try:
             decision_accepter = DecisionOnem.objects.get(Description__icontains='Accepter')
-            offre_acceptee = Onem.objects.filter(offre=offre, decision=decision_accepter).exists()
-            if not offre_acceptee:
+            if not Onem.objects.filter(offre=offre, decision=decision_accepter).exists():
                 return JsonResponse({'success': False, 'message': 'Cette offre n\'est pas disponible'}, status=400)
         except DecisionOnem.DoesNotExist:
             return JsonResponse({'success': False, 'message': 'Offre non disponible'}, status=400)
@@ -1076,18 +1063,21 @@ def postuler_candidature(request):
             cv=cv
         )
         
+        # ========== ENVOYER L'EMAIL DE CONFIRMATION DE CANDIDATURE ==========
+        from .utils import notifier_candidature_envoyee
+        base_url = "https://mahoridi.pythonanywhere.com"  # Votre domaine
+        email_envoye, email_message = notifier_candidature_envoyee(candidature, base_url)
+        # ====================================================================
+        
         return JsonResponse({
             'success': True,
-            'message': f'Votre candidature pour "{offre.titre}" a été envoyée avec succès !'
+            'message': f'Votre candidature pour "{offre.titre}" a été envoyée avec succès !',
+            'email_envoye': email_envoye,
+            'email_message': email_message
         })
         
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
-
-
-
-
-
 
 
 @require_http_methods(["GET"])
@@ -4599,8 +4589,9 @@ def generer_matricule():
 
 def verifier_et_promouvoir_agent(candidature):
     """
-    Vérifie et promeut le candidat en Agent si moyenne >= 70% après tous les tests.
-    Retourne un message indiquant le résultat.
+    Vérifie si le candidat a une moyenne >= 70% après tous les tests.
+    Si oui, envoie un message d'admissibilité (sans créer l'agent).
+    L'agent sera créé manuellement par l'admin après interview.
     """
     offre = candidature.offre
     tous_les_tests = Test.objects.filter(offre=offre)
@@ -4615,60 +4606,38 @@ def verifier_et_promouvoir_agent(candidature):
     # Si tous les tests ne sont pas encore évalués
     if evaluations_count < nombre_tests:
         restant = nombre_tests - evaluations_count
-        return f"Encore {restant} test(s) à évaluer pour devenir agent.", None
+        return f"Encore {restant} test(s) à évaluer.", None
     
     # Tous les tests sont évalués, calculer la moyenne
     toutes_notes = evaluations_existantes.values_list('note', flat=True)
     moyenne = sum(toutes_notes) / len(toutes_notes)
     
     if moyenne >= 70:
-        # Le candidat est promu AGENT
-        user = candidature.candidat.user
-        success, message = changer_groupe_utilisateur(user, 'AGENT')
+        # 🔐 MODIFICATION : Le candidat n'est PAS promu agent automatiquement
+        # Envoyer seulement l'email d'admissibilité (félicitations + invitation à attendre l'interview)
         
-        # Créer ou mettre à jour l'enregistrement Agent
-        agent, created = Agent.objects.get_or_create(
-            candidat=candidature.candidat,
-            defaults={'statut': 'Approuvé'}
-        )
-        
-        if created:
-            # Nouvel agent : générer un matricule
-            agent.matricule = generer_matricule()
-            agent.statut = 'Approuvé'
-            agent.save()
-        elif agent.statut != 'Approuvé':
-            # Agent existant mais pas approuvé
-            agent.statut = 'Approuvé'
-            if not agent.matricule:
-                agent.matricule = generer_matricule()
-            agent.save()
-        
-        # Envoyer l'email de promotion
-        from .utils import notifier_promotion_agent
-        base_url = "https://mahoridi.pythonanywhere.com/"  # À remplacer par votre domaine
-        email_envoye, email_msg = notifier_promotion_agent(
-            candidature, moyenne, base_url, agent.matricule
+        from .utils import notifier_candidat_admissible
+        base_url = "https://mahoridi.pythonanywhere.com/"  # Votre domaine
+        email_envoye, email_msg = notifier_candidat_admissible(
+            candidature, moyenne, base_url
         )
         
         if email_envoye:
-            return f"✅ Félicitations! Agent promu (Matricule: {agent.matricule}, Moyenne: {moyenne:.2f}%) - Email envoyé", {
-                'promu': True, 
-                'moyenne': moyenne, 
-                'matricule': agent.matricule,
+            return f"✅ Candidat admissible ! (Moyenne: {moyenne:.2f}%) - Email envoyé", {
+                'admissible': True,
+                'moyenne': moyenne,
                 'email_envoye': email_envoye
             }
         else:
-            return f"✅ Promu Agent (Matricule: {agent.matricule}, Moyenne: {moyenne:.2f}%) - ⚠️ Email: {email_msg}", {
-                'promu': True, 
-                'moyenne': moyenne, 
-                'matricule': agent.matricule,
+            return f"✅ Candidat admissible (Moyenne: {moyenne:.2f}%) - ⚠️ Email: {email_msg}", {
+                'admissible': True,
+                'moyenne': moyenne,
                 'email_envoye': email_envoye
             }
     else:
         # Moyenne insuffisante
-        return f"❌ Moyenne {moyenne:.2f}% < 70% - Non promu", {
-            'promu': False, 
+        return f"❌ Moyenne {moyenne:.2f}% < 70% - Non admissible", {
+            'admissible': False, 
             'moyenne': moyenne
         }
 
@@ -5540,6 +5509,9 @@ def ajouter_agent(request):
         
         # Changer le groupe de l'utilisateur de CANDIDAT à AGENT
         user = candidat.user
+        email_envoye = False
+        email_message = ""
+        
         if user:
             # Retirer du groupe CANDIDAT
             groupe_candidat = Group.objects.filter(name='CANDIDAT').first()
@@ -5551,6 +5523,12 @@ def ajouter_agent(request):
             user.groups.add(groupe_agent)
             user.is_staff = True
             user.save()
+            
+            # ========== ENVOYER L'EMAIL DE NOTIFICATION ==========
+            from .utils import notifier_promotion_agent_manuel
+            base_url = "https://mahoridi.pythonanywhere.com"  # Votre domaine
+            email_envoye, email_message = notifier_promotion_agent_manuel(agent, base_url)
+            # =====================================================
         
         return JsonResponse({
             'success': True,
@@ -5559,12 +5537,13 @@ def ajouter_agent(request):
                 'id': agent.id,
                 'matricule': agent.matricule,
                 'date_retenu': agent.date_retenu.strftime('%d/%m/%Y')
-            }
+            },
+            'email_envoye': email_envoye,
+            'email_message': email_message
         })
         
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
-
 
 
 
@@ -5592,13 +5571,16 @@ def modifier_date_recrutement(request):
         except ValueError:
             return JsonResponse({'success': False, 'message': 'Format de date invalide'}, status=400)
         
+        # Sauvegarder l'ancienne date
+        ancienne_date = agent.date_retenu.strftime('%d/%m/%Y') if agent.date_retenu else "Non définie"
+        
         # Mettre à jour la date (contourner auto_now_add)
         agent.date_retenu = date_retenu_obj
         agent.save()
         
         return JsonResponse({
             'success': True,
-            'message': f'Date de recrutement modifiée avec succès : {date_retenu_obj.strftime("%d/%m/%Y")}',
+            'message': f'Date de recrutement modifiée avec succès : {ancienne_date} → {date_retenu_obj.strftime("%d/%m/%Y")}',
             'agent': {
                 'id': agent.id,
                 'date_retenu': agent.date_retenu.strftime('%d/%m/%Y')
@@ -5607,3 +5589,396 @@ def modifier_date_recrutement(request):
         
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+
+# ==================== GESTION DES INTERVIEWS ====================
+
+def page_interviews(request):
+    """Page de gestion des interviews"""
+    offres = OffreEmploie.objects.filter(onem__decision__Description__icontains='Accepter')
+    return render(request, 'Appl/Interviews.html', {'offres': offres})
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_candidats_admissibles_par_offre(request, id_offre):
+    """API: Récupérer les candidats admissibles (moyenne ≥ 70%) pour une offre"""
+    try:
+        from django.db.models import Avg
+        
+        # Récupérer les candidatures acceptées pour cette offre
+        type_decision_accepter = TypeDecision.objects.filter(Description__icontains='Accepter').first()
+        
+        if not type_decision_accepter:
+            return JsonResponse({'success': False, 'message': 'Type décision non trouvé'}, status=400)
+        
+        # Candidatures acceptées pour cette offre
+        candidatures = Candidature.objects.filter(
+            offre_id=id_offre,
+            decisions__type_decision=type_decision_accepter
+        ).exclude(interview__isnull=False).distinct()
+        
+        data = []
+        for c in candidatures:
+            # Calculer la moyenne des évaluations
+            evaluations = Evaluation.objects.filter(candidature=c)
+            if evaluations.exists():
+                moyenne = sum(e.note for e in evaluations) / evaluations.count()
+            else:
+                moyenne = 0
+            
+            # Vérifier si déjà interviewé
+            a_deja_interview = Interview.objects.filter(candidature=c).exists()
+            
+            if moyenne >= 70 and not a_deja_interview:
+                data.append({
+                    'id': c.id,
+                    'candidat_id': c.candidat.id,
+                    'candidat_nom': f"{c.candidat.nom} {c.candidat.postnom} {c.candidat.prenom}",
+                    'candidat_email': c.candidat.user.email if c.candidat.user else None,
+                    'offre_id': c.offre.id,
+                    'offre_titre': c.offre.titre,
+                    'moyenne': round(moyenne, 2),
+                    'date_candidature': c.date_soumission.strftime('%d/%m/%Y')
+                })
+        
+        return JsonResponse({'success': True, 'candidats': data, 'total': len(data)})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def enregistrer_interview(request):
+    """API: Enregistrer une décision d'interview"""
+    try:
+        data = json.loads(request.body)
+        candidature_id = data.get('candidature_id')
+        decision = data.get('decision')
+        observation = data.get('observation', '').strip()
+        motif_rejet = data.get('motif_rejet', '').strip() if decision == 'rejete' else ''
+        
+        if not candidature_id or not decision:
+            return JsonResponse({'success': False, 'message': 'Données incomplètes'}, status=400)
+        
+        candidature = get_object_or_404(Candidature, id=candidature_id)
+        
+        # Vérifier si déjà interviewé
+        if Interview.objects.filter(candidature=candidature).exists():
+            return JsonResponse({'success': False, 'message': 'Ce candidat a déjà été interviewé'}, status=400)
+        
+        # Créer l'interview
+        interview = Interview.objects.create(
+            candidature=candidature,
+            offre=candidature.offre,
+            candidat=candidature.candidat,
+            decision=decision,
+            observation=observation,
+            motif_rejet=motif_rejet if decision == 'rejete' else ''
+        )
+        
+        email_envoye = False
+        email_message = ""
+        
+        from .utils import notifier_resultat_interview
+        base_url = "https://mahoridi.pythonanywhere.com"
+        
+        if decision == 'accepte':
+            # Créer un contrat VIDE pour le candidat (il devra le compléter)
+            contrat = Contrat.objects.create(
+                interview=interview,
+                candidature=candidature,
+                candidat=candidature.candidat,
+                offre=candidature.offre,
+                titre_contrat=f"Proposition de contrat - {candidature.offre.titre}",
+                description=f"Nous avons le plaisir de vous proposer un contrat pour le poste de {candidature.offre.titre}. Veuillez choisir le type de contrat et consulter les détails ci-dessous."
+            )
+            email_envoye, email_message = notifier_resultat_interview(candidature, 'accepte', observation, base_url, contrat.id)
+        else:
+            email_envoye, email_message = notifier_resultat_interview(candidature, 'rejete', motif_rejet, base_url)
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Interview enregistrée avec succès. Décision: {decision}',
+            'interview': {
+                'id': interview.id,
+                'decision': interview.decision,
+                'contrat_id': contrat.id if decision == 'accepte' else None
+            },
+            'email_envoye': email_envoye,
+            'email_message': email_message
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+# ==================== GESTION DES CONTRATS ====================
+
+@login_required
+def mes_contrats(request):
+    """Page des contrats pour le candidat connecté"""
+    return render(request, 'Appl/MesContrats.html')
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_mes_contrats(request):
+    """API: Récupérer les contrats du candidat connecté"""
+    try:
+        if not request.user.is_authenticated:
+            return JsonResponse({'success': False, 'message': 'Non authentifié'}, status=401)
+        
+        candidat = get_object_or_404(Candidat, user=request.user)
+        contrats = Contrat.objects.filter(candidat=candidat).select_related('offre', 'interview')
+        
+        data = []
+        for c in contrats:
+            data.append({
+                'id': c.id,
+                'offre_titre': c.offre.titre,
+                'offre_domaine': c.offre.domaine.NomDomaine,
+                'titre_contrat': c.titre_contrat,
+                'description': c.description,
+                'date_debut': c.date_debut.strftime('%d/%m/%Y') if c.date_debut else 'À définir',
+                'date_fin': c.date_fin.strftime('%d/%m/%Y') if c.date_fin else 'À définir',
+                'salaire': f"{c.salaire:,.0f} FC" if c.salaire else 'À définir',
+                'prime': f"{c.prime:,.0f} FC" if c.prime else '0 FC',
+                'fichier_url': c.fichier_contrat.url if c.fichier_contrat else None,
+                'statut': c.statut,
+                'date_creation': c.date_creation.strftime('%d/%m/%Y à %H:%M')
+            })
+        
+        return JsonResponse({'success': True, 'contrats': data, 'total': len(data)})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def repondre_contrat(request, id_contrat):
+    """API: Réponse du candidat au contrat (Accepter/Refuser)"""
+    try:
+        data = json.loads(request.body)
+        decision = data.get('decision')
+        motif_refus = data.get('motif_refus', '').strip() if decision == 'refuser' else ''
+        
+        contrat = get_object_or_404(Contrat, id=id_contrat)
+        
+        # Vérifier que le contrat appartient au candidat connecté
+        if contrat.candidat.user.id != request.user.id:
+            return JsonResponse({'success': False, 'message': 'Accès non autorisé'}, status=403)
+        
+        if contrat.statut != 'en_attente':
+            return JsonResponse({'success': False, 'message': 'Ce contrat a déjà été traité'}, status=400)
+        
+        if decision == 'accepter':
+            contrat.statut = 'accepte'
+            contrat.date_signature = datetime.now()
+            contrat.save()
+            
+            # Le candidat devient AGENT
+            from django.contrib.auth.models import Group
+            user = request.user
+            groupe_candidat = Group.objects.filter(name='CANDIDAT').first()
+            if groupe_candidat:
+                user.groups.remove(groupe_candidat)
+            
+            groupe_agent, _ = Group.objects.get_or_create(name='AGENT')
+            user.groups.add(groupe_agent)
+            user.is_staff = True
+            user.save()
+            
+            # Créer l'agent
+            import random
+            matricule = f"GRH-{contrat.candidat.id}-{random.randint(1000, 9999)}"
+            while Agent.objects.filter(matricule=matricule).exists():
+                matricule = f"GRH-{contrat.candidat.id}-{random.randint(1000, 9999)}"
+            
+            agent, created = Agent.objects.get_or_create(
+                candidat=contrat.candidat,
+                defaults={
+                    'statut': 'Approuvé',
+                    'matricule': matricule
+                }
+            )
+            if not created and agent.statut != 'Approuvé':
+                agent.statut = 'Approuvé'
+                if not agent.matricule:
+                    agent.matricule = matricule
+                agent.save()
+            
+            # Envoyer email de confirmation
+            from .utils import notifier_contrat_accepte
+            base_url = "https://mahoridi.pythonanywhere.com"
+            notifier_contrat_accepte(contrat, base_url)
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Félicitations ! Vous êtes maintenant agent chez GRH ENGINEERING. Un email de confirmation vous a été envoyé.'
+            })
+            
+        elif decision == 'refuser':
+            contrat.statut = 'refuse'
+            contrat.motif_refus = motif_refus
+            contrat.save()
+            
+            # Envoyer email de refus
+            from .utils import notifier_contrat_refuse
+            base_url = "https://mahoridi.pythonanywhere.com"
+            notifier_contrat_refuse(contrat, motif_refus, base_url)
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Nous avons bien pris en compte votre décision. Nous vous souhaitons bonne chance dans vos recherches.'
+            })
+        else:
+            return JsonResponse({'success': False, 'message': 'Décision invalide'}, status=400)
+            
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)        
+
+
+# views.py - Ajoutez ces vues
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def mettre_a_jour_contrat(request, id_contrat):
+    """API: Le candidat complète les informations du contrat (type, dates, etc.)"""
+    try:
+        if not request.user.is_authenticated:
+            return JsonResponse({'success': False, 'message': 'Non authentifié'}, status=401)
+        
+        data = json.loads(request.body)
+        contrat = get_object_or_404(Contrat, id=id_contrat)
+        
+        # Vérifier que le contrat appartient au candidat connecté
+        if contrat.candidat.user.id != request.user.id:
+            return JsonResponse({'success': False, 'message': 'Accès non autorisé'}, status=403)
+        
+        if contrat.statut != 'en_attente':
+            return JsonResponse({'success': False, 'message': 'Ce contrat a déjà été traité'}, status=400)
+        
+        type_contrat = data.get('type_contrat')
+        date_debut = data.get('date_debut')
+        date_fin = data.get('date_fin')
+        duree_mois = data.get('duree_mois')
+        
+        if not type_contrat:
+            return JsonResponse({'success': False, 'message': 'Veuillez choisir le type de contrat'}, status=400)
+        
+        contrat.type_contrat = type_contrat
+        
+        if type_contrat == 'determine':
+            if not date_debut:
+                return JsonResponse({'success': False, 'message': 'Veuillez indiquer la date de début'}, status=400)
+            if not date_fin and not duree_mois:
+                return JsonResponse({'success': False, 'message': 'Veuillez indiquer la date de fin ou la durée'}, status=400)
+            
+            from datetime import datetime
+            contrat.date_debut = datetime.strptime(date_debut, '%Y-%m-%d').date()
+            
+            if date_fin:
+                contrat.date_fin = datetime.strptime(date_fin, '%Y-%m-%d').date()
+            elif duree_mois:
+                contrat.duree_mois = int(duree_mois)
+        else:
+            # Contrat indéterminé - pas de dates
+            contrat.date_debut = None
+            contrat.date_fin = None
+            contrat.duree_mois = None
+        
+        contrat.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Informations du contrat enregistrées. Vous pouvez maintenant l\'accepter ou le refuser.',
+            'contrat': {
+                'id': contrat.id,
+                'type_contrat': contrat.type_contrat,
+                'duree_texte': contrat.duree_contrat_str()
+            }
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+
+# views.py - Ajoutez ces vues pour l'admin
+
+@login_required
+def contrats_admin(request):
+    """Page admin pour gérer les contrats"""
+    return render(request, 'Appl/ContratsAdmin.html')
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_contrats_admin(request):
+    """API: Récupérer tous les contrats pour l'admin"""
+    try:
+        if not request.user.is_superuser:
+            return JsonResponse({'success': False, 'message': 'Accès non autorisé'}, status=403)
+        
+        contrats = Contrat.objects.select_related('candidat', 'offre').all().order_by('-date_proposition')
+        
+        data = []
+        for c in contrats:
+            data.append({
+                'id': c.id,
+                'candidat_nom': f"{c.candidat.nom} {c.candidat.prenom}",
+                'offre_titre': c.offre.titre,
+                'titre_contrat': c.titre_contrat,
+                'description': c.description,
+                'salaire': float(c.salaire_base) if c.salaire_base else None,
+                'prime': float(c.prime) if c.prime else 0,
+                'avantages': c.avantages,
+                'type_contrat': c.type_contrat,
+                'duree_texte': c.duree_contrat_str(),
+                'statut': c.statut,
+                'motif_refus': c.motif_refus,
+                'date_creation': c.date_proposition.strftime('%d/%m/%Y')
+            })
+        
+        return JsonResponse({'success': True, 'contrats': data, 'total': len(data)})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def modifier_contrat_admin(request, id_contrat):
+    """API: Modifier un contrat (admin)"""
+    try:
+        if not request.user.is_superuser:
+            return JsonResponse({'success': False, 'message': 'Accès non autorisé'}, status=403)
+        
+        contrat = get_object_or_404(Contrat, id=id_contrat)
+        
+        titre_contrat = request.POST.get('titre_contrat', '').strip()
+        description = request.POST.get('description', '').strip()
+        salaire = request.POST.get('salaire')
+        prime = request.POST.get('prime', 0)
+        avantages = request.POST.get('avantages', '').strip()
+        
+        if titre_contrat:
+            contrat.titre_contrat = titre_contrat
+        if description:
+            contrat.description = description
+        if salaire:
+            contrat.salaire_base = float(salaire)
+        if prime:
+            contrat.prime = float(prime)
+        if avantages:
+            contrat.avantages = avantages
+        
+        fichier = request.FILES.get('fichier_contrat')
+        if fichier:
+            contrat.fichier_contrat = fichier
+        
+        contrat.save()
+        
+        return JsonResponse({'success': True, 'message': 'Contrat modifié avec succès'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)        

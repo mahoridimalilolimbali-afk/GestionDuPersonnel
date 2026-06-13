@@ -407,6 +407,28 @@ urlpatterns = [
     path('api/agents/ajouter/', views.ajouter_agent, name='ajouter_agent'),
     path('api/agents/modifier-date/', views.modifier_date_recrutement, name='modifier_date_recrutement'),
 
+    # urls.py - Ajoutez ces lignes
+
+# urls.py - Ajoutez toutes ces lignes
+
+    # ==================== INTERVIEWS ====================
+    path('interviews/', views.page_interviews, name='page_interviews'),
+    path('api/interviews/candidats-admissibles/<int:id_offre>/', views.get_candidats_admissibles_par_offre, name='get_candidats_admissibles_par_offre'),
+    path('api/interviews/enregistrer/', views.enregistrer_interview, name='enregistrer_interview'),
+
+    # ==================== CONTRATS ====================
+    path('mes-contrats/', views.mes_contrats, name='mes_contrats'),
+    path('api/mes-contrats/', views.get_mes_contrats, name='get_mes_contrats'),
+    path('api/contrat/mettre-a-jour/<int:id_contrat>/', views.mettre_a_jour_contrat, name='mettre_a_jour_contrat'),
+    path('api/contrat/repondre/<int:id_contrat>/', views.repondre_contrat, name='repondre_contrat'),
+
+    # urls.py - Ajoutez ces lignes pour l'admin
+
+    # Contrats admin
+    path('contrats-admin/', views.contrats_admin, name='contrats_admin'),
+    path('api/contrats-admin/', views.get_contrats_admin, name='get_contrats_admin'),
+    path('api/contrat-admin/modifier/<int:id_contrat>/', views.modifier_contrat_admin, name='modifier_contrat_admin'),
+
 ]
 # Servir les fichiers média en développement
 if settings.DEBUG:

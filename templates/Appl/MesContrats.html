@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>Mes Contrats - GRH ENGINEERING</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            font-family: 'Poppins', sans-serif;
+        }
+        .container { max-width: 1200px; margin: auto; }
+        .main-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .card-header-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px 35px;
+            color: white;
+        }
+        .contrat-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s;
+        }
+        .contrat-card:hover { transform: translateY(-5px); }
+        .badge-cdd { background: #3498db; color: white; padding: 5px 12px; border-radius: 20px; font-size: 11px; }
+        .badge-cdi { background: #27ae60; color: white; padding: 5px 12px; border-radius: 20px; font-size: 11px; }
+        .badge-attente { background: #f39c12; color: white; padding: 5px 12px; border-radius: 20px; font-size: 11px; }
+        .btn-accepter { background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); color: white; border: none; }
+        .btn-refuser { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; border: none; }
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .form-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-card">
+            <div class="card-header-custom d-flex justify-content-between align-items-center">
+    <div>
+        <h2><i class="fas fa-file-signature"></i> Mes Contrats</h2>
+        <p>Consultez et gérez vos propositions de contrat</p>
+    </div>
+    <a href="/Appl/dashboardCandidat" class="btn btn-outline-light">
+        <i class="fas fa-arrow-left"></i> Retour
+    </a>
+</div>
+            
+            <div class="card-body-custom p-4" id="contratsContainer">
+                <div class="text-center py-5">
+                    <div class="loading-spinner"></div>
+                    <p class="mt-3">Chargement de vos contrats...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Type de contrat -->
+    <div class="modal fade" id="typeContratModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-file-contract"></i> Choisir le type de contrat</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="typeContratId">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Type de contrat</label>
+                        <select class="form-select" id="selectTypeContrat">
+                            <option value="">-- Sélectionnez --</option>
+                            <option value="determine">Contrat à durée déterminée (CDD)</option>
+                            <option value="indetermine">Contrat à durée indéterminée (CDI)</option>
+                        </select>
+                    </div>
+                    <div id="cddFields" style="display: none;">
+                        <div class="mb-3">
+                            <label class="form-label">Date de début</label>
+                            <input type="date" class="form-control" id="dateDebut">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Date de fin</label>
+                            <input type="date" class="form-control" id="dateFin">
+                            <small class="text-muted">Ou indiquez la durée en mois</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Durée (en mois)</label>
+                            <input type="number" class="form-control" id="dureeMois" placeholder="Ex: 12">
+                        </div>
+                    </div>
+                    <div id="cdiFields" style="display: none;">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Contrat à durée indéterminée - Pas de date d'expiration
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmerTypeContrat()">Continuer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Refus -->
+    <div class="modal fade" id="refusModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-times-circle"></i> Motif de refus</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="refusContratId">
+                    <div class="mb-3">
+                        <label class="form-label">Veuillez expliquer votre motif de refus</label>
+                        <textarea class="form-control" id="motifRefus" rows="4" placeholder="Salaire insuffisant, conditions non adaptées, autre offre..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmerRefus()">Refuser le contrat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        let contratsData = [];
+
+        function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
+
+        function chargerContrats() {
+            $.ajax({
+                url: '/api/mes-contrats/',
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        contratsData = response.contrats;
+                        afficherContrats(response.contrats);
+                    }
+                },
+                error: function() {
+                    $('#contratsContainer').html('<div class="text-center py-5 text-danger">Erreur de chargement</div>');
+                }
+            });
+        }
+
+        function afficherContrats(contrats) {
+            const container = $('#contratsContainer');
+            container.empty();
+            
+            if (contrats.length === 0) {
+                container.html(`
+                    <div class="text-center py-5">
+                        <i class="fas fa-folder-open" style="font-size: 60px; color: #ccc;"></i>
+                        <p class="mt-3">Aucun contrat disponible</p>
+                    </div>
+                `);
+                return;
+            }
+            
+            contrats.forEach(contrat => {
+                let badgeType = '';
+                let dureeText = '';
+                
+                if (contrat.type_contrat === 'determine') {
+                    badgeType = '<span class="badge-cdd">CDD - Durée déterminée</span>';
+                    dureeText = contrat.duree_texte || 'Durée à définir';
+                } else if (contrat.type_contrat === 'indetermine') {
+                    badgeType = '<span class="badge-cdi">CDI - Durée indéterminée</span>';
+                    dureeText = 'Durée indéterminée';
+                } else {
+                    badgeType = '<span class="badge-attente">Type à choisir</span>';
+                }
+                
+                const statutBadge = contrat.statut === 'accepte' ? '<span class="badge-cdi">✅ Accepté</span>' :
+                                    contrat.statut === 'refuse' ? '<span class="badge-cdd" style="background:#e74c3c;">❌ Refusé</span>' :
+                                    '<span class="badge-attente">⏳ En attente de signature</span>';
+                
+                const card = `
+                    <div class="contrat-card" data-id="${contrat.id}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h4><i class="fas fa-file-contract"></i> ${contrat.offre_titre}</h4>
+                                <div class="mt-2">
+                                    ${badgeType}
+                                    <span class="badge-attente ms-2">${contrat.offre_domaine}</span>
+                                    ${statutBadge}
+                                </div>
+                            </div>
+                            <small class="text-muted">Proposé le ${contrat.date_creation}</small>
+                        </div>
+                        <div class="mt-3">
+                            <p><strong>📝 Description :</strong><br>${contrat.description || 'Proposition de contrat à consulter'}</p>
+                            <p><strong>💰 Salaire :</strong> ${contrat.salaire || 'À définir'}</p>
+                            <p><strong>📅 Durée :</strong> ${dureeText}</p>
+                            ${contrat.date_debut && contrat.date_debut !== 'À définir' ? `<p><strong>📅 Date de début :</strong> ${contrat.date_debut}</p>` : ''}
+                        </div>
+                        <div class="mt-3 text-end">
+                            ${contrat.statut === 'en_attente' ? `
+                                <button class="btn-refuser btn me-2" onclick="ouvrirRefusModal(${contrat.id})">
+                                    <i class="fas fa-times"></i> Refuser
+                                </button>
+                                <button class="btn-accepter btn" onclick="accepterContrat(${contrat.id})">
+                                    <i class="fas fa-check"></i> Accepter et signer
+                                </button>
+                            ` : ''}
+                            ${contrat.statut === 'accepte' ? `
+                                <div class="alert alert-success">
+                                    <i class="fas fa-check-circle"></i> Contrat accepté - Bienvenue dans l'équipe !
+                                </div>
+                            ` : ''}
+                            ${contrat.statut === 'refuse' ? `
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-info-circle"></i> Contrat refusé
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+                container.append(card);
+            });
+        }
+
+        function ouvrirModalTypeContrat(contratId) {
+            $('#typeContratId').val(contratId);
+            $('#selectTypeContrat').val('');
+            $('#cddFields').hide();
+            $('#cdiFields').hide();
+            $('#typeContratModal').modal('show');
+        }
+
+        $('#selectTypeContrat').on('change', function() {
+            const type = $(this).val();
+            if (type === 'determine') {
+                $('#cddFields').show();
+                $('#cdiFields').hide();
+            } else if (type === 'indetermine') {
+                $('#cddFields').hide();
+                $('#cdiFields').show();
+            } else {
+                $('#cddFields').hide();
+                $('#cdiFields').hide();
+            }
+        });
+
+        function confirmerTypeContrat() {
+            const contratId = $('#typeContratId').val();
+            const typeContrat = $('#selectTypeContrat').val();
+            const dateDebut = $('#dateDebut').val();
+            const dateFin = $('#dateFin').val();
+            const dureeMois = $('#dureeMois').val();
+            
+            if (!typeContrat) {
+                Swal.fire({ icon: 'error', title: 'Erreur', text: 'Veuillez choisir le type de contrat' });
+                return;
+            }
+            
+            if (typeContrat === 'determine' && !dateDebut) {
+                Swal.fire({ icon: 'error', title: 'Erreur', text: 'Veuillez indiquer la date de début' });
+                return;
+            }
+            
+            Swal.fire({ title: 'Enregistrement...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            $.ajax({
+                url: `/api/contrat/mettre-a-jour/${contratId}/`,
+                method: 'POST',
+                data: JSON.stringify({
+                    type_contrat: typeContrat,
+                    date_debut: dateDebut,
+                    date_fin: dateFin,
+                    duree_mois: dureeMois
+                }),
+                headers: { 'X-CSRFToken': getCSRFToken(), 'Content-Type': 'application/json' },
+                success: function(response) {
+                    Swal.close();
+                    if (response.success) {
+                        Swal.fire({ icon: 'success', title: 'Succès', text: response.message });
+                        $('#typeContratModal').modal('hide');
+                        chargerContrats();
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Erreur', text: response.message });
+                    }
+                },
+                error: function() {
+                    Swal.close();
+                    Swal.fire({ icon: 'error', title: 'Erreur', text: 'Erreur lors de l\'enregistrement' });
+                }
+            });
+        }
+
+        function accepterContrat(contratId) {
+            Swal.fire({
+                title: 'Confirmation',
+                text: 'Voulez-vous vraiment accepter ce contrat ? Vous deviendrez agent chez GRH ENGINEERING.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#27ae60',
+                confirmButtonText: 'Oui, j\'accepte',
+                cancelButtonText: 'Annuler'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: 'Traitement...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                    
+                    const response = await fetch(`/api/contrat/repondre/${contratId}/`, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': getCSRFToken(), 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ decision: 'accepter' })
+                    });
+                    const data = await response.json();
+                    
+                    Swal.close();
+                    
+                    if (data.success) {
+                        Swal.fire({ icon: 'success', title: 'Félicitations !', html: data.message });
+                        chargerContrats();
+                        setTimeout(() => { window.location.href = '/Appl/dashboardAgent'; }, 3000);
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Erreur', text: data.message });
+                    }
+                }
+            });
+        }
+
+        function ouvrirRefusModal(contratId) {
+            $('#refusContratId').val(contratId);
+            $('#motifRefus').val('');
+            $('#refusModal').modal('show');
+        }
+
+        function confirmerRefus() {
+            const contratId = $('#refusContratId').val();
+            const motifRefus = $('#motifRefus').val();
+            
+            if (!motifRefus) {
+                Swal.fire({ icon: 'error', title: 'Erreur', text: 'Veuillez expliquer votre motif de refus' });
+                return;
+            }
+            
+            Swal.fire({
+                title: 'Confirmation',
+                text: 'Êtes-vous sûr de vouloir refuser ce contrat ?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e74c3c',
+                confirmButtonText: 'Oui, refuser',
+                cancelButtonText: 'Annuler'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: 'Traitement...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                    
+                    const response = await fetch(`/api/contrat/repondre/${contratId}/`, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': getCSRFToken(), 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ decision: 'refuser', motif_refus: motifRefus })
+                    });
+                    const data = await response.json();
+                    
+                    Swal.close();
+                    
+                    if (data.success) {
+                        Swal.fire({ icon: 'success', title: 'Refus enregistré', text: data.message });
+                        $('#refusModal').modal('hide');
+                        chargerContrats();
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Erreur', text: data.message });
+                    }
+                }
+            });
+        }
+
+        $(document).ready(function() {
+            chargerContrats();
+        });
+    </script>
+</body>
+</html>

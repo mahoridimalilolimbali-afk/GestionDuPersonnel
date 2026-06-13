@@ -557,7 +557,7 @@ def notifier_onem_modification_offre(offre, ancien_titre, base_url=None):
     <html>
     <head>
         <meta charset="UTF-8">
-        <title>Offre modifiée - GRH ENGINEERING</title>
+        <title>Offre modifiée - GH ENGINEERING</title>
         <style>
             body {{
                 font-family: 'Poppins', Arial, sans-serif;
@@ -620,12 +620,12 @@ def notifier_onem_modification_offre(offre, ancien_titre, base_url=None):
         <div class="container">
             <div class="header">
                 <h1>✏️ Offre d'Emploi Modifiée</h1>
-                <p>GRH ENGINEERING SARL</p>
+                <p>GH ENGINEERING SARL</p>
             </div>
             <div class="content">
                 <h2>Bonjour,</h2>
                 
-                <p>Une offre d'emploi a été <strong>modifiée</strong> sur la plateforme GRH ENGINEERING.</p>
+                <p>Une offre d'emploi a été <strong>modifiée</strong> sur la plateforme GH ENGINEERING.</p>
                 
                 <div class="modification-box">
                     <p><strong>🔄 Changement effectué :</strong></p>
@@ -685,3 +685,537 @@ def notifier_onem_modification_offre(offre, ancien_titre, base_url=None):
         return True, f"✅ Notification de modification envoyée à {emails_envoyes} utilisateur(s) ONEM"
     else:
         return False, f"❌ Aucun email envoyé. {', '.join(erreurs)}"
+
+
+        # utils.py - Ajoutez cette fonction
+
+def notifier_promotion_agent_manuel(agent, base_url=None):
+    """
+    Notifie le candidat qu'il a été promu Agent (ajout manuel par admin)
+    """
+    from django.core.mail import EmailMultiAlternatives
+    from django.utils.html import strip_tags
+    
+    candidat = agent.candidat
+    user = candidat.user
+    
+    email_destinataire = user.email if user and user.email else None
+    
+    if not email_destinataire:
+        return False, f"Le candidat {candidat.nom} {candidat.prenom} n'a pas d'adresse email."
+    
+    if not base_url:
+        base_url = "https://mahoridi.pythonanywhere.com/"
+    
+    sujet = f"🎉 Félicitations ! Vous êtes maintenant Agent chez GH ENGINEERING"
+    
+    html_message = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Promotion Agent - GH ENGINEERING</title>
+        <style>
+            body {{
+                font-family: 'Poppins', Arial, sans-serif;
+                background-color: #f4f4f4;
+                margin: 0;
+                padding: 20px;
+            }}
+            .container {{
+                max-width: 600px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 15px;
+                overflow: hidden;
+                box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            }}
+            .header {{
+                background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+                color: white;
+                padding: 30px;
+                text-align: center;
+            }}
+            .header h1 {{ margin: 0; font-size: 24px; }}
+            .content {{ padding: 30px; }}
+            .info-box {{
+                background: #f8f9fa;
+                border-left: 4px solid #f39c12;
+                padding: 15px;
+                margin: 20px 0;
+                border-radius: 8px;
+            }}
+            .btn {{
+                display: inline-block;
+                background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+                color: white;
+                padding: 12px 35px;
+                text-decoration: none;
+                border-radius: 25px;
+                margin: 20px 0;
+                font-weight: bold;
+            }}
+            .footer {{
+                background: #f8f9fa;
+                padding: 20px;
+                text-align: center;
+                font-size: 12px;
+                color: #999;
+            }}
+            .matricule-box {{
+                background: #e8f0fe;
+                border-radius: 10px;
+                padding: 15px;
+                text-align: center;
+                margin: 20px 0;
+                font-family: monospace;
+                font-size: 18px;
+                font-weight: bold;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🎉 Félicitations ! 🎉</h1>
+            </div>
+            <div class="content">
+                <h2>Bonjour {candidat.nom} {candidat.postnom} {candidat.prenom},</h2>
+                
+                <p>Nous avons le plaisir de vous informer que vous avez été promu(e) au statut d'<strong>Agent</strong> au sein de GRH ENGINEERING SARL.</p>
+                
+                <div class="info-box">
+                    <p><strong>📋 Vos informations :</strong></p>
+                    <p>• Matricule : <strong>{agent.matricule}</strong></p>
+                    <p>• Date de recrutement : <strong>{agent.date_retenu.strftime('%d/%m/%Y')}</strong></p>
+                    <p>• Statut : <strong>Approuvé</strong></p>
+                </div>
+                
+                <div class="matricule-box">
+                    🆔 Votre matricule : {agent.matricule}
+                </div>
+                
+                <p>Vous pouvez dès maintenant accéder à votre espace Agent en utilisant vos identifiants habituels.</p>
+                
+                <div style="text-align: center;">
+                    <a href="{base_url}" class="btn">
+                        🚀 Accéder à mon espace Agent
+                    </a>
+                </div>
+                
+                <p style="font-size: 14px; color: #666;">
+                    Connectez-vous avec vos identifiants pour découvrir votre nouveau tableau de bord.
+                </p>
+            </div>
+            <div class="footer">
+                <p>GH ENGINEERING SARL - RDC, Goma</p>
+                <p>Bienvenue dans notre équipe !</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    try:
+        plain_message = strip_tags(html_message)
+        email = EmailMultiAlternatives(
+            subject=sujet,
+            body=plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[email_destinataire]
+        )
+        email.attach_alternative(html_message, "text/html")
+        email.send()
+        return True, f"Email de promotion envoyé à {email_destinataire}"
+    except Exception as e:
+        return False, str(e)
+
+
+        # utils.py - Ajoutez cette fonction
+
+def notifier_candidat_admissible(candidature, moyenne, base_url=None):
+    """
+    Notifie le candidat qu'il a réussi les tests et est admissible.
+    VOUS POUVEZ MODIFIER LE CONTENU DE CET EMAIL SELON VOS BESOINS.
+    """
+    from django.core.mail import EmailMultiAlternatives
+    from django.utils.html import strip_tags
+    
+    candidat = candidature.candidat
+    offre = candidature.offre
+    user = candidat.user
+    
+    email_destinataire = user.email if user and user.email else None
+    
+    if not email_destinataire:
+        return False, f"Le candidat {candidat.nom} {candidat.prenom} n'a pas d'adresse email."
+    
+    if not base_url:
+        base_url = "https://mahoridi.pythonanywhere.com/"
+    
+    # ========== VOUS POUVEZ MODIFIER LE CONTENU CI-DESSOUS ==========
+    sujet = f"✅ Félicitations ! Vous êtes admissible - GRH ENGINEERING"
+    
+    html_message = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Résultat de votre candidature - GssH ENGINEERING</title>
+        <style>
+            body {{
+                font-family: 'Poppins', Arial, sans-serif;
+                background-color: #f4f4f4;
+                margin: 0;
+                padding: 20px;
+            }}
+            .container {{
+                max-width: 600px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 15px;
+                overflow: hidden;
+                box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            }}
+            .header {{
+                background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+                color: white;
+                padding: 30px;
+                text-align: center;
+            }}
+            .header h1 {{ margin: 0; font-size: 24px; }}
+            .content {{ padding: 30px; }}
+            .score-box {{
+                background: #fef9e7;
+                border: 2px solid #f39c12;
+                border-radius: 15px;
+                padding: 20px;
+                text-align: center;
+                margin: 20px 0;
+            }}
+            .score-box .moyenne {{
+                font-size: 48px;
+                font-weight: 700;
+                color: #27ae60;
+            }}
+            .btn {{
+                display: inline-block;
+                background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+                color: white;
+                padding: 12px 35px;
+                text-decoration: none;
+                border-radius: 25px;
+                margin: 20px 0;
+                font-weight: bold;
+            }}
+            .footer {{
+                background: #f8f9fa;
+                padding: 20px;
+                text-align: center;
+                font-size: 12px;
+                color: #999;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🎉 Félicitations ! 🎉</h1>
+            </div>
+            <div class="content">
+                <h2>Bonjour {candidat.nom} {candidat.postnom} {candidat.prenom},</h2>
+                
+                <p>Suite à vos évaluations pour le poste <strong>"{offre.titre}"</strong>, 
+                vous avez obtenu une moyenne de <strong>{moyenne:.2f}%</strong>.</p>
+                
+                <div class="score-box">
+                    <div class="moyenne">{moyenne:.2f}%</div>
+                    <p>Votre moyenne - Seuil requis: 70%</p>
+                </div>
+                
+                <p style="font-size: 18px; text-align: center; font-weight: bold; color: #27ae60;">
+                    ✅ Vous êtes admissible pour la suite du processus !
+                </p>
+                
+                <p>Notre équipe vous contactera prochainement pour la suite.</p>
+                
+                <div style="text-align: center;">
+                    <a href="{base_url}" class="btn">
+                        📋 Suivre ma candidature
+                    </a>
+                </div>
+                
+                <p style="font-size: 14px; color: #666;">
+                    Connectez-vous pour suivre l'évolution de votre dossier.
+                </p>
+            </div>
+            <div class="footer">
+                <p>GH ENGINEERING SARL - RDC, Goma</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    # ========== FIN DE LA PARTIE MODIFIABLE ==========
+    
+    try:
+        plain_message = strip_tags(html_message)
+        email = EmailMultiAlternatives(
+            subject=sujet,
+            body=plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[email_destinataire]
+        )
+        email.attach_alternative(html_message, "text/html")
+        email.send()
+        return True, f"Email d'admissibilité envoyé à {email_destinataire}"
+    except Exception as e:
+        return False, str(e)
+    
+
+
+
+
+    # utils.py - Ajoutez cette fonction
+
+def notifier_candidature_envoyee(candidature, base_url=None):
+    """
+    Notifie le candidat que sa candidature a été bien reçue
+    """
+    from django.core.mail import EmailMultiAlternatives
+    from django.utils.html import strip_tags
+    
+    candidat = candidature.candidat
+    offre = candidature.offre
+    user = candidat.user
+    
+    email_destinataire = user.email if user and user.email else None
+    
+    if not email_destinataire:
+        return False, f"Le candidat {candidat.nom} {candidat.prenom} n'a pas d'adresse email."
+    
+    if not base_url:
+        base_url = "https://mahoridi.pythonanywhere.com"
+    
+    sujet = f"📋 Confirmation de votre candidature - {offre.titre} - GH ENGINEERING"
+    
+    html_message = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Confirmation de candidature - GH ENGINEERING</title>
+        <style>
+            body {{
+                font-family: 'Poppins', Arial, sans-serif;
+                background-color: #f4f4f4;
+                margin: 0;
+                padding: 20px;
+            }}
+            .container {{
+                max-width: 600px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 15px;
+                overflow: hidden;
+                box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            }}
+            .header {{
+                background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+                color: white;
+                padding: 30px;
+                text-align: center;
+            }}
+            .header h1 {{ margin: 0; font-size: 24px; }}
+            .header h1 i {{ margin-right: 10px; }}
+            .content {{ padding: 30px; }}
+            .info-box {{
+                background: #f8f9fa;
+                border-left: 4px solid #27ae60;
+                padding: 15px;
+                margin: 20px 0;
+                border-radius: 8px;
+            }}
+            .info-box p {{ margin: 8px 0; }}
+            .btn {{
+                display: inline-block;
+                background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+                color: white;
+                padding: 12px 35px;
+                text-decoration: none;
+                border-radius: 25px;
+                margin: 20px 0;
+                font-weight: bold;
+            }}
+            .footer {{
+                background: #f8f9fa;
+                padding: 20px;
+                text-align: center;
+                font-size: 12px;
+                color: #999;
+                border-top: 1px solid #eee;
+            }}
+            .status-badge {{
+                display: inline-block;
+                background: #27ae60;
+                color: white;
+                padding: 5px 15px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1><i class="fas fa-check-circle"></i> GH ENGINEERING SARL</h1>
+                <p>Confirmation de votre candidature</p>
+            </div>
+            <div class="content">
+                <h2>Bonjour {candidat.nom} {candidat.postnom} {candidat.prenom},</h2>
+                
+                <p>Nous vous remercions pour l'intérêt que vous portez à notre entreprise.</p>
+                
+                <div class="info-box">
+                    <p><strong>📋 Détails de votre candidature :</strong></p>
+                    <p>• Offre : <strong>{offre.titre}</strong></p>
+                    <p>• Domaine : <strong>{offre.domaine.NomDomaine}</strong></p>
+                    <p>• Date de soumission : <strong>{candidature.date_soumission.strftime('%d/%m/%Y à %H:%M')}</strong></p>
+                    <p>• Statut : <span class="status-badge">En cours d'analyse</span></p>
+                </div>
+                
+                <p>Votre candidature a été <strong>enregistrée avec succès</strong> dans notre système. Nous vous contacterons dès qu'une décision sera prise concernant votre dossier.</p>
+                
+                <p>Notre équipe RH examine actuellement l'ensemble des candidatures reçues pour cette offre. Vous recevrez une notification par email dès qu'une mise à jour sera disponible.</p>
+                
+                <div style="text-align: center;">
+                    <a href="{base_url}" class="btn">
+                        📊 Suivre ma candidature
+                    </a>
+                </div>
+                
+                <p style="font-size: 14px; color: #666; margin-top: 20px;">
+                    Cliquez sur le bouton ci-dessus pour accéder à votre espace personnel et suivre l'évolution de votre candidature.
+                </p>
+            </div>
+            <div class="footer">
+                <p>Cet email est automatique, merci de ne pas y répondre.</p>
+                <p>&copy; 2026 GH ENGINEERING SARL - RDC, Goma</p>
+                <p><small>Pour toute information, contactez-nous au +243 835 137 057</small></p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    try:
+        plain_message = strip_tags(html_message)
+        email = EmailMultiAlternatives(
+            subject=sujet,
+            body=plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[email_destinataire]
+        )
+        email.attach_alternative(html_message, "text/html")
+        email.send()
+        return True, f"Email de confirmation envoyé à {email_destinataire}"
+    except Exception as e:
+        return False, str(e)
+    
+
+
+ # utils.py - Ajoutez ces fonctions
+
+def notifier_resultat_interview(candidature, decision, commentaire, base_url=None, contrat_id=None):
+    """Notifier le candidat du résultat de son interview"""
+    candidat = candidature.candidat
+    offre = candidature.offre
+    user = candidat.user
+    
+    email_destinataire = user.email if user and user.email else None
+    
+    if not email_destinataire:
+        return False, "Pas d'adresse email"
+    
+    if decision == 'accepte':
+        sujet = f"🎉 Félicitations ! Vous êtes retenu pour le poste {offre.titre}"
+        html_message = f"""
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="UTF-8"><title>Félicitations - GRH ENGINEERING</title></head>
+        <body style="font-family: Poppins, Arial, sans-serif;">
+            <div style="max-width: 600px; margin: auto; background: white; border-radius: 15px; overflow: hidden;">
+                <div style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); padding: 30px; text-align: center;">
+                    <h1 style="color: white;">🎉 Félicitations !</h1>
+                </div>
+                <div style="padding: 30px;">
+                    <h2>Bonjour {candidat.nom} {candidat.prenom},</h2>
+                    <p>Nous avons le plaisir de vous informer que votre candidature pour le poste <strong>"{offre.titre}"</strong> a été <strong style="color:#27ae60;">RETENUE</strong> après l'interview.</p>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                        <p><strong>📝 Commentaire :</strong><br>{commentaire or 'Félicitations pour votre prestation !'}</p>
+                    </div>
+                    <p>Veuillez vous connecter à votre espace candidat pour consulter et signer votre contrat.</p>
+                    <div style="text-align: center;">
+                        <a href="{base_url}/Appl/mes-contrats" style="background: #27ae60; color: white; padding: 12px 35px; text-decoration: none; border-radius: 25px;">📄 Voir mon contrat</a>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+    else:
+        sujet = f"📋 Résultat de votre candidature - {offre.titre}"
+        html_message = f"""
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="UTF-8"><title>Résultat candidature - GRH ENGINEERING</title></head>
+        <body style="font-family: Poppins, Arial, sans-serif;">
+            <div style="max-width: 600px; margin: auto; background: white; border-radius: 15px; overflow: hidden;">
+                <div style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); padding: 30px; text-align: center;">
+                    <h1 style="color: white;">📋 Résultat</h1>
+                </div>
+                <div style="padding: 30px;">
+                    <h2>Bonjour {candidat.nom} {candidat.prenom},</h2>
+                    <p>Nous vous remercons pour votre participation à l'interview pour le poste <strong>"{offre.titre}"</strong>.</p>
+                    <p>Après délibération, nous avons le regret de vous informer que votre candidature n'a <strong style="color:#e74c3c;">PAS ÉTÉ RETENUE</strong>.</p>
+                    <div style="background: #fff3cd; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                        <p><strong>📝 Motif :</strong><br>{commentaire or 'Autres profils mieux correspondants'}</p>
+                    </div>
+                    <p>Nous vous encourageons à postuler à d'autres offres qui pourraient correspondre à votre profil.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+    
+    envoyer_email_async(sujet, html_message, [email_destinataire])
+    return True, f"Email envoyé à {email_destinataire}"
+
+
+def notifier_contrat_accepte(contrat, base_url=None):
+    """Notifier le candidat que son contrat a été accepté"""
+    candidat = contrat.candidat
+    html_message = f"""
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="UTF-8"><title>Contrat accepté - GRH ENGINEERING</title></head>
+    <body style="font-family: Poppins, Arial, sans-serif;">
+        <div style="max-width: 600px; margin: auto; background: white; border-radius: 15px; overflow: hidden;">
+            <div style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); padding: 30px; text-align: center;">
+                <h1 style="color: white;">✅ Contrat accepté</h1>
+            </div>
+            <div style="padding: 30px;">
+                <h2>Bonjour {candidat.nom} {candidat.prenom},</h2>
+                <p>Félicitations ! Vous avez accepté le contrat pour le poste <strong>"{contrat.offre.titre}"</strong>.</p>
+                <p>Vous êtes désormais <strong>Agent chez GRH ENGINEERING</strong> !</p>
+                <p>Votre matricule vous a été attribué. Vous pouvez vous connecter à votre espace agent pour accéder à vos fonctionnalités.</p>
+                <div style="text-align: center;">
+                    <a href="{base_url}/Appl/dashboardAgent" style="background: #27ae60; color: white; padding: 12px 35px; text-decoration: none; border-radius: 25px;">🚀 Accéder à mon espace Agent</a>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    envoyer_email_async("✅ Contrat accepté - Bienvenue chez GRH ENGINEERING", html_message, [candidat.user.email])   
