@@ -5601,6 +5601,12 @@ def modifier_date_recrutement(request):
 def page_interviews(request):
     """Affiche la page principale des interviews"""
     offres = OffreEmploie.objects.filter(onem__decision__Description__icontains='Accepter')
+    
+    # DEBUG - Afficher dans la console
+    print(f"Nombre d'offres trouvées: {offres.count()}")
+    for offre in offres:
+        print(f"Offre: {offre.titre} - Décision: {offre.onem_set.first().decision.Description if offre.onem_set.first() else 'Aucune'}")
+    
     return render(request, 'Appl/Interviews.html', {'offres': offres})
 
 
