@@ -437,6 +437,8 @@ urlpatterns = [
     path('api/contrats-admin/creer/', views.creer_contrat_admin, name='creer_contrat_admin'),
     path('api/contrat-admin/supprimer/<int:id_contrat>/', views.supprimer_contrat_admin, name='supprimer_contrat_admin'),
 
+
+    path('api/evaluations/candidatures-tests-offre/<int:id_offre>/', views.get_candidatures_tests_par_offre, name='get_candidatures_tests_par_offre'),
 ]
 # Servir les fichiers média en développement
 if settings.DEBUG:

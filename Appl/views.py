@@ -6241,3 +6241,65 @@ def supprimer_contrat_admin(request, id_contrat):
         return JsonResponse({'success': True, 'message': 'Contrat supprimé avec succès'})
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)  
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_candidatures_tests_par_offre(request, id_offre):
+    """API: Récupérer les candidatures acceptées pour une offre avec leurs tests"""
+    try:
+        # Récupérer le type de décision "Accepter"
+        type_decision_accepter = TypeDecision.objects.filter(Description__icontains='Accepter').first()
+        
+        if not type_decision_accepter:
+            return JsonResponse({'success': False, 'message': 'Type décision "Accepter" non trouvé'}, status=400)
+        
+        # Récupérer les candidatures acceptées pour cette offre
+        candidatures = Candidature.objects.filter(
+            offre_id=id_offre,
+            decisions__type_decision=type_decision_accepter
+        ).select_related('candidat', 'offre', 'offre__domaine').distinct()
+        
+        data = []
+        for c in candidatures:
+            # Récupérer tous les tests de l'offre
+            tous_les_tests = Test.objects.filter(offre_id=id_offre).order_by('date_test')
+            
+            tests_data = []
+            for test in tous_les_tests:
+                evaluation = Evaluation.objects.filter(candidature=c, test=test).first()
+                
+                tests_data.append({
+                    'id': test.id,
+                    'nom_fichier': test.filename(),
+                    'date_test': test.date_test.strftime('%d/%m/%Y'),
+                    'est_evalue': evaluation is not None,
+                    'evaluation_id': evaluation.id if evaluation else None,
+                    'note': evaluation.note if evaluation else None,
+                    'observation': evaluation.observation if evaluation else None,
+                    'date_evaluation': evaluation.date_evaluation.strftime('%d/%m/%Y %H:%M') if evaluation else None
+                })
+            
+            # Calculer la moyenne
+            evaluations_existantes = Evaluation.objects.filter(candidature=c)
+            if evaluations_existantes.exists():
+                moyenne = sum(e.note for e in evaluations_existantes) / evaluations_existantes.count()
+            else:
+                moyenne = 0
+            
+            data.append({
+                'id': c.id,
+                'candidat_id': c.candidat.id,
+                'candidat_nom': f"{c.candidat.nom} {c.candidat.postnom} {c.candidat.prenom}",
+                'offre_id': c.offre.id,
+                'offre_titre': c.offre.titre,
+                'candidat_email': c.candidat.user.email if c.candidat.user else None,
+                'tests': tests_data,
+                'nombre_tests': len(tous_les_tests),
+                'tests_evalues': len([t for t in tests_data if t['est_evalue']]),
+                'moyenne': round(moyenne, 2)
+            })
+        
+        return JsonResponse({'success': True, 'candidatures': data})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
