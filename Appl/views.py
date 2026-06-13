@@ -27,6 +27,9 @@ from django.utils.html import strip_tags
 
 def ChargerIndex(request):
     return render (request,"Appl/index.html")
+@login_required   
+def ChargerContratAdmin(request):
+    return render (request,"Appl/ContratsAdmin.html")
 @login_required
 def ChargerTypeDecisionOffre(request):
     return render (request, "Appl/TypeDecisionOffre.html")

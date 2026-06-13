@@ -10,6 +10,7 @@ urlpatterns = [
     #LIEN VERS PAGES
 
     path('', ChargerIndex),
+    path('ContratsAdmin', ChargerContratAdmin),
     path('Domaine',ChargerDomaine),
     path('AnalyseDemandeConge', ChargerAnalyseDemandeConge),
     path('offreEmploi',ChargerOffreEmploi),
