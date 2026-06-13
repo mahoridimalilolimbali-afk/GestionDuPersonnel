@@ -11,6 +11,7 @@ urlpatterns = [
 
     path('', ChargerIndex),
     path('ContratsAdmin', ChargerContratAdmin),
+    path('ContratsAdmin/', views.contrats_admin, name='contrats_admin'),
     path('Domaine',ChargerDomaine),
     path('AnalyseDemandeConge', ChargerAnalyseDemandeConge),
     path('offreEmploi',ChargerOffreEmploi),

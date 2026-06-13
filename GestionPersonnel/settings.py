@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+import sys
 
 # Chemin absolu vers le dossier du projet
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -41,7 +42,23 @@ SECRET_KEY = 'django-insecure-a^1i1@21-+hf1)h5%n)385b2@wgan2%v(8ir5^-_1dl@kxk_qv
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['mahoridi.pythonanywhere.com']
+# settings.py - Configuration des hôtes autorisés
+
+
+# Détecter si on est en local ou en production
+IS_LOCAL = 'runserver' in sys.argv
+
+if IS_LOCAL:
+    ALLOWED_HOSTS = [
+        '127.0.0.1',
+        'localhost',
+        '192.168.1.%',  # Pour le réseau local
+    ]
+else:
+    ALLOWED_HOSTS = [
+        'mahoridi.pythonanywhere.com',
+        'www.mahoridi.pythonanywhere.com',
+    ]
 
 
 # Application definition
