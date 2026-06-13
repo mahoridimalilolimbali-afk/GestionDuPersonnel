@@ -194,6 +194,11 @@
             border-bottom: 3px solid #667eea;
             background: transparent;
         }
+        .offre-select-loading {
+            text-align: center;
+            padding: 30px;
+            color: #667eea;
+        }
     </style>
 </head>
 <body>
@@ -230,10 +235,7 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold"><i class="fas fa-briefcase"></i> Choisir une offre</label>
                                 <select class="form-select-custom" id="offreSelect">
-                                    <option value="">-- Sélectionnez une offre --</option>
-                                    {% for offre in offres %}
-                                        <option value="{{ offre.id }}">{{ offre.titre }} ({{ offre.domaine.NomDomaine }})</option>
-                                    {% endfor %}
+                                    <option value="">-- Chargement des offres... --</option>
                                 </select>
                             </div>
                             <div class="col-md-6 d-flex align-items-end">
@@ -373,6 +375,7 @@
     <script>
         let currentCandidats = [];
         let interviewsList = [];
+        let offresData = [];
 
         function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
         function showLoading() { $('#loadingOverlay').fadeIn(300); }
@@ -388,6 +391,38 @@
 
         function showError(message) {
             Swal.fire({ icon: 'error', title: 'Erreur', text: message, confirmButtonColor: '#e74c3c' });
+        }
+
+        // ==================== CHARGER LES OFFRES DYNAMIQUEMENT ====================
+        function chargerOffres() {
+            $('#offreSelect').html('<option value="">-- Chargement des offres... --</option>');
+            
+            $.ajax({
+                url: '/api/offres/',
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        offresData = response.offres;
+                        const select = $('#offreSelect');
+                        select.empty();
+                        select.append('<option value="">-- Sélectionnez une offre --</option>');
+                        
+                        if (response.offres.length === 0) {
+                            select.append('<option value="" disabled>Aucune offre disponible</option>');
+                        } else {
+                            response.offres.forEach(offre => {
+                                select.append(`<option value="${offre.id}">${offre.titre} (${offre.domaine_nom})</option>`);
+                            });
+                        }
+                    } else {
+                        $('#offreSelect').html('<option value="">Erreur de chargement des offres</option>');
+                    }
+                },
+                error: function() {
+                    $('#offreSelect').html('<option value="">Erreur de connexion</option>');
+                    showError('Impossible de charger les offres');
+                }
+            });
         }
 
         // Charger les candidats admissibles
@@ -409,7 +444,7 @@
                         afficherCandidats(response.candidats);
                         $('#nouveauxCount').text(response.candidats.length);
                     } else {
-                        $('#candidatsBody').html('</td><td colspan="6" class="text-center text-danger">Erreur de chargement</td><\/tr>');
+                        $('#candidatsBody').html('<tr><td colspan="6" class="text-center text-danger">Erreur de chargement</td><\/tr>');
                     }
                 },
                 error: function() {
@@ -428,6 +463,10 @@
             }
 
             candidats.forEach(c => {
+                // Échapper les apostrophes pour éviter les erreurs JavaScript
+                const candidatNom = c.candidat_nom.replace(/'/g, "\\'");
+                const offreTitre = c.offre_titre.replace(/'/g, "\\'");
+                
                 tbody.append(`
                     <tr>
                         <td>#${c.id}</td>
@@ -436,7 +475,7 @@
                         <td><span class="badge-admissible">${c.moyenne}%</span></td>
                         <td>${c.date_candidature}</td>
                         <td>
-                            <button class="btn-interview" onclick="ouvrirModalInterview(${c.id}, '${c.candidat_nom}', '${c.offre_titre}', ${c.moyenne})">
+                            <button class="btn-interview" onclick="ouvrirModalInterview(${c.id}, '${candidatNom}', '${offreTitre}', ${c.moyenne})">
                                 <i class="fas fa-calendar-alt"></i> Interview
                             </button>
                         </td>
@@ -684,6 +723,7 @@
         }
 
         $(document).ready(function() {
+            chargerOffres();  // ← Charger les offres dynamiquement
             chargerHistorique();
         });
     </script>
