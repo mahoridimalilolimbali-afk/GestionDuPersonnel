@@ -6246,13 +6246,15 @@ def supprimer_contrat_admin(request, id_contrat):
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_candidatures_tests_par_offre(request, id_offre):
-    """API: Récupérer les candidatures acceptées pour une offre avec leurs tests et interviews"""
+    """API: Récupérer les candidatures acceptées pour une offre avec leurs tests"""
     try:
+        # Récupérer le type de décision "Accepter"
         type_decision_accepter = TypeDecision.objects.filter(Description__icontains='Accepter').first()
         
         if not type_decision_accepter:
             return JsonResponse({'success': False, 'message': 'Type décision "Accepter" non trouvé'}, status=400)
         
+        # Récupérer les candidatures acceptées pour cette offre
         candidatures = Candidature.objects.filter(
             offre_id=id_offre,
             decisions__type_decision=type_decision_accepter
@@ -6260,6 +6262,7 @@ def get_candidatures_tests_par_offre(request, id_offre):
         
         data = []
         for c in candidatures:
+            # Récupérer tous les tests de l'offre
             tous_les_tests = Test.objects.filter(offre_id=id_offre).order_by('date_test')
             
             tests_data = []
@@ -6277,9 +6280,7 @@ def get_candidatures_tests_par_offre(request, id_offre):
                     'date_evaluation': evaluation.date_evaluation.strftime('%d/%m/%Y %H:%M') if evaluation else None
                 })
             
-            # Récupérer l'interview
-            interview = Interview.objects.filter(candidature=c).first()
-            
+            # Calculer la moyenne
             evaluations_existantes = Evaluation.objects.filter(candidature=c)
             if evaluations_existantes.exists():
                 moyenne = sum(e.note for e in evaluations_existantes) / evaluations_existantes.count()
@@ -6296,15 +6297,14 @@ def get_candidatures_tests_par_offre(request, id_offre):
                 'tests': tests_data,
                 'nombre_tests': len(tous_les_tests),
                 'tests_evalues': len([t for t in tests_data if t['est_evalue']]),
-                'moyenne': round(moyenne, 2),
-                'interview_id': interview.id if interview else None,
-                'interview_decision': interview.decision if interview else None,
-                'interview_observation': interview.observation if interview else None
+                'moyenne': round(moyenne, 2)
             })
         
         return JsonResponse({'success': True, 'candidatures': data})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
 
 
 @csrf_exempt
