@@ -439,6 +439,9 @@ urlpatterns = [
     path('api/contrat/repondre/<int:id_contrat>/', views.repondre_contrat, name='repondre_contrat'),
 
 
+    
+
+
     path('api/evaluations/candidatures-tests-offre/<int:id_offre>/', views.get_candidatures_tests_par_offre, name='get_candidatures_tests_par_offre'),
 
     path('api/evaluations/candidatures-tests-offre/<int:id_offre>/', views.get_candidatures_tests_par_offre, name='get_candidatures_tests_par_offre'),
