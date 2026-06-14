@@ -6182,43 +6182,63 @@ def mes_contrats(request):
     return render(request, 'Appl/MesContrats.html')
 
 
+# views.py - Remplacez votre fonction par celle-ci
+
 @csrf_exempt
 @login_required
 @require_http_methods(["GET"])
 def get_mes_contrats(request):
-    """API: Récupérer les contrats du candidat connecté (après interview acceptée)"""
+    """API: Récupérer les contrats du candidat connecté"""
     try:
         if not request.user.is_authenticated:
             return JsonResponse({'success': False, 'message': 'Non authentifié'}, status=401)
         
-        # Récupérer le candidat connecté
+        # Récupérer le candidat
         try:
             candidat = Candidat.objects.get(user=request.user)
         except Candidat.DoesNotExist:
             return JsonResponse({'success': True, 'contrats': [], 'total': 0})
         
-        # Récupérer les contrats de ce candidat où l'interview a été acceptée
-        contrats = Contrat.objects.filter(
-            candidat=candidat,
-            interview__decision='accepte'  # Seulement les interviews acceptées
-        ).select_related('offre', 'interview')
+        # Récupérer les contrats
+        contrats = Contrat.objects.filter(candidat=candidat).select_related('offre')
         
         data = []
         for c in contrats:
+            # Calcul manuel de la durée (sans utiliser la méthode du modèle)
+            if c.type_contrat == 'indetermine':
+                duree_texte = "Durée indéterminée"
+            elif c.date_debut and c.date_fin:
+                duree_texte = f"Du {c.date_debut.strftime('%d/%m/%Y')} au {c.date_fin.strftime('%d/%m/%Y')}"
+            elif c.date_debut:
+                duree_texte = f"À partir du {c.date_debut.strftime('%d/%m/%Y')}"
+            else:
+                duree_texte = "À définir"
+            
+            # Fichier URL
+            fichier_url = None
+            if c.fichier_contrat and hasattr(c.fichier_contrat, 'url'):
+                fichier_url = c.fichier_contrat.url
+            
             data.append({
                 'id': c.id,
                 'offre_titre': c.offre.titre,
                 'type_contrat': c.type_contrat,
-                'duree_texte': c.duree_contrat_str(),
+                'duree_texte': duree_texte,
                 'statut': c.statut,
                 'date_creation': c.date_creation.strftime('%d/%m/%Y'),
-                'fichier_url': c.fichier_contrat.url if c.fichier_contrat else None,
+                'fichier_url': fichier_url,
                 'nom_fichier': c.fichier_contrat.name.split('/')[-1] if c.fichier_contrat else None
             })
         
         return JsonResponse({'success': True, 'contrats': data, 'total': len(data)})
+        
     except Exception as e:
+        import traceback
+        error_detail = traceback.format_exc()
+        print(f"Erreur: {error_detail}")
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+        
 
 @csrf_exempt
 @login_required
