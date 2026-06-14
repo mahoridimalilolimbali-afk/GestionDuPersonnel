@@ -480,6 +480,7 @@ class Interview(models.Model):
 
 # models.py - Modèle Contrat simplifié
 
+# models.py
 class Contrat(models.Model):
     TYPE_CONTRAT_CHOICES = [
         ('determine', 'Contrat à durée déterminée (CDD)'),
@@ -493,26 +494,22 @@ class Contrat(models.Model):
         ('signe', 'Signé'),
     ]
     
-    # Relations
     interview = models.OneToOneField('Interview', on_delete=models.CASCADE, related_name='contrat')
     offre = models.ForeignKey('OffreEmploie', on_delete=models.CASCADE, related_name='contrats')
     candidat = models.ForeignKey('Candidat', on_delete=models.CASCADE, related_name='contrats')
     
-    # Type de contrat
     type_contrat = models.CharField(max_length=20, choices=TYPE_CONTRAT_CHOICES)
     
-    # Fichier du contrat (PDF ou DOC)
-    fichier_contrat = models.FileField(upload_to='contrats/', null=True, blank=True)
+    # Fichier du contrat - comme pour CV et OffreFichier
+    fichier_contrat = models.FileField(upload_to='contrats/%Y/%m/', null=True, blank=True)
     
-    # Pour contrat déterminé (CDD)
+    # Pour CDD
     date_debut = models.DateField(null=True, blank=True)
     date_fin = models.DateField(null=True, blank=True)
     
-    # Statut et motif de refus
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='en_attente')
     motif_refus = models.TextField(blank=True, null=True)
     
-    # Dates
     date_creation = models.DateTimeField(auto_now_add=True)
     date_signature = models.DateTimeField(null=True, blank=True)
     
@@ -524,9 +521,7 @@ class Contrat(models.Model):
     def __str__(self):
         return f"Contrat {self.candidat.nom} - {self.offre.titre}"
     
-    def duree_contrat_str(self):
-        if self.type_contrat == 'indetermine':
-            return "Durée indéterminée"
-        elif self.date_debut and self.date_fin:
-            return f"Du {self.date_debut.strftime('%d/%m/%Y')} au {self.date_fin.strftime('%d/%m/%Y')}"
-        return "À définir"
+    def filename(self):
+        if self.fichier_contrat:
+            return self.fichier_contrat.name.split('/')[-1]
+        return None

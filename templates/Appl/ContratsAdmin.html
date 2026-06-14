@@ -421,56 +421,57 @@
                 $('#cddFields').hide();
             }
         });
-
-        function creerContrat() {
-            const interviewId = $('#interviewSelect').val();
-            const typeContrat = $('#typeContratSelect').val();
-            const dateDebut = $('#dateDebut').val();
-            const dateFin = $('#dateFin').val();
-            const fichier = $('#fichierContrat')[0].files[0];
-            
-            if (!interviewId) {
-                showError('Veuillez sélectionner un candidat');
-                return;
+function creerContrat() {
+    const interviewId = $('#interviewSelect').val();
+    const typeContrat = $('#typeContratSelect').val();
+    const dateDebut = $('#dateDebut').val();
+    const dateFin = $('#dateFin').val();
+    const fichier = $('#fichierContrat')[0].files[0];
+    
+    if (!interviewId) {
+        showError('Veuillez sélectionner un candidat');
+        return;
+    }
+    if (!typeContrat) {
+        showError('Veuillez sélectionner le type de contrat');
+        return;
+    }
+    
+    // FormData pour l'upload de fichier
+    const formData = new FormData();
+    formData.append('interview_id', interviewId);
+    formData.append('type_contrat', typeContrat);
+    if (dateDebut) formData.append('date_debut', dateDebut);
+    if (dateFin) formData.append('date_fin', dateFin);
+    if (fichier) formData.append('fichier_contrat', fichier);
+    
+    Swal.fire({ title: 'Création...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    
+    $.ajax({
+        url: '/api/contrats/creer/',
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        headers: { 'X-CSRFToken': getCSRFToken() },
+        success: function(response) {
+            Swal.close();
+            if (response.success) {
+                showSuccess(response.message, response.email_envoye ? response.email_message : null);
+                $('#nouveauContratModal').modal('hide');
+                $('#fichierContrat').val('');
+                chargerContrats();
+                chargerInterviewsAcceptees();
+            } else {
+                showError(response.message);
             }
-            if (!typeContrat) {
-                showError('Veuillez sélectionner le type de contrat');
-                return;
-            }
-            
-            const formData = new FormData();
-            formData.append('interview_id', interviewId);
-            formData.append('type_contrat', typeContrat);
-            formData.append('date_debut', dateDebut);
-            formData.append('date_fin', dateFin);
-            if (fichier) formData.append('fichier_contrat', fichier);
-            
-            Swal.fire({ title: 'Création...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-            
-            $.ajax({
-                url: '/api/contrats/creer/',
-                method: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                headers: { 'X-CSRFToken': getCSRFToken() },
-                success: function(response) {
-                    Swal.close();
-                    if (response.success) {
-                        showSuccess(response.message, response.email_envoye ? response.email_message : null);
-                        $('#nouveauContratModal').modal('hide');
-                        chargerContrats();
-                        chargerInterviewsAcceptees();
-                    } else {
-                        showError(response.message);
-                    }
-                },
-                error: function(xhr) {
-                    Swal.close();
-                    showError(xhr.responseJSON?.message || 'Erreur lors de la création');
-                }
-            });
+        },
+        error: function(xhr) {
+            Swal.close();
+            showError(xhr.responseJSON?.message || 'Erreur lors de la création');
         }
+    });
+}
 
         // Modifier contrat
         function ouvrirModalModifierContrat(contratId) {

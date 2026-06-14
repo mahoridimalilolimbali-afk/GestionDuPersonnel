@@ -6084,70 +6084,71 @@ def get_interviews_acceptees(request):
 
 
 @csrf_exempt
-@require_http_methods(["POST"])
 def creer_contrat(request):
     """API: Créer un contrat pour un candidat retenu après interview"""
     try:
-        data = json.loads(request.body)
-        interview_id = data.get('interview_id')
-        type_contrat = data.get('type_contrat')
-        date_debut = data.get('date_debut')
-        date_fin = data.get('date_fin')
-        
-        if not interview_id:
-            return JsonResponse({'success': False, 'message': 'Interview non spécifiée'}, status=400)
-        
-        if not type_contrat:
-            return JsonResponse({'success': False, 'message': 'Type de contrat requis'}, status=400)
-        
-        interview = get_object_or_404(Interview, id=interview_id)
-        
-        if interview.decision != 'accepte':
-            return JsonResponse({'success': False, 'message': 'Cette interview n\'a pas été acceptée'}, status=400)
-        
-        if hasattr(interview, 'contrat'):
-            return JsonResponse({'success': False, 'message': 'Un contrat existe déjà pour cette interview'}, status=400)
-        
-        # Créer le contrat
-        contrat = Contrat.objects.create(
-            interview=interview,
-            offre=interview.offre,
-            candidat=interview.candidature.candidat,
-            type_contrat=type_contrat,
-            statut='en_attente'
-        )
-        
-        # Gestion des dates pour CDD
-        if type_contrat == 'determine':
-            from datetime import datetime
-            if date_debut:
-                contrat.date_debut = datetime.strptime(date_debut, '%Y-%m-%d').date()
-            if date_fin:
-                contrat.date_fin = datetime.strptime(date_fin, '%Y-%m-%d').date()
-            contrat.save()
-        
-        # Gérer le fichier uploadé
-        fichier = request.FILES.get('fichier_contrat')
-        if fichier:
-            contrat.fichier_contrat = fichier
-            contrat.save()
-        
-        # Envoyer l'email au candidat
-        from .utils import notifier_contrat_propose
-        base_url = "https://mahoridi.pythonanywhere.com"
-        email_envoye, email_message = notifier_contrat_propose(contrat, base_url)
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Contrat créé avec succès pour {interview.candidature.candidat.nom}',
-            'contrat_id': contrat.id,
-            'email_envoye': email_envoye,
-            'email_message': email_message
-        })
-        
+        if request.method == 'POST':
+            interview_id = request.POST.get('interview_id')
+            type_contrat = request.POST.get('type_contrat')
+            date_debut = request.POST.get('date_debut')
+            date_fin = request.POST.get('date_fin')
+            fichier = request.FILES.get('fichier_contrat')
+            
+            if not interview_id:
+                return JsonResponse({'success': False, 'message': 'Interview non spécifiée'}, status=400)
+            
+            if not type_contrat:
+                return JsonResponse({'success': False, 'message': 'Type de contrat requis'}, status=400)
+            
+            interview = get_object_or_404(Interview, id=interview_id)
+            
+            if interview.decision != 'accepte':
+                return JsonResponse({'success': False, 'message': 'Cette interview n\'a pas été acceptée'}, status=400)
+            
+            if hasattr(interview, 'contrat'):
+                return JsonResponse({'success': False, 'message': 'Un contrat existe déjà pour cette interview'}, status=400)
+            
+            # Créer le contrat
+            contrat = Contrat.objects.create(
+                interview=interview,
+                offre=interview.offre,
+                candidat=interview.candidature.candidat,
+                type_contrat=type_contrat,
+                statut='en_attente'
+            )
+            
+            # Gérer les dates pour CDD
+            if type_contrat == 'determine':
+                from datetime import datetime
+                if date_debut:
+                    contrat.date_debut = datetime.strptime(date_debut, '%Y-%m-%d').date()
+                if date_fin:
+                    contrat.date_fin = datetime.strptime(date_fin, '%Y-%m-%d').date()
+                contrat.save()
+            
+            # Gérer le fichier uploadé - comme pour OffreEmploie
+            if fichier:
+                contrat.fichier_contrat = fichier
+                contrat.save()
+            
+            # Envoyer l'email au candidat
+            from .utils import notifier_contrat_propose
+            base_url = "https://mahoridi.pythonanywhere.com"
+            email_envoye, email_message = notifier_contrat_propose(contrat, base_url)
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Contrat créé avec succès pour {interview.candidature.candidat.nom}',
+                'contrat_id': contrat.id,
+                'fichier_url': contrat.fichier_contrat.url if contrat.fichier_contrat else None,
+                'email_envoye': email_envoye,
+                'email_message': email_message
+            })
+        else:
+            return JsonResponse({'success': False, 'message': 'Méthode non autorisée'}, status=405)
+            
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
-
 
 @csrf_exempt
 @require_http_methods(["GET"])
