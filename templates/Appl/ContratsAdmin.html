@@ -426,7 +426,7 @@ function creerContrat() {
     const typeContrat = $('#typeContratSelect').val();
     const dateDebut = $('#dateDebut').val();
     const dateFin = $('#dateFin').val();
-    const fichier = $('#fichierContrat')[0].files[0];
+    const fichier = $('#fichierContrat')[0].files[0];  // ← Récupération du fichier
     
     if (!interviewId) {
         showError('Veuillez sélectionner un candidat');
@@ -437,38 +437,56 @@ function creerContrat() {
         return;
     }
     
-    // FormData pour l'upload de fichier
+    // Utiliser FormData comme dans Test.html
     const formData = new FormData();
     formData.append('interview_id', interviewId);
     formData.append('type_contrat', typeContrat);
     if (dateDebut) formData.append('date_debut', dateDebut);
     if (dateFin) formData.append('date_fin', dateFin);
-    if (fichier) formData.append('fichier_contrat', fichier);
+    if (fichier) formData.append('fichier_contrat', fichier);  // ← Garder ce nom
     
-    Swal.fire({ title: 'Création...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    // Afficher le loader
+    Swal.fire({
+        title: 'Création en cours...',
+        text: 'Veuillez patienter',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+    });
     
     $.ajax({
         url: '/api/contrats/creer/',
         method: 'POST',
         data: formData,
-        processData: false,
-        contentType: false,
+        processData: false,  // ← Important: ne pas traiter les données
+        contentType: false,  // ← Important: laisser le navigateur définir le contentType
         headers: { 'X-CSRFToken': getCSRFToken() },
         success: function(response) {
             Swal.close();
             if (response.success) {
-                showSuccess(response.message, response.email_envoye ? response.email_message : null);
+                let message = response.message;
+                if (response.email_envoye) {
+                    message += `<br><br><i class="fas fa-envelope text-success"></i> ${response.email_message}`;
+                }
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Succès !',
+                    html: message,
+                    timer: 3000,
+                    showConfirmButton: false
+                });
                 $('#nouveauContratModal').modal('hide');
-                $('#fichierContrat').val('');
+                $('#fichierContrat').val('');  // Reset file input
                 chargerContrats();
                 chargerInterviewsAcceptees();
             } else {
-                showError(response.message);
+                Swal.fire({ icon: 'error', title: 'Erreur', text: response.message });
             }
         },
         error: function(xhr) {
             Swal.close();
-            showError(xhr.responseJSON?.message || 'Erreur lors de la création');
+            console.error('Erreur:', xhr);
+            const message = xhr.responseJSON?.message || 'Erreur lors de la création';
+            Swal.fire({ icon: 'error', title: 'Erreur', text: message });
         }
     });
 }
