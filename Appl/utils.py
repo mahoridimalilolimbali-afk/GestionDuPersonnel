@@ -1554,3 +1554,66 @@ def notifier_contrat_refuse(contrat, motif_refus, base_url=None):
         return True, f"Email de confirmation envoyé à {email_destinataire}"
     except Exception as e:
         return False, str(e)
+
+
+
+
+
+def notifier_contrat_accepte_candidat(contrat, base_url=None):
+    """Notifie le candidat que son contrat a été accepté (félicitations)"""
+    from django.core.mail import EmailMultiAlternatives
+    from django.utils.html import strip_tags
+    
+    candidat = contrat.candidat
+    offre = contrat.offre
+    user = candidat.user
+    
+    email_destinataire = user.email if user and user.email else None
+    
+    if not email_destinataire:
+        return False, "Pas d'adresse email"
+    
+    sujet = f"🎉 Félicitations ! Vous êtes retenu chez GH ENGINEERING"
+    
+    html_message = f"""
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="UTF-8"><title>Félicitations - GH ENGINEERING</title></head>
+    <body style="font-family: Poppins, Arial, sans-serif;">
+        <div style="max-width: 600px; margin: auto; background: white; border-radius: 15px; overflow: hidden;">
+            <div style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); padding: 30px; text-align: center;">
+                <h1 style="color: white;">🎉 Félicitations !</h1>
+            </div>
+            <div style="padding: 30px;">
+                <h2>Bonjour {candidat.nom} {candidat.prenom},</h2>
+                <p>Nous avons le plaisir de vous informer que vous avez accepté le contrat pour le poste <strong>"{offre.titre}"</strong>.</p>
+                <p style="font-size: 18px; text-align: center; padding: 15px; background: #fef9e7; border-radius: 10px;">
+                    <strong>✅ Vous êtes désormais retenu au sein de GH ENGINEERING SARL !</strong>
+                </p>
+                <p>Veuillez vous présenter au bureau pour la confirmation écrite de votre engagement.</p>
+                <div style="background: #e8f0fe; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                    <p><strong>📍 Adresse :</strong> Quartier Himbi, Avenue du Travail, N°15, Goma, RDC</p>
+                    <p><strong>📞 Contact :</strong> +243 813 456 789</p>
+                    <p><strong>📧 Email :</strong> contact@grh-engineering.com</p>
+                </div>
+                <p>Cordialement,</p>
+                <p><strong>L'équipe RH - GH ENGINEERING</strong></p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    try:
+        plain_message = strip_tags(html_message)
+        email = EmailMultiAlternatives(
+            subject=sujet,
+            body=plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[email_destinataire]
+        )
+        email.attach_alternative(html_message, "text/html")
+        email.send()
+        return True, f"Email de félicitations envoyé à {email_destinataire}"
+    except Exception as e:
+        return False, str(e)

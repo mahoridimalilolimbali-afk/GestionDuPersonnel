@@ -6183,15 +6183,25 @@ def mes_contrats(request):
 
 
 @csrf_exempt
+@login_required
 @require_http_methods(["GET"])
 def get_mes_contrats(request):
-    """API: Récupérer les contrats du candidat connecté"""
+    """API: Récupérer les contrats du candidat connecté (après interview acceptée)"""
     try:
         if not request.user.is_authenticated:
             return JsonResponse({'success': False, 'message': 'Non authentifié'}, status=401)
         
-        candidat = get_object_or_404(Candidat, user=request.user)
-        contrats = Contrat.objects.filter(candidat=candidat).select_related('offre', 'interview')
+        # Récupérer le candidat connecté
+        try:
+            candidat = Candidat.objects.get(user=request.user)
+        except Candidat.DoesNotExist:
+            return JsonResponse({'success': True, 'contrats': [], 'total': 0})
+        
+        # Récupérer les contrats de ce candidat où l'interview a été acceptée
+        contrats = Contrat.objects.filter(
+            candidat=candidat,
+            interview__decision='accepte'  # Seulement les interviews acceptées
+        ).select_related('offre', 'interview')
         
         data = []
         for c in contrats:
@@ -6209,7 +6219,6 @@ def get_mes_contrats(request):
         return JsonResponse({'success': True, 'contrats': data, 'total': len(data)})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
-
 
 @csrf_exempt
 @login_required
@@ -6231,49 +6240,21 @@ def repondre_contrat(request, id_contrat):
             return JsonResponse({'success': False, 'message': 'Ce contrat a déjà été traité'}, status=400)
         
         from datetime import datetime
-        from django.contrib.auth.models import Group
         
         if decision == 'accepter':
             contrat.statut = 'accepte'
             contrat.date_signature = datetime.now()
             contrat.save()
             
-            # Le candidat devient AGENT
-            user = request.user
-            groupe_candidat = Group.objects.filter(name='CANDIDAT').first()
-            if groupe_candidat:
-                user.groups.remove(groupe_candidat)
-            
-            groupe_agent, _ = Group.objects.get_or_create(name='AGENT')
-            user.groups.add(groupe_agent)
-            user.is_staff = True
-            user.save()
-            
-            # Créer l'agent
-            import random
-            matricule = f"GRH-{contrat.candidat.id}-{random.randint(1000, 9999)}"
-            while Agent.objects.filter(matricule=matricule).exists():
-                matricule = f"GRH-{contrat.candidat.id}-{random.randint(1000, 9999)}"
-            
-            agent, created = Agent.objects.get_or_create(
-                candidat=contrat.candidat,
-                defaults={'statut': 'Approuvé', 'matricule': matricule}
-            )
-            if not created and agent.statut != 'Approuvé':
-                agent.statut = 'Approuvé'
-                if not agent.matricule:
-                    agent.matricule = matricule
-                agent.save()
-            
-            # ========== ENVOYER L'EMAIL DE CONFIRMATION ==========
-            from .utils import notifier_contrat_accepte
+            # ========== ENVOYER L'EMAIL DE FÉLICITATIONS ==========
+            from .utils import notifier_contrat_accepte_candidat
             base_url = "https://mahoridi.pythonanywhere.com"
-            email_envoye, email_message = notifier_contrat_accepte(contrat, base_url)
+            email_envoye, email_message = notifier_contrat_accepte_candidat(contrat, base_url)
             # =====================================================
             
             return JsonResponse({
                 'success': True,
-                'message': 'Merci pour votre confiance ! Vous serez informé(e) dans les plus brefs délais.',
+                'message': 'Félicitations ! Vous êtes désormais retenu au sein de GRH ENGINEERING SARL. Veuillez vous présenter au bureau pour la confirmation écrite.',
                 'email_envoye': email_envoye,
                 'email_message': email_message
             })
@@ -6286,24 +6267,15 @@ def repondre_contrat(request, id_contrat):
             contrat.motif_refus = motif_refus
             contrat.save()
             
-            # ========== ENVOYER L'EMAIL DE REFUS ==========
-            from .utils import notifier_contrat_refuse
-            base_url = "https://mahoridi.pythonanywhere.com"
-            email_envoye, email_message = notifier_contrat_refuse(contrat, motif_refus, base_url)
-            # =============================================
-            
             return JsonResponse({
                 'success': True,
-                'message': 'Nous avons bien pris en compte votre décision.',
-                'email_envoye': email_envoye,
-                'email_message': email_message
+                'message': 'Nous avons bien pris en compte votre décision.'
             })
         else:
             return JsonResponse({'success': False, 'message': 'Décision invalide'}, status=400)
             
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
-
 # views.py - Ajoutez cette fonction
 
 def contrats_admin(request):

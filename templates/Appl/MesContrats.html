@@ -198,10 +198,10 @@
                     `;
                 } else if (contrat.statut === 'accepte') {
                     statutBadge = '<span class="badge-accepte">✅ Contrat accepté</span>';
-                    actionsHtml = `<div class="mt-3 alert alert-success">✅ Merci pour votre confiance. Vous serez informé(e) dans les plus brefs délais.</div>`;
+                    actionsHtml = `<div class="mt-3 alert alert-success">✅ Vous avez accepté ce contrat. Bienvenue dans l'équipe !</div>`;
                 } else if (contrat.statut === 'refuse') {
                     statutBadge = '<span class="badge-refuse">❌ Contrat refusé</span>';
-                    actionsHtml = `<div class="mt-3 alert alert-warning">❌ Vous avez refusé ce contrat. Nous vous souhaitons bonne chance.</div>`;
+                    actionsHtml = `<div class="mt-3 alert alert-warning">❌ Vous avez refusé ce contrat.</div>`;
                 }
                 
                 const fichierHtml = contrat.fichier_url ? 
@@ -303,9 +303,10 @@
                                 if (response.email_envoye) {
                                     msg += `<br><br><i class="fas fa-envelope text-success"></i> ${response.email_message}`;
                                 }
-                                Swal.fire({ icon: 'success', title: 'Merci !', html: msg });
+                                Swal.fire({ icon: 'success', title: 'Félicitations !', html: msg });
                                 chargerContrats();
-                                setTimeout(() => { window.location.reload(); }, 3000);
+                                // Rediriger vers le dashboard après 3 secondes
+                                setTimeout(() => { window.location.href = '/Appl/dashboardCandidat'; }, 3000);
                             } else {
                                 Swal.fire({ icon: 'error', title: 'Erreur', text: response.message });
                             }
@@ -316,7 +317,9 @@
             });
         }
 
-        $(document).ready(function() { chargerContrats(); });
+        $(document).ready(function() { 
+            chargerContrats(); 
+        });
     </script>
 </body>
 </html>
