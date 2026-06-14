@@ -6238,7 +6238,7 @@ def get_mes_contrats(request):
         print(f"Erreur: {error_detail}")
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-        
+
 
 @csrf_exempt
 @login_required
@@ -6260,28 +6260,70 @@ def repondre_contrat(request, id_contrat):
             return JsonResponse({'success': False, 'message': 'Ce contrat a déjà été traité'}, status=400)
         
         from datetime import datetime
+        from django.contrib.auth.models import Group
         
         if decision == 'accepter':
             contrat.statut = 'accepte'
             contrat.date_signature = datetime.now()
             contrat.save()
             
+            # ========== ENREGISTRER LE CANDIDAT COMME AGENT ==========
+            candidat = contrat.candidat
+            user = candidat.user
+            
+            # Générer un matricule unique
+            import random
+            matricule = f"GRH-{candidat.id}-{random.randint(1000, 9999)}"
+            while Agent.objects.filter(matricule=matricule).exists():
+                matricule = f"GRH-{candidat.id}-{random.randint(1000, 9999)}"
+            
+            # Créer l'agent
+            agent, created = Agent.objects.get_or_create(
+                candidat=candidat,
+                defaults={
+                    'statut': 'Approuvé',
+                    'matricule': matricule,
+                    'date_retenu': datetime.now().date()
+                }
+            )
+            
+            if not created:
+                # Si l'agent existait déjà mais pas approuvé
+                if agent.statut != 'Approuvé':
+                    agent.statut = 'Approuvé'
+                if not agent.matricule:
+                    agent.matricule = matricule
+                agent.save()
+            
+            # ========== CHANGER LE GROUPE DE L'UTILISATEUR ==========
+            # Retirer du groupe CANDIDAT
+            groupe_candidat = Group.objects.filter(name='CANDIDAT').first()
+            if groupe_candidat:
+                user.groups.remove(groupe_candidat)
+            
+            # Ajouter au groupe AGENT
+            groupe_agent, _ = Group.objects.get_or_create(name='AGENT')
+            user.groups.add(groupe_agent)
+            user.is_staff = True
+            user.save()
+            # ========================================================
+            
             # ========== ENVOYER L'EMAIL DE FÉLICITATIONS ==========
             from .utils import notifier_contrat_accepte_candidat
             base_url = "https://mahoridi.pythonanywhere.com"
-            email_envoye, email_message = notifier_contrat_accepte_candidat(contrat, base_url)
+            email_envoye, email_message = notifier_contrat_accepte_candidat(contrat, agent, base_url)
             # =====================================================
             
             return JsonResponse({
                 'success': True,
-                'message': 'Félicitations ! Vous êtes désormais retenu au sein de GRH ENGINEERING SARL. Veuillez vous présenter au bureau pour la confirmation écrite.',
+                'message': f'Félicitations ! Vous êtes désormais agent chez GRH ENGINEERING.<br>📋 Votre matricule : {agent.matricule}',
                 'email_envoye': email_envoye,
                 'email_message': email_message
             })
             
         elif decision == 'refuser':
             if not motif_refus:
-                return JsonResponse({'success': False, 'message': 'Veuillez expliquer le motif du refus'}, status=400)
+                return JsonResponse({'success': False, 'message': 'Veuillez expliquer votre motif de refus'}, status=400)
             
             contrat.statut = 'refuse'
             contrat.motif_refus = motif_refus
@@ -6296,7 +6338,9 @@ def repondre_contrat(request, id_contrat):
             
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
-# views.py - Ajoutez cette fonction
+        
+        
+        # views.py - Ajoutez cette fonction
 
 def contrats_admin(request):
     """Page admin pour gérer les contrats"""

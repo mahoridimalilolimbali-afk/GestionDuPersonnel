@@ -1559,8 +1559,8 @@ def notifier_contrat_refuse(contrat, motif_refus, base_url=None):
 
 
 
-def notifier_contrat_accepte_candidat(contrat, base_url=None):
-    """Notifie le candidat que son contrat a été accepté (félicitations)"""
+def notifier_contrat_accepte_candidat(contrat, agent, base_url=None):
+    """Notifie le candidat qu'il est devenu agent après acceptation du contrat"""
     from django.core.mail import EmailMultiAlternatives
     from django.utils.html import strip_tags
     
@@ -1573,7 +1573,7 @@ def notifier_contrat_accepte_candidat(contrat, base_url=None):
     if not email_destinataire:
         return False, "Pas d'adresse email"
     
-    sujet = f"🎉 Félicitations ! Vous êtes retenu chez GH ENGINEERING"
+    sujet = f"🎉 Félicitations ! Vous êtes désormais Agent chez GH ENGINEERING"
     
     html_message = f"""
     <!DOCTYPE html>
@@ -1586,15 +1586,20 @@ def notifier_contrat_accepte_candidat(contrat, base_url=None):
             </div>
             <div style="padding: 30px;">
                 <h2>Bonjour {candidat.nom} {candidat.prenom},</h2>
-                <p>Nous avons le plaisir de vous informer que vous avez accepté le contrat pour le poste <strong>"{offre.titre}"</strong>.</p>
-                <p style="font-size: 18px; text-align: center; padding: 15px; background: #fef9e7; border-radius: 10px;">
-                    <strong>✅ Vous êtes désormais retenu au sein de GH ENGINEERING SARL !</strong>
-                </p>
-                <p>Veuillez vous présenter au bureau pour la confirmation écrite de votre engagement.</p>
+                <p>Nous avons le plaisir de vous informer que vous êtes désormais <strong>Agent chez GRH ENGINEERING SARL</strong>.</p>
                 <div style="background: #e8f0fe; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                    <p><strong>📋 Vos informations :</strong></p>
+                    <p>• Matricule : <strong>{agent.matricule}</strong></p>
+                    <p>• Poste : <strong>{offre.titre}</strong></p>
+                </div>
+                <p>Veuillez vous présenter au bureau pour la confirmation écrite.</p>
+                <div style="background: #fef9e7; padding: 15px; border-radius: 10px; margin: 20px 0;">
                     <p><strong>📍 Adresse :</strong> Quartier Himbi, Avenue du Travail, N°15, Goma, RDC</p>
                     <p><strong>📞 Contact :</strong> +243 813 456 789</p>
-                    <p><strong>📧 Email :</strong> contact@grh-engineering.com</p>
+                </div>
+                <p>Connectez-vous à votre espace Agent pour accéder à vos fonctionnalités.</p>
+                <div style="text-align: center;">
+                    <a href="{base_url}" style="background: #27ae60; color: white; padding: 12px 35px; text-decoration: none; border-radius: 25px; display: inline-block;">🚀 Accéder à mon espace Agent</a>
                 </div>
                 <p>Cordialement,</p>
                 <p><strong>L'équipe RH - GH ENGINEERING</strong></p>
