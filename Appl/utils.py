@@ -1433,3 +1433,124 @@ def notifier_contrat_propose(contrat, base_url=None):
         return True, f"Email envoyé à {email_destinataire}"
     except Exception as e:
         return False, str(e)
+
+
+
+        # utils.py - Ajoutez ces fonctions
+
+def notifier_contrat_accepte(contrat, base_url=None):
+    """Notifie le candidat que son contrat a été accepté"""
+    from django.core.mail import EmailMultiAlternatives
+    from django.utils.html import strip_tags
+    
+    candidat = contrat.candidat
+    offre = contrat.offre
+    user = candidat.user
+    
+    email_destinataire = user.email if user and user.email else None
+    
+    if not email_destinataire:
+        return False, "Pas d'adresse email"
+    
+    sujet = f"✅ Merci pour votre confiance - {offre.titre} - GRH ENGINEERING"
+    
+    html_message = f"""
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="UTF-8"><title>Contrat accepté - GRH ENGINEERING</title></head>
+    <body style="font-family: Poppins, Arial, sans-serif;">
+        <div style="max-width: 600px; margin: auto; background: white; border-radius: 15px; overflow: hidden;">
+            <div style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); padding: 30px; text-align: center;">
+                <h1 style="color: white;">✅ Merci pour votre confiance</h1>
+            </div>
+            <div style="padding: 30px;">
+                <h2>Bonjour {candidat.nom} {candidat.prenom},</h2>
+                <p>Nous avons bien reçu votre acceptation du contrat pour le poste <strong>"{offre.titre}"</strong>.</p>
+                <p>Nous vous remercions pour la confiance que vous accordez à notre entreprise.</p>
+                <div style="background: #e8f0fe; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                    <p><strong>📋 Récapitulatif :</strong></p>
+                    <p>• Poste : {offre.titre}</p>
+                    <p>• Type : {"CDD" if contrat.type_contrat == 'determine' else "CDI"}</p>
+                    {f'<p>• Période : Du {contrat.date_debut.strftime("%d/%m/%Y")} au {contrat.date_fin.strftime("%d/%m/%Y")}</p>' if contrat.date_debut and contrat.date_fin else ''}
+                </div>
+                <p style="font-size: 16px; text-align: center; padding: 15px; background: #fef9e7; border-radius: 10px;">
+                    <strong>📢 Vous serez informé(e) dans les plus brefs délais de la suite de la procédure.</strong>
+                </p>
+                <p>Cordialement,</p>
+                <p><strong>L'équipe RH - GRH ENGINEERING</strong></p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    try:
+        plain_message = strip_tags(html_message)
+        email = EmailMultiAlternatives(
+            subject=sujet,
+            body=plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[email_destinataire]
+        )
+        email.attach_alternative(html_message, "text/html")
+        email.send()
+        return True, f"Email de confirmation envoyé à {email_destinataire}"
+    except Exception as e:
+        return False, str(e)
+
+
+def notifier_contrat_refuse(contrat, motif_refus, base_url=None):
+    """Notifie le candidat que son contrat a été refusé"""
+    from django.core.mail import EmailMultiAlternatives
+    from django.utils.html import strip_tags
+    
+    candidat = contrat.candidat
+    offre = contrat.offre
+    user = candidat.user
+    
+    email_destinataire = user.email if user and user.email else None
+    
+    if not email_destinataire:
+        return False, "Pas d'adresse email"
+    
+    sujet = f"📋 Suite de votre candidature - {offre.titre} - GRH ENGINEERING"
+    
+    html_message = f"""
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="UTF-8"><title>Refus de contrat - GRH ENGINEERING</title></head>
+    <body style="font-family: Poppins, Arial, sans-serif;">
+        <div style="max-width: 600px; margin: auto; background: white; border-radius: 15px; overflow: hidden;">
+            <div style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); padding: 30px; text-align: center;">
+                <h1 style="color: white;">📋 Suite de votre candidature</h1>
+            </div>
+            <div style="padding: 30px;">
+                <h2>Bonjour {candidat.nom} {candidat.prenom},</h2>
+                <p>Nous avons bien reçu votre décision concernant le contrat pour le poste <strong>"{offre.titre}"</strong>.</p>
+                <div style="background: #fff3cd; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                    <p><strong>📝 Motif du refus :</strong></p>
+                    <p>{motif_refus}</p>
+                </div>
+                <p>Nous respectons votre décision et nous vous souhaitons une excellente continuation dans vos projets professionnels.</p>
+                <p>Nous vous encourageons à consulter régulièrement nos offres pour d'autres opportunités.</p>
+                <p>Cordialement,</p>
+                <p><strong>L'équipe RH - GRH ENGINEERING</strong></p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    try:
+        plain_message = strip_tags(html_message)
+        email = EmailMultiAlternatives(
+            subject=sujet,
+            body=plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[email_destinataire]
+        )
+        email.attach_alternative(html_message, "text/html")
+        email.send()
+        return True, f"Email de confirmation envoyé à {email_destinataire}"
+    except Exception as e:
+        return False, str(e)

@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token }}">
-    <title>Mes Contrats - GRH</title>
+    <title>Mes Contrats - GRH ENGINEERING</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -32,6 +33,11 @@
             border: none;
             padding: 8px 20px;
             border-radius: 20px;
+            transition: all 0.3s;
+        }
+        .btn-back:hover {
+            background: rgba(255,255,255,0.3);
+            color: white;
         }
         .contrat-card {
             background: white;
@@ -39,16 +45,18 @@
             padding: 25px;
             margin-bottom: 20px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-            border-left: 4px solid #667eea;
+            border-left: 5px solid #667eea;
+            transition: all 0.3s;
         }
+        .contrat-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.15); }
         .badge-cdd { background: #3498db; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; }
         .badge-cdi { background: #27ae60; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; }
         .badge-attente { background: #f39c12; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; }
         .badge-accepte { background: #27ae60; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; }
         .badge-refuse { background: #e74c3c; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; }
-        .btn-accepter { background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); color: white; border: none; padding: 8px 20px; border-radius: 10px; font-weight: 600; }
-        .btn-refuser { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; border: none; padding: 8px 20px; border-radius: 10px; font-weight: 600; }
-        .btn-telecharger { background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; border: none; padding: 8px 20px; border-radius: 10px; font-weight: 600; }
+        .btn-accepter { background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); color: white; border: none; padding: 8px 25px; border-radius: 10px; font-weight: 600; }
+        .btn-refuser { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; border: none; padding: 8px 25px; border-radius: 10px; font-weight: 600; }
+        .btn-telecharger { background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; border: none; padding: 8px 25px; border-radius: 10px; font-weight: 600; }
         .loading-spinner {
             display: inline-block;
             width: 40px;
@@ -59,6 +67,7 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .card-body-custom { padding: 30px; background: #f8f9fa; }
     </style>
 </head>
 <body>
@@ -73,7 +82,7 @@
                     <i class="fas fa-arrow-left"></i> Retour Dashboard
                 </a>
             </div>
-            <div class="card-body-custom p-4" id="contratsContainer">
+            <div class="card-body-custom" id="contratsContainer">
                 <div class="text-center py-5">
                     <div class="loading-spinner"></div>
                     <p class="mt-3">Chargement de vos contrats...</p>
@@ -84,7 +93,7 @@
 
     <!-- Modal Refus -->
     <div class="modal fade" id="refusModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title"><i class="fas fa-times-circle"></i> Motif de refus</h5>
@@ -113,16 +122,42 @@
         function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
 
         function chargerContrats() {
+            $('#contratsContainer').html(`
+                <div class="text-center py-5">
+                    <div class="loading-spinner"></div>
+                    <p class="mt-3">Chargement de vos contrats...</p>
+                </div>
+            `);
+            
             $.ajax({
                 url: '/api/mes-contrats/',
                 method: 'GET',
+                headers: { 'X-CSRFToken': getCSRFToken() },
                 success: function(response) {
                     if (response.success) {
                         afficherContrats(response.contrats);
+                    } else {
+                        $('#contratsContainer').html(`
+                            <div class="text-center py-5 text-danger">
+                                <i class="fas fa-exclamation-triangle" style="font-size: 48px;"></i>
+                                <p class="mt-3">${response.error || 'Erreur de chargement'}</p>
+                                <button class="btn btn-primary mt-3" onclick="chargerContrats()">
+                                    <i class="fas fa-sync-alt"></i> Réessayer
+                                </button>
+                            </div>
+                        `);
                     }
                 },
                 error: function() {
-                    $('#contratsContainer').html('<div class="text-center py-5 text-danger">Erreur de chargement</div>');
+                    $('#contratsContainer').html(`
+                        <div class="text-center py-5 text-danger">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 48px;"></i>
+                            <p class="mt-3">Erreur de connexion au serveur</p>
+                            <button class="btn btn-primary mt-3" onclick="chargerContrats()">
+                                <i class="fas fa-sync-alt"></i> Réessayer
+                            </button>
+                        </div>
+                    `);
                 }
             });
         }
@@ -152,21 +187,21 @@
                 if (contrat.statut === 'en_attente') {
                     statutBadge = '<span class="badge-attente">⏳ En attente de validation</span>';
                     actionsHtml = `
-                        <div class="mt-3 text-end">
+                        <div class="mt-4 text-end">
                             <button class="btn-refuser me-2" onclick="ouvrirModalRefus(${contrat.id})">
                                 <i class="fas fa-times"></i> Refuser
                             </button>
                             <button class="btn-accepter" onclick="accepterContrat(${contrat.id})">
-                                <i class="fas fa-check"></i> Accepter et signer
+                                <i class="fas fa-check"></i> Accepter
                             </button>
                         </div>
                     `;
                 } else if (contrat.statut === 'accepte') {
                     statutBadge = '<span class="badge-accepte">✅ Contrat accepté</span>';
-                    actionsHtml = `<div class="mt-3 alert alert-success">✅ Vous avez accepté ce contrat. Bienvenue dans l'équipe !</div>`;
+                    actionsHtml = `<div class="mt-3 alert alert-success">✅ Merci pour votre confiance. Vous serez informé(e) dans les plus brefs délais.</div>`;
                 } else if (contrat.statut === 'refuse') {
                     statutBadge = '<span class="badge-refuse">❌ Contrat refusé</span>';
-                    actionsHtml = `<div class="mt-3 alert alert-warning">❌ Vous avez refusé ce contrat.</div>`;
+                    actionsHtml = `<div class="mt-3 alert alert-warning">❌ Vous avez refusé ce contrat. Nous vous souhaitons bonne chance.</div>`;
                 }
                 
                 const fichierHtml = contrat.fichier_url ? 
@@ -189,7 +224,7 @@
                         </div>
                         <div class="mt-3">
                             <p><strong>📅 Période :</strong> ${contrat.duree_texte}</p>
-                            <p><strong>📄 Fichier :</strong> ${fichierHtml}</p>
+                            <p><strong>📄 Contrat :</strong> ${fichierHtml}</p>
                         </div>
                         ${actionsHtml}
                     </div>
@@ -212,36 +247,42 @@
                 return;
             }
             
-            Swal.fire({ title: 'Confirmation', text: 'Êtes-vous sûr de vouloir refuser ce contrat ?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#e74c3c', confirmButtonText: 'Oui, refuser' })
-                .then((result) => {
-                    if (result.isConfirmed) {
-                        Swal.fire({ title: 'Traitement...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-                        
-                        $.ajax({
-                            url: `/api/contrat/repondre/${contratId}/`,
-                            method: 'POST',
-                            data: JSON.stringify({ decision: 'refuser', motif_refus: motifRefus }),
-                            headers: { 'X-CSRFToken': getCSRFToken(), 'Content-Type': 'application/json' },
-                            success: function(response) {
-                                Swal.close();
-                                if (response.success) {
-                                    Swal.fire({ icon: 'success', title: 'Refus enregistré', text: response.message });
-                                    $('#refusModal').modal('hide');
-                                    chargerContrats();
-                                } else {
-                                    Swal.fire({ icon: 'error', title: 'Erreur', text: response.message });
-                                }
-                            },
-                            error: function() { Swal.close(); Swal.fire({ icon: 'error', title: 'Erreur', text: 'Erreur lors du refus' }); }
-                        });
-                    }
-                });
+            Swal.fire({
+                title: 'Confirmation',
+                text: 'Êtes-vous sûr de vouloir refuser ce contrat ?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e74c3c',
+                confirmButtonText: 'Oui, refuser'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: 'Traitement...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                    
+                    $.ajax({
+                        url: `/api/contrat/repondre/${contratId}/`,
+                        method: 'POST',
+                        data: JSON.stringify({ decision: 'refuser', motif_refus: motifRefus }),
+                        headers: { 'X-CSRFToken': getCSRFToken(), 'Content-Type': 'application/json' },
+                        success: function(response) {
+                            Swal.close();
+                            if (response.success) {
+                                Swal.fire({ icon: 'success', title: 'Refus enregistré', text: response.message });
+                                $('#refusModal').modal('hide');
+                                chargerContrats();
+                            } else {
+                                Swal.fire({ icon: 'error', title: 'Erreur', text: response.message });
+                            }
+                        },
+                        error: function() { Swal.close(); Swal.fire({ icon: 'error', title: 'Erreur', text: 'Erreur lors du refus' }); }
+                    });
+                }
+            });
         }
 
         function accepterContrat(contratId) {
             Swal.fire({
                 title: 'Confirmation',
-                text: 'Voulez-vous vraiment accepter ce contrat ? Vous deviendrez agent chez GRH ENGINEERING.',
+                text: 'Voulez-vous vraiment accepter ce contrat ?',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#27ae60',
@@ -258,9 +299,13 @@
                         success: function(response) {
                             Swal.close();
                             if (response.success) {
-                                Swal.fire({ icon: 'success', title: 'Félicitations !', text: response.message });
+                                let msg = response.message;
+                                if (response.email_envoye) {
+                                    msg += `<br><br><i class="fas fa-envelope text-success"></i> ${response.email_message}`;
+                                }
+                                Swal.fire({ icon: 'success', title: 'Merci !', html: msg });
                                 chargerContrats();
-                                setTimeout(() => { window.location.href = '/Appl/dashboardAgent'; }, 3000);
+                                setTimeout(() => { window.location.reload(); }, 3000);
                             } else {
                                 Swal.fire({ icon: 'error', title: 'Erreur', text: response.message });
                             }

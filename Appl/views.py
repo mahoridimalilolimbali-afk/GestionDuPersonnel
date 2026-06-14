@@ -6228,6 +6228,7 @@ def get_mes_contrats(request):
 
 
 @csrf_exempt
+@login_required
 @require_http_methods(["POST"])
 def repondre_contrat(request, id_contrat):
     """API: Réponse du candidat au contrat (Accepter/Refuser)"""
@@ -6238,6 +6239,7 @@ def repondre_contrat(request, id_contrat):
         
         contrat = get_object_or_404(Contrat, id=id_contrat)
         
+        # Vérifier que le contrat appartient au candidat connecté
         if contrat.candidat.user.id != request.user.id:
             return JsonResponse({'success': False, 'message': 'Accès non autorisé'}, status=403)
         
@@ -6279,36 +6281,44 @@ def repondre_contrat(request, id_contrat):
                     agent.matricule = matricule
                 agent.save()
             
-            # Envoyer email de confirmation
+            # ========== ENVOYER L'EMAIL DE CONFIRMATION ==========
             from .utils import notifier_contrat_accepte
             base_url = "https://mahoridi.pythonanywhere.com"
-            notifier_contrat_accepte(contrat, base_url)
+            email_envoye, email_message = notifier_contrat_accepte(contrat, base_url)
+            # =====================================================
             
             return JsonResponse({
                 'success': True,
-                'message': 'Félicitations ! Vous êtes maintenant agent chez GRH ENGINEERING.'
+                'message': 'Merci pour votre confiance ! Vous serez informé(e) dans les plus brefs délais.',
+                'email_envoye': email_envoye,
+                'email_message': email_message
             })
             
         elif decision == 'refuser':
+            if not motif_refus:
+                return JsonResponse({'success': False, 'message': 'Veuillez expliquer le motif du refus'}, status=400)
+            
             contrat.statut = 'refuse'
             contrat.motif_refus = motif_refus
             contrat.save()
             
-            # Envoyer email de refus
+            # ========== ENVOYER L'EMAIL DE REFUS ==========
             from .utils import notifier_contrat_refuse
             base_url = "https://mahoridi.pythonanywhere.com"
-            notifier_contrat_refuse(contrat, motif_refus, base_url)
+            email_envoye, email_message = notifier_contrat_refuse(contrat, motif_refus, base_url)
+            # =============================================
             
             return JsonResponse({
                 'success': True,
-                'message': 'Nous avons bien pris en compte votre décision.'
+                'message': 'Nous avons bien pris en compte votre décision.',
+                'email_envoye': email_envoye,
+                'email_message': email_message
             })
         else:
             return JsonResponse({'success': False, 'message': 'Décision invalide'}, status=400)
             
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
-
 
 # views.py - Ajoutez cette fonction
 
