@@ -5082,7 +5082,7 @@ def get_utilisateurs_communication(request):
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_offres_communication(request):
-    """API: Récupérer les offres avec nombre de candidats acceptés"""
+    """API: Récupérer les offres avec nombre de candidats acceptés (non encore agents)"""
     try:
         type_decision_accepter = TypeDecision.objects.filter(Description__icontains='Accepter').first()
         
@@ -5091,10 +5091,16 @@ def get_offres_communication(request):
         
         for offre in offres:
             if type_decision_accepter:
-                nb_candidats = Decision.objects.filter(
+                # Récupérer les candidatures acceptées
+                candidatures_acceptees = Decision.objects.filter(
                     candidature__offre=offre,
                     type_decision=type_decision_accepter
-                ).count()
+                ).values_list('candidature__candidat_id', flat=True)
+                
+                # Filtrer pour exclure ceux qui sont déjà agents
+                agents_ids = Agent.objects.values_list('candidat_id', flat=True)
+                candidats_non_agents = [c for c in candidatures_acceptees if c not in agents_ids]
+                nb_candidats = len(candidats_non_agents)
             else:
                 nb_candidats = 0
             
@@ -5117,7 +5123,6 @@ def envoyer_communication(request):
         from django.core.mail import EmailMultiAlternatives
         from django.utils.html import strip_tags
         from django.contrib.auth.models import User
-        from django.core.mail import send_mail
         
         data = json.loads(request.body)
         type_dest = data.get('type')
@@ -5131,54 +5136,52 @@ def envoyer_communication(request):
         message_detail = ""
         
         if type_dest == 'utilisateur':
-            # Envoyer à un utilisateur spécifique
             user_id = data.get('destinataire_id')
             user = User.objects.get(id=user_id)
             if user.email:
                 destinataires_emails.append(user.email)
                 message_detail = f"à {user.get_full_name() or user.username} ({user.email})"
-            else:
-                return JsonResponse({'success': False, 'message': 'Cet utilisateur n\'a pas d\'email'}, status=400)
         
         elif type_dest == 'groupe':
-            # Envoyer à tout un groupe
             groupe_nom = data.get('groupe')
             utilisateurs = User.objects.filter(groups__name=groupe_nom, is_active=True)
-            
             for user in utilisateurs:
                 if user.email:
                     destinataires_emails.append(user.email)
-            
-            if not destinataires_emails:
-                return JsonResponse({'success': False, 'message': f'Aucun utilisateur trouvé dans le groupe {groupe_nom}'}, status=400)
-            
             message_detail = f"au groupe {groupe_nom} ({len(destinataires_emails)} destinataires)"
         
         elif type_dest == 'candidats_acceptes':
-            # Envoyer aux candidats acceptés pour une offre
             offre_id = data.get('offre_id')
             offre = OffreEmploie.objects.get(id=offre_id)
             
             type_decision_accepter = TypeDecision.objects.get(Description__icontains='Accepter')
+            
+            # Récupérer les candidatures acceptées pour cette offre
             decisions = Decision.objects.filter(
                 candidature__offre=offre,
                 type_decision=type_decision_accepter
             ).select_related('candidature__candidat__user')
             
+            # Récupérer les IDs des candidats déjà agents
+            agents_ids = Agent.objects.values_list('candidat_id', flat=True)
+            
             for decision in decisions:
-                user = decision.candidature.candidat.user
-                if user.email:
-                    destinataires_emails.append(user.email)
+                candidat = decision.candidature.candidat
+                # EXCLURE les candidats déjà agents
+                if candidat.id not in agents_ids:
+                    user = candidat.user
+                    if user and user.email:
+                        destinataires_emails.append(user.email)
             
             if not destinataires_emails:
-                return JsonResponse({'success': False, 'message': f'Aucun candidat accepté pour l\'offre "{offre.titre}"'}, status=400)
+                return JsonResponse({'success': False, 'message': f'Aucun candidat non agent pour l\'offre "{offre.titre}"'}, status=400)
             
-            message_detail = f"aux candidats acceptés pour l'offre \"{offre.titre}\" ({len(destinataires_emails)} destinataires)"
+            message_detail = f"aux candidats acceptés (non encore agents) pour l'offre \"{offre.titre}\" ({len(destinataires_emails)} destinataires)"
         
         else:
             return JsonResponse({'success': False, 'message': 'Type de destinataire invalide'}, status=400)
         
-        # Construction du message HTML
+        # Construction du message HTML (identique)
         base_url = "https://mahoridi.pythonanywhere.com"
         
         html_message = f"""
@@ -5188,68 +5191,24 @@ def envoyer_communication(request):
             <meta charset="UTF-8">
             <title>{objet}</title>
             <style>
-                body {{
-                    font-family: 'Poppins', Arial, sans-serif;
-                    background-color: #f4f4f4;
-                    margin: 0;
-                    padding: 20px;
-                }}
-                .container {{
-                    max-width: 600px;
-                    margin: 0 auto;
-                    background: white;
-                    border-radius: 15px;
-                    overflow: hidden;
-                    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-                }}
-                .header {{
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    color: white;
-                    padding: 30px;
-                    text-align: center;
-                }}
-                .header h1 {{ margin: 0; font-size: 24px; }}
+                body {{ font-family: 'Poppins', Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }}
+                .container {{ max-width: 600px; margin: 0 auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }}
+                .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }}
                 .content {{ padding: 30px; }}
-                .message-box {{
-                    background: #f8f9fa;
-                    padding: 20px;
-                    border-radius: 10px;
-                    margin: 20px 0;
-                    font-size: 14px;
-                    line-height: 1.6;
-                }}
-                .footer {{
-                    background: #f8f9fa;
-                    padding: 20px;
-                    text-align: center;
-                    font-size: 12px;
-                    color: #999;
-                }}
-                .btn {{
-                    display: inline-block;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    color: white;
-                    padding: 10px 25px;
-                    text-decoration: none;
-                    border-radius: 25px;
-                    margin-top: 15px;
-                }}
+                .message-box {{ background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0; }}
+                .btn {{ display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 35px; text-decoration: none; border-radius: 25px; margin: 20px 0; }}
+                .footer {{ background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #999; }}
             </style>
         </head>
         <body>
             <div class="container">
-                <div class="header">
-                    <h1>📧 GRH ENGINEERING</h1>
-                    <p>Communication officielle</p>
-                </div>
+                <div class="header"><h1>📧 GRH ENGINEERING</h1><p>Communication officielle</p></div>
                 <div class="content">
                     <h2>Bonjour,</h2>
-                    <div class="message-box">
-                        {contenu.replace(chr(10), '<br>')}
-                    </div>
-                    <p style="text-align: center;">
+                    <div class="message-box">{contenu.replace(chr(10), '<br>')}</div>
+                    <div style="text-align: center;">
                         <a href="{base_url}/Appl/login" class="btn">🔗 Se connecter</a>
-                    </p>
+                    </div>
                 </div>
                 <div class="footer">
                     <p>GRH ENGINEERING SARL - RDC, Goma</p>
@@ -5260,7 +5219,6 @@ def envoyer_communication(request):
         </html>
         """
         
-        # Envoyer les emails
         emails_envoyes = 0
         erreurs = []
         
@@ -5291,7 +5249,33 @@ def envoyer_communication(request):
             }, status=400)
         
     except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+
+import time
+
+def envoyer_email_avec_retry(email, sujet, html_message, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            plain_message = strip_tags(html_message)
+            email_msg = EmailMultiAlternatives(
+                subject=sujet,
+                body=plain_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[email]
+            )
+            email_msg.attach_alternative(html_message, "text/html")
+            email_msg.send()
+            return True, None
+        except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep(3)  # Attendre 3 secondes avant réessai
+            else:
+                return False, str(e)
+    return False, "Échec"
+
+
 
 
 def ChargerCommunication(request):
