@@ -1371,3 +1371,65 @@ def notifier_resultat_interview(candidature, decision, observation, base_url=Non
         return True, f"Email envoyé à {email_destinataire}"
     except Exception as e:
         return False, str(e)
+
+
+
+
+        # utils.py - Ajoutez ces fonctions
+
+def notifier_contrat_propose(contrat, base_url=None):
+    """Notifie le candidat qu'un contrat lui a été proposé"""
+    from django.core.mail import EmailMultiAlternatives
+    from django.utils.html import strip_tags
+    
+    candidat = contrat.candidat
+    offre = contrat.offre
+    user = candidat.user
+    
+    email_destinataire = user.email if user and user.email else None
+    
+    if not email_destinataire:
+        return False, "Pas d'adresse email"
+    
+    type_contrat = "CDD (Durée déterminée)" if contrat.type_contrat == 'determine' else "CDI (Durée indéterminée)"
+    
+    sujet = f"📄 Contrat proposé pour le poste {offre.titre} - GRH ENGINEERING"
+    
+    html_message = f"""
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="UTF-8"><title>Proposition de contrat - GRH ENGINEERING</title></head>
+    <body style="font-family: Poppins, Arial, sans-serif;">
+        <div style="max-width: 600px; margin: auto; background: white; border-radius: 15px; overflow: hidden;">
+            <div style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); padding: 30px; text-align: center;">
+                <h1 style="color: white;">📄 Proposition de contrat</h1>
+            </div>
+            <div style="padding: 30px;">
+                <h2>Bonjour {candidat.nom} {candidat.prenom},</h2>
+                <p>Félicitations ! Vous avez été retenu pour le poste <strong>"{offre.titre}"</strong>.</p>
+                <p>Un contrat de type <strong>{type_contrat}</strong> vous a été proposé.</p>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                    <p><strong>📝 Détails du contrat :</strong></p>
+                    <p>• Poste : {offre.titre}</p>
+                    <p>• Type : {type_contrat}</p>
+                    {f'<p>• Date début : {contrat.date_debut.strftime("%d/%m/%Y")}</p>' if contrat.date_debut else ''}
+                    {f'<p>• Date fin : {contrat.date_fin.strftime("%d/%m/%Y")}</p>' if contrat.date_fin else ''}
+                </div>
+                <p>Veuillez vous connecter à votre espace candidat pour consulter et valider votre contrat.</p>
+                <div style="text-align: center;">
+                    <a href="{base_url}/Appl/mes-contrats" style="background: #27ae60; color: white; padding: 12px 35px; text-decoration: none; border-radius: 25px;">📄 Voir mon contrat</a>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    try:
+        plain_message = strip_tags(html_message)
+        email = EmailMultiAlternatives(subject=sujet, body=plain_message, from_email=settings.DEFAULT_FROM_EMAIL, to=[email_destinataire])
+        email.attach_alternative(html_message, "text/html")
+        email.send()
+        return True, f"Email envoyé à {email_destinataire}"
+    except Exception as e:
+        return False, str(e)

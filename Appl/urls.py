@@ -421,21 +421,22 @@ urlpatterns = [
     path('api/interviews/supprimer/<int:id_interview>/', views.supprimer_interview, name='supprimer_interview'),
 
 
-    # ==================== CONTRATS ====================
+   # urls.py - Ajoutez ces lignes pour l'admin
+
+    # Contrats admin
+    # urls.py - Ajoutez ces lignes
+
+    # Contrats Admin
+    path('contrats-admin/', views.page_contrats_admin, name='page_contrats_admin'),
+    path('api/contrats/interviews-acceptees/', views.get_interviews_acceptees, name='get_interviews_acceptees'),
+    path('api/contrats/creer/', views.creer_contrat, name='creer_contrat'),
+    path('api/contrats/liste-admin/', views.get_contrats_admin, name='get_contrats_admin'),
+    path('api/contrats/supprimer/<int:id_contrat>/', views.supprimer_contrat, name='supprimer_contrat'),
+
+    # Contrats Candidat
     path('mes-contrats/', views.mes_contrats, name='mes_contrats'),
     path('api/mes-contrats/', views.get_mes_contrats, name='get_mes_contrats'),
-    path('api/contrat/mettre-a-jour/<int:id_contrat>/', views.mettre_a_jour_contrat, name='mettre_a_jour_contrat'),
     path('api/contrat/repondre/<int:id_contrat>/', views.repondre_contrat, name='repondre_contrat'),
-
-    # urls.py - Ajoutez ces lignes pour l'admin
-
-    # Contrats admin
-# urls.py - Ajoutez ces lignes
-
-    # Contrats admin
-    path('api/contrats/candidats-par-offre/<int:id_offre>/', views.get_candidats_par_offre_pour_contrat, name='get_candidats_par_offre_pour_contrat'),
-    path('api/contrats-admin/creer/', views.creer_contrat_admin, name='creer_contrat_admin'),
-    path('api/contrat-admin/supprimer/<int:id_contrat>/', views.supprimer_contrat_admin, name='supprimer_contrat_admin'),
 
 
     path('api/evaluations/candidatures-tests-offre/<int:id_offre>/', views.get_candidatures_tests_par_offre, name='get_candidatures_tests_par_offre'),

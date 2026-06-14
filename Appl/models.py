@@ -478,16 +478,16 @@ class Interview(models.Model):
 
 # models.py - Modèle Contrat corrigé
 
+# models.py - Modèle Contrat simplifié
+
 class Contrat(models.Model):
-    """Modèle pour gérer les contrats des candidats retenus"""
-    
     TYPE_CONTRAT_CHOICES = [
         ('determine', 'Contrat à durée déterminée (CDD)'),
         ('indetermine', 'Contrat à durée indéterminée (CDI)'),
     ]
     
     STATUT_CHOICES = [
-        ('en_attente', 'En attente de signature'),
+        ('en_attente', 'En attente de validation'),
         ('accepte', 'Accepté par le candidat'),
         ('refuse', 'Refusé par le candidat'),
         ('signe', 'Signé'),
@@ -495,56 +495,38 @@ class Contrat(models.Model):
     
     # Relations
     interview = models.OneToOneField('Interview', on_delete=models.CASCADE, related_name='contrat')
-    candidature = models.ForeignKey('Candidature', on_delete=models.CASCADE, related_name='contrats')
-    candidat = models.ForeignKey('Candidat', on_delete=models.CASCADE, related_name='contrats')
     offre = models.ForeignKey('OffreEmploie', on_delete=models.CASCADE, related_name='contrats')
+    candidat = models.ForeignKey('Candidat', on_delete=models.CASCADE, related_name='contrats')
     
-    # Type de contrat (choisi par le candidat)
-    type_contrat = models.CharField(max_length=20, choices=TYPE_CONTRAT_CHOICES, null=True, blank=True)
+    # Type de contrat
+    type_contrat = models.CharField(max_length=20, choices=TYPE_CONTRAT_CHOICES)
     
-    # Informations du contrat
-    titre_contrat = models.CharField(max_length=200, default="Contrat d'engagement professionnel")
-    description = models.TextField(blank=True, null=True)
+    # Fichier du contrat (PDF ou DOC)
+    fichier_contrat = models.FileField(upload_to='contrats/', null=True, blank=True)
     
     # Pour contrat déterminé (CDD)
     date_debut = models.DateField(null=True, blank=True)
     date_fin = models.DateField(null=True, blank=True)
-    duree_mois = models.IntegerField(null=True, blank=True, help_text="Durée en mois pour CDD")
     
-    # Pour contrat indéterminé (CDI)
-    # Pas de dates spécifiques
-    
-    # Rémunération
-    salaire_base = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Salaire de base mensuel")
-    prime = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    
-    # Avantages
-    avantages = models.TextField(blank=True, null=True, help_text="Avantages sociaux (mutuelle, transport, etc.)")
-    
-    # Fichier du contrat (optionnel)
-    fichier_contrat = models.FileField(upload_to='contrats/', null=True, blank=True)
-    
-    # Statut
+    # Statut et motif de refus
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='en_attente')
     motif_refus = models.TextField(blank=True, null=True)
     
     # Dates
-    date_proposition = models.DateTimeField(auto_now_add=True)
+    date_creation = models.DateTimeField(auto_now_add=True)
     date_signature = models.DateTimeField(null=True, blank=True)
     
     class Meta:
         verbose_name = "Contrat"
         verbose_name_plural = "Contrats"
-        ordering = ['-date_proposition']
+        ordering = ['-date_creation']
     
     def __str__(self):
-        type_aff = "CDD" if self.type_contrat == 'determine' else "CDI"
-        return f"Contrat {type_aff} - {self.candidat.nom} - {self.offre.titre}"
+        return f"Contrat {self.candidat.nom} - {self.offre.titre}"
     
     def duree_contrat_str(self):
-        """Retourne la durée du contrat en texte"""
         if self.type_contrat == 'indetermine':
             return "Durée indéterminée"
-        elif self.duree_mois:
-            return f"{self.duree_mois} mois"
+        elif self.date_debut and self.date_fin:
+            return f"Du {self.date_debut.strftime('%d/%m/%Y')} au {self.date_fin.strftime('%d/%m/%Y')}"
         return "À définir"
