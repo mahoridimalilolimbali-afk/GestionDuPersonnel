@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -80,8 +81,8 @@
             margin-bottom: 25px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.08);
         }
-        .btn-print {
-            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        .btn-pdf {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
             color: white;
             border: none;
             padding: 8px 20px;
@@ -89,9 +90,9 @@
             font-weight: 600;
             transition: all 0.3s;
         }
-        .btn-print:hover {
+        .btn-pdf:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52,152,219,0.4);
+            box-shadow: 0 5px 15px rgba(231,76,60,0.4);
             color: white;
         }
         
@@ -140,7 +141,21 @@
             border-radius: 20px;
             font-size: 11px;
         }
-        .badge-conge {
+        .badge-conge-approuve {
+            background: #27ae60;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+        }
+        .badge-conge-refuse {
+            background: #e74c3c;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+        }
+        .badge-conge-attente {
             background: #f39c12;
             color: white;
             padding: 4px 10px;
@@ -162,45 +177,31 @@
             100% { transform: rotate(360deg); }
         }
         
-        /* Impression - CORRIGÉE */
-        @media print {
-            body { background: white; padding: 0; margin: 0; }
-            .btn-back, .btn-print, .nav-tabs-custom, .filters-card button, .no-print, .card-header-custom .btn-back { display: none !important; }
-            .container { max-width: 100%; padding: 0; margin: 0; }
-            .main-card { box-shadow: none; border-radius: 0; }
-            .table-custom { box-shadow: none; }
-            .card-header-custom { background: #2c3e50; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .table-custom thead { background: #2c3e50; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .table-custom thead th { color: white; }
-            .card-body-custom { padding: 0; }
-        }
-        
-        /* Style pour l'impression */
-        .print-only {
-            display: none;
-        }
-        @media print {
-            .print-only {
-                display: block;
-            }
-            .no-print {
-                display: none;
-            }
-        }
-        
         .empty-state {
             text-align: center;
             padding: 50px;
             color: #999;
         }
-        .report-header {
+        
+        /* Style pour le PDF */
+        .pdf-header {
             text-align: center;
             margin-bottom: 30px;
             padding-bottom: 20px;
-            border-bottom: 2px solid #e1e8ed;
+            border-bottom: 2px solid #ddd;
         }
-        .report-header h3 { font-weight: 700; color: #2c3e50; }
-        .report-header p { color: #7f8c8d; margin: 0; }
+        .pdf-header h1 { font-size: 24px; margin-bottom: 5px; }
+        .pdf-header h3 { font-size: 16px; color: #555; margin: 5px 0; }
+        .pdf-header h2 { font-size: 20px; color: #2c3e50; margin: 10px 0; }
+        .pdf-header p { font-size: 12px; color: #777; margin: 5px 0; }
+        .pdf-footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            font-size: 10px;
+            color: #777;
+        }
     </style>
 </head>
 <body>
@@ -244,7 +245,7 @@
             <div class="card-body-custom">
                 <div class="tab-content">
                     
-                    <!-- Tab 1: Candidats par offre (UNIQUEMENT CANDIDATS) -->
+                    <!-- Tab 1: Candidats par offre -->
                     <div class="tab-pane fade show active" id="candidats-offre" role="tabpanel">
                         <div class="filters-card">
                             <div class="row align-items-end">
@@ -255,8 +256,8 @@
                                     </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <button class="btn-print w-100" onclick="imprimerRapport('candidats-offre')">
-                                        <i class="fas fa-print"></i> Imprimer
+                                    <button class="btn-pdf w-100" onclick="telechargerPDF('candidats-offre')">
+                                        <i class="fas fa-file-pdf"></i> Télécharger PDF
                                     </button>
                                 </div>
                             </div>
@@ -269,7 +270,7 @@
                         </div>
                     </div>
                     
-                    <!-- Tab 2: Candidats retenus pour test (UNIQUEMENT CANDIDATS NON AGENTS) -->
+                    <!-- Tab 2: Candidats retenus pour test -->
                     <div class="tab-pane fade" id="candidats-retenus" role="tabpanel">
                         <div class="filters-card">
                             <div class="row align-items-end">
@@ -280,8 +281,8 @@
                                     </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <button class="btn-print w-100" onclick="imprimerRapport('candidats-retenus')">
-                                        <i class="fas fa-print"></i> Imprimer
+                                    <button class="btn-pdf w-100" onclick="telechargerPDF('candidats-retenus')">
+                                        <i class="fas fa-file-pdf"></i> Télécharger PDF
                                     </button>
                                 </div>
                             </div>
@@ -299,14 +300,14 @@
                         <div class="filters-card">
                             <div class="row align-items-end">
                                 <div class="col-md-8">
-                                    <label class="form-label fw-bold"><i class="fas fa-building"></i> Filtre</label>
+                                    <label class="form-label fw-bold"><i class="fas fa-building"></i> Filtre par offre</label>
                                     <select class="form-select" id="offreSelectAgents">
                                         <option value="all">-- Toutes les offres --</option>
                                     </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <button class="btn-print w-100" onclick="imprimerRapport('agents-engages')">
-                                        <i class="fas fa-print"></i> Imprimer
+                                    <button class="btn-pdf w-100" onclick="telechargerPDF('agents-engages')">
+                                        <i class="fas fa-file-pdf"></i> Télécharger PDF
                                     </button>
                                 </div>
                             </div>
@@ -319,21 +320,22 @@
                         </div>
                     </div>
                     
-                    <!-- Tab 4: Agents en congé (UNIQUEMENT APPROUVÉS) -->
+                    <!-- Tab 4: Agents en congé -->
                     <div class="tab-pane fade" id="agents-conge" role="tabpanel">
                         <div class="filters-card">
                             <div class="row align-items-end">
                                 <div class="col-md-8">
                                     <label class="form-label fw-bold"><i class="fas fa-filter"></i> Filtre par statut</label>
                                     <select class="form-select" id="statutCongeSelect">
+                                        <option value="all">Tous les statuts</option>
                                         <option value="approuve">Approuvés</option>
                                         <option value="refuse">Refusés</option>
                                         <option value="en_attente">En attente</option>
                                     </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <button class="btn-print w-100" onclick="imprimerRapport('agents-conge')">
-                                        <i class="fas fa-print"></i> Imprimer
+                                    <button class="btn-pdf w-100" onclick="telechargerPDF('agents-conge')">
+                                        <i class="fas fa-file-pdf"></i> Télécharger PDF
                                     </button>
                                 </div>
                             </div>
@@ -360,71 +362,90 @@
         
         function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
         
-        function imprimerRapport(tabId) {
+        function telechargerPDF(tabId) {
             const content = document.getElementById(tabId + 'Content');
             if (!content) return;
             
-            const tableHtml = content.querySelector('.table-responsive') ? content.querySelector('.table-responsive').innerHTML : content.innerHTML;
-            const titre = getTabTitle(tabId);
+            const tableHtml = content.querySelector('.table-responsive');
+            if (!tableHtml) {
+                Swal.fire({ icon: 'error', title: 'Erreur', text: 'Aucune donnée à exporter' });
+                return;
+            }
             
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Rapport GRH ENGINEERING</title>
-                    <meta charset="UTF-8">
-                    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-                    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-                    <style>
-                        * { margin: 0; padding: 0; box-sizing: border-box; }
-                        body { font-family: 'Poppins', sans-serif; padding: 40px; }
-                        .report-header { text-align: center; margin-bottom: 30px; }
-                        .report-header h1 { font-size: 24px; margin-bottom: 5px; font-weight: 700; }
-                        .report-header h3 { font-size: 16px; color: #555; margin: 5px 0; }
-                        .report-header h2 { font-size: 20px; color: #2c3e50; margin: 10px 0; }
-                        .report-header p { font-size: 12px; color: #777; margin: 5px 0; }
-                        .report-header hr { margin: 15px 0; border-top: 1px solid #ddd; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-                        th { background: #667eea; color: white; font-weight: 600; }
-                        .footer { text-align: center; margin-top: 30px; font-size: 10px; color: #777; }
-                        @media print {
-                            body { margin: 0; padding: 20px; }
-                            .no-print { display: none; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="report-header">
-                        <h1>RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</h1>
-                        <h3>Province du Nord-Kivu - Ville de Goma</h3>
-                        <h2>GRH ENGINEERING SARL</h2>
-                        <p>N° GRH/RDC/NK/GOMA/2026</p>
-                        <hr>
-                        <h4>${titre}</h4>
-                        <p>Date d'édition: ${new Date().toLocaleDateString('fr-FR')}</p>
-                    </div>
-                    <div>
-                        ${tableHtml}
-                    </div>
-                    <div class="footer">
-                        <p>Document certifié conforme - Direction des Ressources Humaines</p>
-                        <p>GRH ENGINEERING SARL - Goma, RDC</p>
-                    </div>
-                </body>
-                </html>
-            `);
-            printWindow.document.close();
-            printWindow.print();
+            const titre = getTabTitle(tabId);
+            const date = new Date().toLocaleDateString('fr-FR');
+            const heure = new Date().toLocaleTimeString('fr-FR');
+            
+            // Créer le contenu HTML pour le PDF
+            const pdfContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Rapport GRH ENGINEERING</title>
+                <style>
+                    body { font-family: 'Poppins', Arial, sans-serif; padding: 40px; margin: 0; }
+                    .pdf-header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #ddd; }
+                    .pdf-header h1 { font-size: 24px; margin-bottom: 5px; font-weight: bold; }
+                    .pdf-header h3 { font-size: 16px; color: #555; margin: 5px 0; }
+                    .pdf-header h2 { font-size: 20px; color: #2c3e50; margin: 10px 0; }
+                    .pdf-header p { font-size: 12px; color: #777; margin: 5px 0; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+                    th { background: #667eea; color: white; font-weight: 600; }
+                    .pdf-footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 10px; color: #777; }
+                </style>
+            </head>
+            <body>
+                <div class="pdf-header">
+                    <h1>RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</h1>
+                    <h3>Province du Nord-Kivu - Ville de Goma</h3>
+                    <h2>GRH ENGINEERING SARL</h2>
+                    <p>N° GRH/RDC/NK/GOMA/2026</p>
+                    <hr>
+                    <h4>${titre}</h4>
+                    <p>Date d'édition: ${date} à ${heure}</p>
+                </div>
+                <div>
+                    ${tableHtml.outerHTML}
+                </div>
+                <div class="pdf-footer">
+                    <p>Document certifié conforme - Direction des Ressources Humaines</p>
+                    <p>GRH ENGINEERING SARL - Goma, RDC</p>
+                </div>
+            </body>
+            </html>
+            `;
+            
+            // Créer un élément temporaire pour le PDF
+            const element = document.createElement('div');
+            element.innerHTML = pdfContent;
+            document.body.appendChild(element);
+            
+            // Options html2pdf
+            const opt = {
+                margin: [0.5, 0.5, 0.5, 0.5],
+                filename: `rapport_${tabId}_${new Date().toISOString().slice(0,19)}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, letterRendering: true },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+            
+            html2pdf().set(opt).from(element).save().then(() => {
+                document.body.removeChild(element);
+                Swal.fire({ icon: 'success', title: 'Succès', text: 'PDF téléchargé avec succès', timer: 2000, showConfirmButton: false });
+            }).catch(err => {
+                document.body.removeChild(element);
+                Swal.fire({ icon: 'error', title: 'Erreur', text: 'Erreur lors de la génération du PDF' });
+            });
         }
         
         function getTabTitle(tabId) {
             const titles = {
                 'candidats-offre': 'LISTE DES CANDIDATS PAR OFFRE',
-                'candidats-retenus': 'LISTE DES CANDIDATS RETENUS POUR LES TESTS',
+                'candidats-retenus': 'LISTE DES CANDIDATS RETENUS POUR LES TESTS (MOYENNE ≥ 70%)',
                 'agents-engages': 'LISTE DES AGENTS ENGAGÉS',
-                'agents-conge': 'LISTE DES AGENTS EN CONGÉ APPROUVÉS'
+                'agents-conge': 'LISTE DES AGENTS EN CONGÉ'
             };
             return titles[tabId] || 'RAPPORT GRH';
         }
@@ -459,7 +480,7 @@
             });
         }
         
-        // 1. Candidats par offre (UNIQUEMENT CANDIDATS)
+        // 1. Candidats par offre
         $('#offreSelectCandidats').on('change', function() {
             const offreId = $(this).val();
             if (!offreId) return;
@@ -512,7 +533,7 @@
             $('#candidatsOffreContent').html(html);
         }
         
-        // 2. Candidats retenus pour test (UNIQUEMENT CANDIDATS NON AGENTS)
+        // 2. Candidats retenus pour test (moyenne ≥ 70%)
         $('#offreSelectRetenus').on('change', function() {
             const offreId = $(this).val();
             if (!offreId) return;
@@ -534,7 +555,7 @@
         
         function afficherCandidatsRetenus(candidats, offreTitre) {
             if (!candidats || candidats.length === 0) {
-                $('#candidatsRetenusContent').html(`<div class="empty-state"><i class="fas fa-folder-open"></i><p>Aucun candidat retenu pour les tests</p></div>`);
+                $('#candidatsRetenusContent').html(`<div class="empty-state"><i class="fas fa-folder-open"></i><p>Aucun candidat retenu pour les tests (moyenne ≥ 70%)</p></div>`);
                 return;
             }
             
@@ -547,12 +568,12 @@
                     <td>${c.sexe}</td>
                     <td>${c.telephone}</td>
                     <td>${c.email || '-'}</td>
-                    <td><span class="badge ${c.moyenne >= 70 ? 'badge-retenu' : 'badge-domaine'}">${c.moyenne}%</span></td>
-                    <td>${c.moyenne >= 70 ? 'Admissible' : 'Non admissible'}</td>
+                    <td><span class="badge-retenu">${c.moyenne}%</span></td>
+                    <td>Admissible pour interview</div>
                 </tr>`;
             });
             
-            html += `</tbody><td></div>`;
+            html += `</tbody></table></div>`;
             $('#candidatsRetenusContent').html(html);
         }
         
@@ -594,7 +615,7 @@
             $('#agentsEngagesContent').html(html);
         }
         
-        // 4. Agents en congé (UNIQUEMENT APPROUVÉS par défaut)
+        // 4. Agents en congé (tous statuts)
         function chargerAgentsConge() {
             $('#agentsCongeContent').html(`<div class="text-center py-5"><div class="loading-spinner"></div><p>Chargement...</p></div>`);
             
@@ -620,8 +641,18 @@
             let html = `<div class="table-responsive"><table class="table table-custom"><thead><tr><th>Agent</th><th>Type de congé</th><th>Période</th><th>Nombre jours</th><th>Statut</th><th>Motif</th></tr></thead><tbody>`;
             
             conges.forEach(c => {
-                let statutClass = c.statut === 'approuve' ? 'badge-retenu' : (c.statut === 'refuse' ? 'badge-domaine' : 'badge-conge');
-                let statutText = c.statut === 'approuve' ? 'Approuvé' : (c.statut === 'refuse' ? 'Refusé' : 'En attente');
+                let statutClass = '';
+                let statutText = '';
+                if (c.statut === 'approuve') {
+                    statutClass = 'badge-conge-approuve';
+                    statutText = '✅ Approuvé';
+                } else if (c.statut === 'refuse') {
+                    statutClass = 'badge-conge-refuse';
+                    statutText = '❌ Refusé';
+                } else {
+                    statutClass = 'badge-conge-attente';
+                    statutText = '⏳ En attente';
+                }
                 
                 html += `<tr>
                     <td><strong>${c.agent_nom}</strong></td>
