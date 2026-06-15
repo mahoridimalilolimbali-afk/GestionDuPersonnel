@@ -684,6 +684,69 @@
             chargerAgentsEngages();
             chargerAgentsConge();
         });
+
+
+
+
+
+
+
+        function imprimerPage(tabId) {
+    const contentDiv = document.getElementById(tabId + 'Content');
+    if (!contentDiv) return;
+    
+    const table = contentDiv.querySelector('table');
+    if (!table) {
+        Swal.fire({ icon: 'error', title: 'Erreur', text: 'Aucun tableau à imprimer' });
+        return;
+    }
+    
+    const titre = getTabTitle(tabId);
+    const date = new Date().toLocaleDateString('fr-FR');
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Rapport GRH ENGINEERING</title>
+            <style>
+                body { font-family: 'Poppins', sans-serif; padding: 40px; }
+                .header { text-align: center; margin-bottom: 30px; }
+                h1 { font-size: 24px; }
+                h2 { font-size: 20px; color: #2c3e50; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+                th { background: #667eea; color: white; }
+                .footer { text-align: center; margin-top: 30px; font-size: 12px; }
+                @media print {
+                    body { margin: 0; padding: 20px; }
+                    .no-print { display: none; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</h1>
+                <h3>Province du Nord-Kivu - Ville de Goma</h3>
+                <h2>GRH ENGINEERING SARL</h2>
+                <p>N° GRH/RDC/NK/GOMA/2026</p>
+                <hr>
+                <h4>${titre}</h4>
+                <p>Date: ${date}</p>
+            </div>
+            ${table.outerHTML}
+            <div class="footer">
+                <p>Document certifié conforme - Direction des Ressources Humaines</p>
+                <p>GRH ENGINEERING SARL - Goma, RDC</p>
+            </div>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+}
     </script>
 </body>
 </html>
