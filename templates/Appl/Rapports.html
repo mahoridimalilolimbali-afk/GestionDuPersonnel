@@ -371,125 +371,134 @@
         function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
         
         function imprimerRapport(tabId) {
-            // Récupérer l'élément contenant le tableau
-            const contentDiv = document.getElementById(tabId + 'Content');
-            if (!contentDiv) {
-                Swal.fire({ icon: 'error', title: 'Erreur', text: 'Contenu non trouvé' });
-                return;
-            }
-            
-            // Chercher le tableau
-            let table = contentDiv.querySelector('table');
-            if (!table) {
-                Swal.fire({ icon: 'error', title: 'Erreur', text: 'Aucun tableau trouvé' });
-                return;
-            }
-            
-            // Vérifier si le tableau a des données
-            const tbody = table.querySelector('tbody');
-            if (!tbody || tbody.querySelectorAll('tr').length === 0) {
-                Swal.fire({ icon: 'error', title: 'Erreur', text: 'Aucune donnée à imprimer' });
-                return;
-            }
-            
-            const titre = getTabTitle(tabId);
-            const date = new Date().toLocaleDateString('fr-FR');
-            const heure = new Date().toLocaleTimeString('fr-FR');
-            
-            // Récupérer le nom de l'offre si applicable
-            let offreNom = '';
-            if (tabId === 'candidats-offre' || tabId === 'candidats-retenus') {
-                const select = document.getElementById(tabId === 'candidats-offre' ? 'offreSelectCandidats' : 'offreSelectRetenus');
-                offreNom = select.options[select.selectedIndex]?.text || '';
-            }
-            
-            // Créer la fenêtre d'impression
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <title>Rapport GRH ENGINEERING</title>
-                    <style>
-                        * { margin: 0; padding: 0; box-sizing: border-box; }
-                        body { 
-                            font-family: 'Poppins', 'Segoe UI', Arial, sans-serif; 
-                            padding: 40px; 
-                            margin: 0;
-                            font-size: 12px;
-                        }
-                        .print-header { 
-                            text-align: center; 
-                            margin-bottom: 30px; 
-                            padding-bottom: 20px; 
-                            border-bottom: 2px solid #333;
-                        }
-                        .print-header h1 { font-size: 22px; margin: 0; font-weight: bold; }
-                        .print-header h3 { font-size: 14px; margin: 5px 0; color: #555; }
-                        .print-header h2 { font-size: 18px; margin: 10px 0; color: #2c3e50; }
-                        .print-header p { font-size: 11px; color: #666; margin: 5px 0; }
-                        table { 
-                            width: 100%; 
-                            border-collapse: collapse; 
-                            margin-top: 20px;
-                            font-size: 11px;
-                        }
-                        th, td { 
-                            border: 1px solid #ddd; 
-                            padding: 8px 6px; 
-                            text-align: center; 
-                        }
-                        th { 
-                            background: #667eea; 
-                            color: white; 
-                            font-weight: 600;
-                        }
-                        .print-footer { 
-                            text-align: center; 
-                            margin-top: 30px; 
-                            padding-top: 20px; 
-                            border-top: 1px solid #ddd; 
-                            font-size: 10px; 
-                            color: #777;
-                        }
-                        @media print {
-                            body { margin: 0; padding: 20px; }
-                            .no-print { display: none; }
-                            th { background: #667eea !important; color: white !important; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="print-header">
-                        <h1>RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</h1>
-                        <h3>Province du Nord-Kivu - Ville de Goma</h3>
-                        <h2>GRH ENGINEERING SARL</h2>
-                        <p>N° GRH/RDC/NK/GOMA/2026</p>
-                        <hr>
-                        <h4>${titre}</h4>
-                        ${offreNom ? `<p><strong>Offre :</strong> ${offreNom}</p>` : ''}
-                        <p>Date d'édition: ${date} à ${heure}</p>
-                    </div>
-                    <div>
-                        ${table.outerHTML}
-                    </div>
-                    <div class="print-footer">
-                        <p>Document certifié conforme - Direction des Ressources Humaines</p>
-                        <p>GRH ENGINEERING SARL - Goma, RDC</p>
-                        <p>Signature et sceau</p>
-                    </div>
-                    <script>
-                        window.onload = function() {
-                            window.print();
-                            setTimeout(function() { window.close(); }, 1000);
-                        };
-                    <\/script>
-                </body>
-                </html>
-            `);
-            printWindow.document.close();
-        }
+    // Convertir l'ID du tab en ID du contenu
+    let contentId = '';
+    if (tabId === 'candidats-offre') contentId = 'candidatsOffreContent';
+    else if (tabId === 'candidats-retenus') contentId = 'candidatsRetenusContent';
+    else if (tabId === 'agents-engages') contentId = 'agentsEngagesContent';
+    else if (tabId === 'agents-conge') contentId = 'agentsCongeContent';
+    
+    const contentDiv = document.getElementById(contentId);
+    if (!contentDiv) {
+        Swal.fire({ icon: 'error', title: 'Erreur', text: 'Contenu non trouvé. ID: ' + contentId });
+        return;
+    }
+    
+    // Chercher le tableau
+    let table = contentDiv.querySelector('table');
+    if (!table) {
+        Swal.fire({ icon: 'error', title: 'Erreur', text: 'Aucun tableau trouvé' });
+        return;
+    }
+    
+    // Vérifier si le tableau a des données
+    const tbody = table.querySelector('tbody');
+    if (!tbody || tbody.querySelectorAll('tr').length === 0) {
+        Swal.fire({ icon: 'error', title: 'Erreur', text: 'Aucune donnée à imprimer' });
+        return;
+    }
+    
+    const titre = getTabTitle(tabId);
+    const date = new Date().toLocaleDateString('fr-FR');
+    const heure = new Date().toLocaleTimeString('fr-FR');
+    
+    // Récupérer le nom de l'offre si applicable
+    let offreNom = '';
+    if (tabId === 'candidats-offre') {
+        const select = document.getElementById('offreSelectCandidats');
+        offreNom = select.options[select.selectedIndex]?.text || '';
+    } else if (tabId === 'candidats-retenus') {
+        const select = document.getElementById('offreSelectRetenus');
+        offreNom = select.options[select.selectedIndex]?.text || '';
+    }
+    
+    // Créer la fenêtre d'impression
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Rapport GRH ENGINEERING</title>
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body { 
+                    font-family: 'Poppins', 'Segoe UI', Arial, sans-serif; 
+                    padding: 40px; 
+                    margin: 0;
+                    font-size: 12px;
+                }
+                .print-header { 
+                    text-align: center; 
+                    margin-bottom: 30px; 
+                    padding-bottom: 20px; 
+                    border-bottom: 2px solid #333;
+                }
+                .print-header h1 { font-size: 22px; margin: 0; font-weight: bold; }
+                .print-header h3 { font-size: 14px; margin: 5px 0; color: #555; }
+                .print-header h2 { font-size: 18px; margin: 10px 0; color: #2c3e50; }
+                .print-header p { font-size: 11px; color: #666; margin: 5px 0; }
+                table { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                    margin-top: 20px;
+                    font-size: 11px;
+                }
+                th, td { 
+                    border: 1px solid #ddd; 
+                    padding: 8px 6px; 
+                    text-align: center; 
+                }
+                th { 
+                    background: #667eea; 
+                    color: white; 
+                    font-weight: 600;
+                }
+                .print-footer { 
+                    text-align: center; 
+                    margin-top: 30px; 
+                    padding-top: 20px; 
+                    border-top: 1px solid #ddd; 
+                    font-size: 10px; 
+                    color: #777;
+                }
+                @media print {
+                    body { margin: 0; padding: 20px; }
+                    .no-print { display: none; }
+                    th { background: #667eea !important; color: white !important; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="print-header">
+                <h1>RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</h1>
+                <h3>Province du Nord-Kivu - Ville de Goma</h3>
+                <h2>GRH ENGINEERING SARL</h2>
+                <p>N° GRH/RDC/NK/GOMA/2026</p>
+                <hr>
+                <h4>${titre}</h4>
+                ${offreNom ? `<p><strong>Offre :</strong> ${offreNom}</p>` : ''}
+                <p>Date d'édition: ${date} à ${heure}</p>
+            </div>
+            <div>
+                ${table.outerHTML}
+            </div>
+            <div class="print-footer">
+                <p>Document certifié conforme - Direction des Ressources Humaines</p>
+                <p>GH ENGINEERING SARL - Goma, RDC</p>
+                <p>Signature et sceau</p>
+            </div>
+            <script>
+                window.onload = function() {
+                    window.print();
+                    setTimeout(function() { window.close(); }, 1000);
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
         
         function getTabTitle(tabId) {
             const titles = {
