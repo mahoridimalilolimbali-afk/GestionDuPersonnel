@@ -54,7 +54,6 @@
         }
         .card-body-custom { padding: 35px; background: #f8f9fa; }
         
-        /* Onglets */
         .nav-tabs-custom {
             border-bottom: 2px solid #e1e8ed;
             padding: 0 35px;
@@ -74,7 +73,6 @@
             background: transparent;
         }
         
-        /* Filtres */
         .filters-card {
             background: white;
             border-radius: 20px;
@@ -97,7 +95,6 @@
             color: white;
         }
         
-        /* Tableau */
         .table-custom {
             background: white;
             border-radius: 20px;
@@ -165,16 +162,30 @@
             100% { transform: rotate(360deg); }
         }
         
-        /* Impression */
+        /* Impression - CORRIGÉE */
         @media print {
             body { background: white; padding: 0; margin: 0; }
-            .btn-back, .btn-print, .nav-tabs-custom, .filters-card button, .no-print { display: none !important; }
+            .btn-back, .btn-print, .nav-tabs-custom, .filters-card button, .no-print, .card-header-custom .btn-back { display: none !important; }
             .container { max-width: 100%; padding: 0; margin: 0; }
             .main-card { box-shadow: none; border-radius: 0; }
             .table-custom { box-shadow: none; }
             .card-header-custom { background: #2c3e50; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .table-custom thead { background: #2c3e50; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .table-custom thead th { color: white; }
+            .card-body-custom { padding: 0; }
+        }
+        
+        /* Style pour l'impression */
+        .print-only {
+            display: none;
+        }
+        @media print {
+            .print-only {
+                display: block;
+            }
+            .no-print {
+                display: none;
+            }
         }
         
         .empty-state {
@@ -233,7 +244,7 @@
             <div class="card-body-custom">
                 <div class="tab-content">
                     
-                    <!-- Tab 1: Candidats par offre -->
+                    <!-- Tab 1: Candidats par offre (UNIQUEMENT CANDIDATS) -->
                     <div class="tab-pane fade show active" id="candidats-offre" role="tabpanel">
                         <div class="filters-card">
                             <div class="row align-items-end">
@@ -244,7 +255,7 @@
                                     </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <button class="btn-print w-100" onclick="imprimerSection('candidats-offre')">
+                                    <button class="btn-print w-100" onclick="imprimerRapport('candidats-offre')">
                                         <i class="fas fa-print"></i> Imprimer
                                     </button>
                                 </div>
@@ -258,7 +269,7 @@
                         </div>
                     </div>
                     
-                    <!-- Tab 2: Candidats retenus pour test -->
+                    <!-- Tab 2: Candidats retenus pour test (UNIQUEMENT CANDIDATS NON AGENTS) -->
                     <div class="tab-pane fade" id="candidats-retenus" role="tabpanel">
                         <div class="filters-card">
                             <div class="row align-items-end">
@@ -269,7 +280,7 @@
                                     </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <button class="btn-print w-100" onclick="imprimerSection('candidats-retenus')">
+                                    <button class="btn-print w-100" onclick="imprimerRapport('candidats-retenus')">
                                         <i class="fas fa-print"></i> Imprimer
                                     </button>
                                 </div>
@@ -294,7 +305,7 @@
                                     </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <button class="btn-print w-100" onclick="imprimerSection('agents-engages')">
+                                    <button class="btn-print w-100" onclick="imprimerRapport('agents-engages')">
                                         <i class="fas fa-print"></i> Imprimer
                                     </button>
                                 </div>
@@ -308,21 +319,20 @@
                         </div>
                     </div>
                     
-                    <!-- Tab 4: Agents en congé -->
+                    <!-- Tab 4: Agents en congé (UNIQUEMENT APPROUVÉS) -->
                     <div class="tab-pane fade" id="agents-conge" role="tabpanel">
                         <div class="filters-card">
                             <div class="row align-items-end">
                                 <div class="col-md-8">
                                     <label class="form-label fw-bold"><i class="fas fa-filter"></i> Filtre par statut</label>
                                     <select class="form-select" id="statutCongeSelect">
-                                        <option value="all">Tous les congés</option>
                                         <option value="approuve">Approuvés</option>
                                         <option value="refuse">Refusés</option>
                                         <option value="en_attente">En attente</option>
                                     </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <button class="btn-print w-100" onclick="imprimerSection('agents-conge')">
+                                    <button class="btn-print w-100" onclick="imprimerRapport('agents-conge')">
                                         <i class="fas fa-print"></i> Imprimer
                                     </button>
                                 </div>
@@ -350,12 +360,12 @@
         
         function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
         
-        function imprimerSection(tabId) {
+        function imprimerRapport(tabId) {
             const content = document.getElementById(tabId + 'Content');
             if (!content) return;
             
-            const originalTitle = document.title;
-            document.title = "Rapport GRH ENGINEERING";
+            const tableHtml = content.querySelector('.table-responsive') ? content.querySelector('.table-responsive').innerHTML : content.innerHTML;
+            const titre = getTabTitle(tabId);
             
             const printWindow = window.open('', '_blank');
             printWindow.document.write(`
@@ -363,17 +373,21 @@
                 <html>
                 <head>
                     <title>Rapport GRH ENGINEERING</title>
+                    <meta charset="UTF-8">
                     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
                     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
                     <style>
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
                         body { font-family: 'Poppins', sans-serif; padding: 40px; }
                         .report-header { text-align: center; margin-bottom: 30px; }
-                        .report-header h1 { font-size: 24px; margin-bottom: 5px; }
-                        .report-header h3 { font-size: 18px; color: #555; }
-                        .report-header p { font-size: 12px; color: #777; }
+                        .report-header h1 { font-size: 24px; margin-bottom: 5px; font-weight: 700; }
+                        .report-header h3 { font-size: 16px; color: #555; margin: 5px 0; }
+                        .report-header h2 { font-size: 20px; color: #2c3e50; margin: 10px 0; }
+                        .report-header p { font-size: 12px; color: #777; margin: 5px 0; }
+                        .report-header hr { margin: 15px 0; border-top: 1px solid #ddd; }
                         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                        th { background: #f2f2f2; }
+                        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+                        th { background: #667eea; color: white; font-weight: 600; }
                         .footer { text-align: center; margin-top: 30px; font-size: 10px; color: #777; }
                         @media print {
                             body { margin: 0; padding: 20px; }
@@ -388,11 +402,11 @@
                         <h2>GRH ENGINEERING SARL</h2>
                         <p>N° GRH/RDC/NK/GOMA/2026</p>
                         <hr>
-                        <h4>${getTabTitle(tabId)}</h4>
+                        <h4>${titre}</h4>
                         <p>Date d'édition: ${new Date().toLocaleDateString('fr-FR')}</p>
                     </div>
                     <div>
-                        ${content.querySelector('.table-responsive') ? content.querySelector('.table-responsive').innerHTML : content.innerHTML}
+                        ${tableHtml}
                     </div>
                     <div class="footer">
                         <p>Document certifié conforme - Direction des Ressources Humaines</p>
@@ -410,7 +424,7 @@
                 'candidats-offre': 'LISTE DES CANDIDATS PAR OFFRE',
                 'candidats-retenus': 'LISTE DES CANDIDATS RETENUS POUR LES TESTS',
                 'agents-engages': 'LISTE DES AGENTS ENGAGÉS',
-                'agents-conge': 'LISTE DES AGENTS EN CONGÉ'
+                'agents-conge': 'LISTE DES AGENTS EN CONGÉ APPROUVÉS'
             };
             return titles[tabId] || 'RAPPORT GRH';
         }
@@ -445,7 +459,7 @@
             });
         }
         
-        // 1. Candidats par offre
+        // 1. Candidats par offre (UNIQUEMENT CANDIDATS)
         $('#offreSelectCandidats').on('change', function() {
             const offreId = $(this).val();
             if (!offreId) return;
@@ -475,13 +489,6 @@
             }
             
             let html = `
-                <div class="report-header" style="display: none;">
-                    <h3>RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</h3>
-                    <p>Province du Nord-Kivu - Ville de Goma</p>
-                    <h2>GRH ENGINEERING SARL</h2>
-                    <p>N° GRH/RDC/NK/GOMA/2026</p>
-                    <h4>Liste des candidats - ${offreTitre}</h4>
-                </div>
                 <div class="table-responsive">
                     <table class="table table-custom">
                         <thead>
@@ -505,7 +512,7 @@
             $('#candidatsOffreContent').html(html);
         }
         
-        // 2. Candidats retenus pour test
+        // 2. Candidats retenus pour test (UNIQUEMENT CANDIDATS NON AGENTS)
         $('#offreSelectRetenus').on('change', function() {
             const offreId = $(this).val();
             if (!offreId) return;
@@ -545,7 +552,7 @@
                 </tr>`;
             });
             
-            html += `</tbody></table></div>`;
+            html += `</tbody><td></div>`;
             $('#candidatsRetenusContent').html(html);
         }
         
@@ -587,7 +594,7 @@
             $('#agentsEngagesContent').html(html);
         }
         
-        // 4. Agents en congé
+        // 4. Agents en congé (UNIQUEMENT APPROUVÉS par défaut)
         function chargerAgentsConge() {
             $('#agentsCongeContent').html(`<div class="text-center py-5"><div class="loading-spinner"></div><p>Chargement...</p></div>`);
             
@@ -620,9 +627,9 @@
                     <td><strong>${c.agent_nom}</strong></td>
                     <td>${c.type_conge}</td>
                     <td>${c.date_debut} → ${c.date_fin}</td>
-                    <td>${c.nombre_jours} jours</td>
-                    <td><span class="${statutClass}">${statutText}</span></td>
-                    <td>${c.motif || '-'}</td>
+                    <td>${c.nombre_jours} jours</div>
+                    <td><span class="${statutClass}">${statutText}</span></div>
+                    <td>${c.motif || '-'}</div>
                 </tr>`;
             });
             

@@ -6353,15 +6353,20 @@ def contrats_admin(request):
 
 
 
-# ==================== RAPPORTS ====================
-
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_candidats_par_offre(request, id_offre):
-    """Rapport: Candidats ayant postulé à une offre"""
+    """Rapport: Candidats ayant postulé à une offre (uniquement ceux avec groupe CANDIDAT)"""
     try:
         offre = get_object_or_404(OffreEmploie, id=id_offre)
-        candidatures = Candidature.objects.filter(offre=offre).select_related('candidat')
+        
+        # Récupérer les IDs des candidats qui sont devenus agents
+        agents_ids = Agent.objects.values_list('candidat_id', flat=True)
+        
+        # Filtrer les candidatures pour exclure ceux qui sont agents
+        candidatures = Candidature.objects.filter(offre=offre).exclude(
+            candidat_id__in=agents_ids
+        ).select_related('candidat')
         
         data = []
         for c in candidatures:
@@ -6382,7 +6387,7 @@ def get_candidats_par_offre(request, id_offre):
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_candidats_retenus_test(request, id_offre):
-    """Rapport: Candidats ayant réussi les tests (moyenne ≥ 70%)"""
+    """Rapport: Candidats ayant réussi les tests (moyenne ≥ 70%) - UNIQUEMENT NON AGENTS"""
     try:
         offre = get_object_or_404(OffreEmploie, id=id_offre)
         type_decision_accepter = TypeDecision.objects.filter(Description__icontains='Accepter').first()
@@ -6390,10 +6395,14 @@ def get_candidats_retenus_test(request, id_offre):
         if not type_decision_accepter:
             return JsonResponse({'success': True, 'candidats': [], 'offre_titre': offre.titre})
         
+        # Récupérer les IDs des candidats qui sont devenus agents
+        agents_ids = Agent.objects.values_list('candidat_id', flat=True)
+        
+        # Filtrer pour exclure les agents
         candidatures = Candidature.objects.filter(
             offre=offre,
             decisions__type_decision=type_decision_accepter
-        ).select_related('candidat')
+        ).exclude(candidat_id__in=agents_ids).select_related('candidat')
         
         data = []
         for c in candidatures:
@@ -6419,58 +6428,23 @@ def get_candidats_retenus_test(request, id_offre):
 
 @csrf_exempt
 @require_http_methods(["GET"])
-def get_agents_engages(request):
-    """Rapport: Liste des agents engagés"""
-    try:
-        agents = Agent.objects.select_related('candidat').all()
-        
-        data = []
-        for a in agents:
-            # Récupérer l'offre via la candidature ou le contrat
-            offre_titre = "Non spécifiée"
-            try:
-                contrat = Contrat.objects.filter(candidat=a.candidat).first()
-                if contrat:
-                    offre_titre = contrat.offre.titre
-            except:
-                pass
-            
-            data.append({
-                'id': a.id,
-                'matricule': a.matricule or '-',
-                'nom': f"{a.candidat.nom} {a.candidat.postnom} {a.candidat.prenom}",
-                'sexe': a.candidat.sexe,
-                'telephone': a.candidat.numeroTelephone,
-                'offre_titre': offre_titre,
-                'date_retenu': a.date_retenu.strftime('%d/%m/%Y')
-            })
-        
-        return JsonResponse({'success': True, 'agents': data})
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
-
-
-@csrf_exempt
-@require_http_methods(["GET"])
 def get_agents_conge(request):
-    """Rapport: Agents en congé"""
+    """Rapport: Agents en congé APPROUVÉS uniquement"""
     try:
-        statut = request.GET.get('statut', 'all')
+        statut = request.GET.get('statut', 'approuve')  # Par défaut, seulement approuvés
         
-        demandes = DemandeConge.objects.select_related('agent__candidat', 'type_conge')
+        # Récupérer uniquement les demandes avec analyse approuvée
+        from django.db.models import Q
         
-        if statut != 'all':
+        demandes = DemandeConge.objects.filter(
+            analyse__decision='approuve'
+        ).select_related('agent__candidat', 'type_conge')
+        
+        if statut != 'all' and statut != 'approuve':
             demandes = demandes.filter(analyse__decision=statut)
         
         data = []
         for d in demandes:
-            # Récupérer le statut depuis l'analyse
-            statut_demande = 'en_attente'
-            try:
-                statut_demande = d.analyse.decision
-            except:
-                pass
-            
             data.append({
                 'id': d.id,
                 'agent_nom': f"{d.agent.candidat.nom} {d.agent.candidat.prenom}",
@@ -6478,11 +6452,10 @@ def get_agents_conge(request):
                 'date_debut': d.date_debut.strftime('%d/%m/%Y'),
                 'date_fin': d.date_fin.strftime('%d/%m/%Y'),
                 'nombre_jours': d.nombre_jours,
-                'statut': statut_demande,
+                'statut': 'approuve',
                 'motif': d.motif
             })
         
         return JsonResponse({'success': True, 'conges': data})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
-    
