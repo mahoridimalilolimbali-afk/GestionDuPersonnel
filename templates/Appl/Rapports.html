@@ -182,17 +182,6 @@
             padding: 50px;
             color: #999;
         }
-        
-        /* Style pour l'impression */
-        @media print {
-            body { background: white; padding: 0; margin: 0; }
-            .btn-back, .btn-pdf, .nav-tabs-custom, .filters-card, .no-print { display: none !important; }
-            .container { max-width: 100%; padding: 0; margin: 0; }
-            .main-card { box-shadow: none; border-radius: 0; }
-            .card-header-custom { background: #2c3e50; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .table-custom thead { background: #2c3e50; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .table-custom thead th { color: white; }
-        }
     </style>
 </head>
 <body>
@@ -355,14 +344,22 @@
         
         function telechargerPDF(tabId) {
             // Récupérer l'élément contenant le tableau
-            const content = document.getElementById(tabId + 'Content');
-            if (!content) {
+            const contentDiv = document.getElementById(tabId + 'Content');
+            if (!contentDiv) {
                 Swal.fire({ icon: 'error', title: 'Erreur', text: 'Contenu non trouvé' });
                 return;
             }
             
-            const tableHtml = content.querySelector('.table-responsive');
-            if (!tableHtml || !tableHtml.querySelector('table') || tableHtml.querySelectorAll('table tbody tr').length === 0) {
+            // Chercher le tableau dans le contenu
+            const table = contentDiv.querySelector('table');
+            if (!table) {
+                Swal.fire({ icon: 'error', title: 'Erreur', text: 'Aucun tableau trouvé' });
+                return;
+            }
+            
+            // Vérifier si le tableau a des données
+            const tbody = table.querySelector('tbody');
+            if (!tbody || tbody.querySelectorAll('tr').length === 0) {
                 Swal.fire({ icon: 'error', title: 'Erreur', text: 'Aucune donnée à exporter' });
                 return;
             }
@@ -370,6 +367,12 @@
             const titre = getTabTitle(tabId);
             const date = new Date().toLocaleDateString('fr-FR');
             const heure = new Date().toLocaleTimeString('fr-FR');
+            
+            // Copier le tableau et l'envelopper dans un div avec les styles
+            const tableClone = table.cloneNode(true);
+            const wrapper = document.createElement('div');
+            wrapper.className = 'table-responsive';
+            wrapper.appendChild(tableClone);
             
             // Créer le contenu HTML pour le PDF
             const pdfContent = `
@@ -403,7 +406,7 @@
                     <p>Date d'édition: ${date} à ${heure}</p>
                 </div>
                 <div>
-                    ${tableHtml.outerHTML}
+                    ${wrapper.outerHTML}
                 </div>
                 <div class="pdf-footer">
                     <p>Document certifié conforme - Direction des Ressources Humaines</p>
@@ -664,7 +667,7 @@
                 </tr>`;
             });
             
-            html += `</tbody></table></div>`;
+            html += `</tbody></tr></div>`;
             $('#agentsCongeContent').html(html);
         }
         
