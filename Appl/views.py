@@ -6353,6 +6353,41 @@ def contrats_admin(request):
 
 
 
+# ==================== RAPPORTS ====================
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_agents_engages(request):
+    """Rapport: Liste des agents engagés"""
+    try:
+        agents = Agent.objects.select_related('candidat').all()
+        
+        data = []
+        for a in agents:
+            # Récupérer l'offre via la candidature ou le contrat
+            offre_titre = "Non spécifiée"
+            try:
+                contrat = Contrat.objects.filter(candidat=a.candidat).first()
+                if contrat:
+                    offre_titre = contrat.offre.titre
+            except:
+                pass
+            
+            data.append({
+                'id': a.id,
+                'matricule': a.matricule or '-',
+                'nom': f"{a.candidat.nom} {a.candidat.postnom} {a.candidat.prenom}",
+                'sexe': a.candidat.sexe,
+                'telephone': a.candidat.numeroTelephone,
+                'offre_titre': offre_titre,
+                'date_retenu': a.date_retenu.strftime('%d/%m/%Y')
+            })
+        
+        return JsonResponse({'success': True, 'agents': data})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_candidats_par_offre(request, id_offre):
