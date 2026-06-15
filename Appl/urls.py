@@ -448,6 +448,12 @@ urlpatterns = [
     path('api/interviews/enregistrer/', views.enregistrer_interview, name='enregistrer_interview'),
     path('api/interviews/get/<int:id_interview>/', views.get_interview_by_id, name='get_interview_by_id'),
     path('api/interviews/modifier/<int:id_interview>/', views.modifier_interview, name='modifier_interview'),
+        # Rapports
+    path('rapports/', views.rapports_page, name='rapports_page'),
+    path('api/rapports/candidats-par-offre/<int:id_offre>/', views.get_candidats_par_offre, name='get_candidats_par_offre'),
+    path('api/rapports/candidats-retenus-test/<int:id_offre>/', views.get_candidats_retenus_test, name='get_candidats_retenus_test'),
+    path('api/rapports/agents-engages/', views.get_agents_engages, name='get_agents_engages'),
+    path('api/rapports/agents-conge/', views.get_agents_conge, name='get_agents_conge'),
 ]
 # Servir les fichiers média en développement
 if settings.DEBUG:

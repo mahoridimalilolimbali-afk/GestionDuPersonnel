@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>Rapports - GRH ENGINEERING SARL</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { max-width: 1400px; margin: auto; }
+        .main-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .card-header-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 25px 35px;
+            color: white;
+        }
+        .header-title {
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .btn-back {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            transition: all 0.3s;
+        }
+        .btn-back:hover {
+            background: rgba(255,255,255,0.3);
+            color: white;
+        }
+        .card-body-custom { padding: 35px; background: #f8f9fa; }
+        
+        /* Onglets */
+        .nav-tabs-custom {
+            border-bottom: 2px solid #e1e8ed;
+            padding: 0 35px;
+            background: white;
+        }
+        .nav-tabs-custom .nav-link {
+            border: none;
+            padding: 15px 25px;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s;
+        }
+        .nav-tabs-custom .nav-link:hover { color: #667eea; }
+        .nav-tabs-custom .nav-link.active {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            background: transparent;
+        }
+        
+        /* Filtres */
+        .filters-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        .btn-print {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-print:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52,152,219,0.4);
+            color: white;
+        }
+        
+        /* Tableau */
+        .table-custom {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            width: 100%;
+        }
+        .table-custom thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .table-custom thead th {
+            color: white;
+            font-weight: 600;
+            padding: 15px 12px;
+            border: none;
+            font-size: 13px;
+            text-align: center;
+        }
+        .table-custom tbody tr {
+            transition: all 0.3s ease;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .table-custom tbody tr:hover {
+            background: #f8f9ff;
+        }
+        .table-custom tbody td {
+            padding: 12px;
+            vertical-align: middle;
+            text-align: center;
+        }
+        
+        .badge-domaine {
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+            color: #667eea;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+        }
+        .badge-retenu {
+            background: #27ae60;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+        }
+        .badge-conge {
+            background: #f39c12;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Impression */
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .btn-back, .btn-print, .nav-tabs-custom, .filters-card button, .no-print { display: none !important; }
+            .container { max-width: 100%; padding: 0; margin: 0; }
+            .main-card { box-shadow: none; border-radius: 0; }
+            .table-custom { box-shadow: none; }
+            .card-header-custom { background: #2c3e50; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .table-custom thead { background: #2c3e50; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .table-custom thead th { color: white; }
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 50px;
+            color: #999;
+        }
+        .report-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e1e8ed;
+        }
+        .report-header h3 { font-weight: 700; color: #2c3e50; }
+        .report-header p { color: #7f8c8d; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-card">
+            <div class="card-header-custom">
+                <div class="header-title">
+                    <div>
+                        <i class="fas fa-chart-line"></i>
+                        <span>Gestion des Rapports</span>
+                    </div>
+                    <a href="/Appl/dashboardAdmin" class="btn-back">
+                        <i class="fas fa-arrow-left"></i> Retour Dashboard
+                    </a>
+                </div>
+            </div>
+            
+            <ul class="nav nav-tabs nav-tabs-custom" id="reportTab" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active" id="candidats-offre-tab" data-bs-toggle="tab" data-bs-target="#candidats-offre" type="button">
+                        <i class="fas fa-users"></i> Candidats par offre
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="candidats-retenus-tab" data-bs-toggle="tab" data-bs-target="#candidats-retenus" type="button">
+                        <i class="fas fa-user-check"></i> Candidats retenus (tests)
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="agents-engages-tab" data-bs-toggle="tab" data-bs-target="#agents-engages" type="button">
+                        <i class="fas fa-user-tie"></i> Agents engagés
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="agents-conge-tab" data-bs-toggle="tab" data-bs-target="#agents-conge" type="button">
+                        <i class="fas fa-umbrella-beach"></i> Agents en congé
+                    </button>
+                </li>
+            </ul>
+            
+            <div class="card-body-custom">
+                <div class="tab-content">
+                    
+                    <!-- Tab 1: Candidats par offre -->
+                    <div class="tab-pane fade show active" id="candidats-offre" role="tabpanel">
+                        <div class="filters-card">
+                            <div class="row align-items-end">
+                                <div class="col-md-8">
+                                    <label class="form-label fw-bold"><i class="fas fa-briefcase"></i> Sélectionner une offre</label>
+                                    <select class="form-select" id="offreSelectCandidats">
+                                        <option value="">-- Chargement des offres... --</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <button class="btn-print w-100" onclick="imprimerSection('candidats-offre')">
+                                        <i class="fas fa-print"></i> Imprimer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="candidatsOffreContent">
+                            <div class="text-center py-5">
+                                <div class="loading-spinner"></div>
+                                <p class="mt-3">Sélectionnez une offre pour voir les candidats</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tab 2: Candidats retenus pour test -->
+                    <div class="tab-pane fade" id="candidats-retenus" role="tabpanel">
+                        <div class="filters-card">
+                            <div class="row align-items-end">
+                                <div class="col-md-8">
+                                    <label class="form-label fw-bold"><i class="fas fa-briefcase"></i> Sélectionner une offre</label>
+                                    <select class="form-select" id="offreSelectRetenus">
+                                        <option value="">-- Chargement des offres... --</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <button class="btn-print w-100" onclick="imprimerSection('candidats-retenus')">
+                                        <i class="fas fa-print"></i> Imprimer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="candidatsRetenusContent">
+                            <div class="text-center py-5">
+                                <div class="loading-spinner"></div>
+                                <p class="mt-3">Sélectionnez une offre pour voir les candidats retenus</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tab 3: Agents engagés -->
+                    <div class="tab-pane fade" id="agents-engages" role="tabpanel">
+                        <div class="filters-card">
+                            <div class="row align-items-end">
+                                <div class="col-md-8">
+                                    <label class="form-label fw-bold"><i class="fas fa-building"></i> Filtre</label>
+                                    <select class="form-select" id="offreSelectAgents">
+                                        <option value="all">-- Toutes les offres --</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <button class="btn-print w-100" onclick="imprimerSection('agents-engages')">
+                                        <i class="fas fa-print"></i> Imprimer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="agentsEngagesContent">
+                            <div class="text-center py-5">
+                                <div class="loading-spinner"></div>
+                                <p class="mt-3">Chargement des agents engagés...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tab 4: Agents en congé -->
+                    <div class="tab-pane fade" id="agents-conge" role="tabpanel">
+                        <div class="filters-card">
+                            <div class="row align-items-end">
+                                <div class="col-md-8">
+                                    <label class="form-label fw-bold"><i class="fas fa-filter"></i> Filtre par statut</label>
+                                    <select class="form-select" id="statutCongeSelect">
+                                        <option value="all">Tous les congés</option>
+                                        <option value="approuve">Approuvés</option>
+                                        <option value="refuse">Refusés</option>
+                                        <option value="en_attente">En attente</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <button class="btn-print w-100" onclick="imprimerSection('agents-conge')">
+                                        <i class="fas fa-print"></i> Imprimer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="agentsCongeContent">
+                            <div class="text-center py-5">
+                                <div class="loading-spinner"></div>
+                                <p class="mt-3">Chargement des agents en congé...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        let offresData = [];
+        
+        function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
+        
+        function imprimerSection(tabId) {
+            const content = document.getElementById(tabId + 'Content');
+            if (!content) return;
+            
+            const originalTitle = document.title;
+            document.title = "Rapport GRH ENGINEERING";
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Rapport GRH ENGINEERING</title>
+                    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+                    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+                    <style>
+                        body { font-family: 'Poppins', sans-serif; padding: 40px; }
+                        .report-header { text-align: center; margin-bottom: 30px; }
+                        .report-header h1 { font-size: 24px; margin-bottom: 5px; }
+                        .report-header h3 { font-size: 18px; color: #555; }
+                        .report-header p { font-size: 12px; color: #777; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th { background: #f2f2f2; }
+                        .footer { text-align: center; margin-top: 30px; font-size: 10px; color: #777; }
+                        @media print {
+                            body { margin: 0; padding: 20px; }
+                            .no-print { display: none; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="report-header">
+                        <h1>RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</h1>
+                        <h3>Province du Nord-Kivu - Ville de Goma</h3>
+                        <h2>GRH ENGINEERING SARL</h2>
+                        <p>N° GRH/RDC/NK/GOMA/2026</p>
+                        <hr>
+                        <h4>${getTabTitle(tabId)}</h4>
+                        <p>Date d'édition: ${new Date().toLocaleDateString('fr-FR')}</p>
+                    </div>
+                    <div>
+                        ${content.querySelector('.table-responsive') ? content.querySelector('.table-responsive').innerHTML : content.innerHTML}
+                    </div>
+                    <div class="footer">
+                        <p>Document certifié conforme - Direction des Ressources Humaines</p>
+                        <p>GRH ENGINEERING SARL - Goma, RDC</p>
+                    </div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        }
+        
+        function getTabTitle(tabId) {
+            const titles = {
+                'candidats-offre': 'LISTE DES CANDIDATS PAR OFFRE',
+                'candidats-retenus': 'LISTE DES CANDIDATS RETENUS POUR LES TESTS',
+                'agents-engages': 'LISTE DES AGENTS ENGAGÉS',
+                'agents-conge': 'LISTE DES AGENTS EN CONGÉ'
+            };
+            return titles[tabId] || 'RAPPORT GRH';
+        }
+        
+        // Charger les offres
+        function chargerOffres() {
+            $.ajax({
+                url: '/api/offres/',
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        offresData = response.offres;
+                        const selectCandidats = $('#offreSelectCandidats');
+                        const selectRetenus = $('#offreSelectRetenus');
+                        const selectAgents = $('#offreSelectAgents');
+                        
+                        selectCandidats.empty();
+                        selectRetenus.empty();
+                        selectAgents.empty();
+                        
+                        selectCandidats.append('<option value="">-- Sélectionnez une offre --</option>');
+                        selectRetenus.append('<option value="">-- Sélectionnez une offre --</option>');
+                        selectAgents.append('<option value="all">-- Toutes les offres --</option>');
+                        
+                        response.offres.forEach(offre => {
+                            selectCandidats.append(`<option value="${offre.id}">${offre.titre}</option>`);
+                            selectRetenus.append(`<option value="${offre.id}">${offre.titre}</option>`);
+                            selectAgents.append(`<option value="${offre.id}">${offre.titre}</option>`);
+                        });
+                    }
+                }
+            });
+        }
+        
+        // 1. Candidats par offre
+        $('#offreSelectCandidats').on('change', function() {
+            const offreId = $(this).val();
+            if (!offreId) return;
+            
+            $('#candidatsOffreContent').html(`<div class="text-center py-5"><div class="loading-spinner"></div><p>Chargement...</p></div>`);
+            
+            $.ajax({
+                url: `/api/rapports/candidats-par-offre/${offreId}/`,
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        afficherCandidatsParOffre(response.candidats, response.offre_titre);
+                    } else {
+                        $('#candidatsOffreContent').html(`<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Erreur de chargement</p></div>`);
+                    }
+                },
+                error: function() {
+                    $('#candidatsOffreContent').html(`<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Erreur de connexion</p></div>`);
+                }
+            });
+        });
+        
+        function afficherCandidatsParOffre(candidats, offreTitre) {
+            if (!candidats || candidats.length === 0) {
+                $('#candidatsOffreContent').html(`<div class="empty-state"><i class="fas fa-folder-open"></i><p>Aucun candidat pour cette offre</p></div>`);
+                return;
+            }
+            
+            let html = `
+                <div class="report-header" style="display: none;">
+                    <h3>RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</h3>
+                    <p>Province du Nord-Kivu - Ville de Goma</p>
+                    <h2>GRH ENGINEERING SARL</h2>
+                    <p>N° GRH/RDC/NK/GOMA/2026</p>
+                    <h4>Liste des candidats - ${offreTitre}</h4>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr><th>ID</th><th>Nom complet</th><th>Sexe</th><th>Téléphone</th><th>Email</th><th>Date candidature</th></tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            candidats.forEach(c => {
+                html += `<tr>
+                    <td>${c.id}</td>
+                    <td>${c.nom}</td>
+                    <td>${c.sexe}</td>
+                    <td>${c.telephone}</td>
+                    <td>${c.email || '-'}</td>
+                    <td>${c.date_candidature}</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table></div>`;
+            $('#candidatsOffreContent').html(html);
+        }
+        
+        // 2. Candidats retenus pour test
+        $('#offreSelectRetenus').on('change', function() {
+            const offreId = $(this).val();
+            if (!offreId) return;
+            
+            $('#candidatsRetenusContent').html(`<div class="text-center py-5"><div class="loading-spinner"></div><p>Chargement...</p></div>`);
+            
+            $.ajax({
+                url: `/api/rapports/candidats-retenus-test/${offreId}/`,
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        afficherCandidatsRetenus(response.candidats, response.offre_titre);
+                    } else {
+                        $('#candidatsRetenusContent').html(`<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Erreur de chargement</p></div>`);
+                    }
+                }
+            });
+        });
+        
+        function afficherCandidatsRetenus(candidats, offreTitre) {
+            if (!candidats || candidats.length === 0) {
+                $('#candidatsRetenusContent').html(`<div class="empty-state"><i class="fas fa-folder-open"></i><p>Aucun candidat retenu pour les tests</p></div>`);
+                return;
+            }
+            
+            let html = `<div class="table-responsive"><table class="table table-custom"><thead><tr><th>ID</th><th>Nom complet</th><th>Sexe</th><th>Téléphone</th><th>Email</th><th>Moyenne</th><th>Statut</th></tr></thead><tbody>`;
+            
+            candidats.forEach(c => {
+                html += `<tr>
+                    <td>${c.id}</td>
+                    <td>${c.nom}</td>
+                    <td>${c.sexe}</td>
+                    <td>${c.telephone}</td>
+                    <td>${c.email || '-'}</td>
+                    <td><span class="badge ${c.moyenne >= 70 ? 'badge-retenu' : 'badge-domaine'}">${c.moyenne}%</span></td>
+                    <td>${c.moyenne >= 70 ? 'Admissible' : 'Non admissible'}</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table></div>`;
+            $('#candidatsRetenusContent').html(html);
+        }
+        
+        // 3. Agents engagés
+        function chargerAgentsEngages() {
+            $('#agentsEngagesContent').html(`<div class="text-center py-5"><div class="loading-spinner"></div><p>Chargement...</p></div>`);
+            
+            $.ajax({
+                url: '/api/rapports/agents-engages/',
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        afficherAgentsEngages(response.agents);
+                    }
+                }
+            });
+        }
+        
+        function afficherAgentsEngages(agents) {
+            if (!agents || agents.length === 0) {
+                $('#agentsEngagesContent').html(`<div class="empty-state"><i class="fas fa-folder-open"></i><p>Aucun agent engagé</p></div>`);
+                return;
+            }
+            
+            let html = `<div class="table-responsive"><table class="table table-custom"><thead><tr><th>Matricule</th><th>Nom complet</th><th>Sexe</th><th>Téléphone</th><th>Offre</th><th>Date recrutement</th></tr></thead><tbody>`;
+            
+            agents.forEach(a => {
+                html += `<tr>
+                    <td><strong>${a.matricule || '-'}</strong></td>
+                    <td>${a.nom}</td>
+                    <td>${a.sexe}</td>
+                    <td>${a.telephone}</td>
+                    <td>${a.offre_titre}</td>
+                    <td>${a.date_retenu}</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table></div>`;
+            $('#agentsEngagesContent').html(html);
+        }
+        
+        // 4. Agents en congé
+        function chargerAgentsConge() {
+            $('#agentsCongeContent').html(`<div class="text-center py-5"><div class="loading-spinner"></div><p>Chargement...</p></div>`);
+            
+            const statut = $('#statutCongeSelect').val();
+            
+            $.ajax({
+                url: `/api/rapports/agents-conge/?statut=${statut}`,
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        afficherAgentsConge(response.conges);
+                    }
+                }
+            });
+        }
+        
+        function afficherAgentsConge(conges) {
+            if (!conges || conges.length === 0) {
+                $('#agentsCongeContent').html(`<div class="empty-state"><i class="fas fa-folder-open"></i><p>Aucune demande de congé</p></div>`);
+                return;
+            }
+            
+            let html = `<div class="table-responsive"><table class="table table-custom"><thead><tr><th>Agent</th><th>Type de congé</th><th>Période</th><th>Nombre jours</th><th>Statut</th><th>Motif</th></tr></thead><tbody>`;
+            
+            conges.forEach(c => {
+                let statutClass = c.statut === 'approuve' ? 'badge-retenu' : (c.statut === 'refuse' ? 'badge-domaine' : 'badge-conge');
+                let statutText = c.statut === 'approuve' ? 'Approuvé' : (c.statut === 'refuse' ? 'Refusé' : 'En attente');
+                
+                html += `<tr>
+                    <td><strong>${c.agent_nom}</strong></td>
+                    <td>${c.type_conge}</td>
+                    <td>${c.date_debut} → ${c.date_fin}</td>
+                    <td>${c.nombre_jours} jours</td>
+                    <td><span class="${statutClass}">${statutText}</span></td>
+                    <td>${c.motif || '-'}</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table></div>`;
+            $('#agentsCongeContent').html(html);
+        }
+        
+        $('#statutCongeSelect').on('change', function() {
+            chargerAgentsConge();
+        });
+        
+        // Initialisation
+        $(document).ready(function() {
+            chargerOffres();
+            chargerAgentsEngages();
+            chargerAgentsConge();
+        });
+    </script>
+</body>
+</html>

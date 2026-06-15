@@ -114,6 +114,10 @@ def ChargerDashboardAgent(request):
 @login_required
 def ChargerMessagerie(request):
     return render (request,"Appl/Messagerie.html")
+@login_required
+def rapports_page(request):
+    """Page des rapports"""
+    return render(request, 'Appl/Rapports.html')
 
 
 
@@ -6345,3 +6349,140 @@ def repondre_contrat(request, id_contrat):
 def contrats_admin(request):
     """Page admin pour gérer les contrats"""
     return render(request, 'Appl/ContratsAdmin.html')
+
+
+
+
+# ==================== RAPPORTS ====================
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_candidats_par_offre(request, id_offre):
+    """Rapport: Candidats ayant postulé à une offre"""
+    try:
+        offre = get_object_or_404(OffreEmploie, id=id_offre)
+        candidatures = Candidature.objects.filter(offre=offre).select_related('candidat')
+        
+        data = []
+        for c in candidatures:
+            data.append({
+                'id': c.candidat.id,
+                'nom': f"{c.candidat.nom} {c.candidat.postnom} {c.candidat.prenom}",
+                'sexe': c.candidat.sexe,
+                'telephone': c.candidat.numeroTelephone,
+                'email': c.candidat.user.email if c.candidat.user else None,
+                'date_candidature': c.date_soumission.strftime('%d/%m/%Y')
+            })
+        
+        return JsonResponse({'success': True, 'candidats': data, 'offre_titre': offre.titre})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_candidats_retenus_test(request, id_offre):
+    """Rapport: Candidats ayant réussi les tests (moyenne ≥ 70%)"""
+    try:
+        offre = get_object_or_404(OffreEmploie, id=id_offre)
+        type_decision_accepter = TypeDecision.objects.filter(Description__icontains='Accepter').first()
+        
+        if not type_decision_accepter:
+            return JsonResponse({'success': True, 'candidats': [], 'offre_titre': offre.titre})
+        
+        candidatures = Candidature.objects.filter(
+            offre=offre,
+            decisions__type_decision=type_decision_accepter
+        ).select_related('candidat')
+        
+        data = []
+        for c in candidatures:
+            evaluations = Evaluation.objects.filter(candidature=c)
+            if evaluations.exists():
+                moyenne = sum(e.note for e in evaluations) / evaluations.count()
+            else:
+                moyenne = 0
+            
+            data.append({
+                'id': c.candidat.id,
+                'nom': f"{c.candidat.nom} {c.candidat.postnom} {c.candidat.prenom}",
+                'sexe': c.candidat.sexe,
+                'telephone': c.candidat.numeroTelephone,
+                'email': c.candidat.user.email if c.candidat.user else None,
+                'moyenne': round(moyenne, 2)
+            })
+        
+        return JsonResponse({'success': True, 'candidats': data, 'offre_titre': offre.titre})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_agents_engages(request):
+    """Rapport: Liste des agents engagés"""
+    try:
+        agents = Agent.objects.select_related('candidat').all()
+        
+        data = []
+        for a in agents:
+            # Récupérer l'offre via la candidature ou le contrat
+            offre_titre = "Non spécifiée"
+            try:
+                contrat = Contrat.objects.filter(candidat=a.candidat).first()
+                if contrat:
+                    offre_titre = contrat.offre.titre
+            except:
+                pass
+            
+            data.append({
+                'id': a.id,
+                'matricule': a.matricule or '-',
+                'nom': f"{a.candidat.nom} {a.candidat.postnom} {a.candidat.prenom}",
+                'sexe': a.candidat.sexe,
+                'telephone': a.candidat.numeroTelephone,
+                'offre_titre': offre_titre,
+                'date_retenu': a.date_retenu.strftime('%d/%m/%Y')
+            })
+        
+        return JsonResponse({'success': True, 'agents': data})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_agents_conge(request):
+    """Rapport: Agents en congé"""
+    try:
+        statut = request.GET.get('statut', 'all')
+        
+        demandes = DemandeConge.objects.select_related('agent__candidat', 'type_conge')
+        
+        if statut != 'all':
+            demandes = demandes.filter(analyse__decision=statut)
+        
+        data = []
+        for d in demandes:
+            # Récupérer le statut depuis l'analyse
+            statut_demande = 'en_attente'
+            try:
+                statut_demande = d.analyse.decision
+            except:
+                pass
+            
+            data.append({
+                'id': d.id,
+                'agent_nom': f"{d.agent.candidat.nom} {d.agent.candidat.prenom}",
+                'type_conge': d.type_conge.designation,
+                'date_debut': d.date_debut.strftime('%d/%m/%Y'),
+                'date_fin': d.date_fin.strftime('%d/%m/%Y'),
+                'nombre_jours': d.nombre_jours,
+                'statut': statut_demande,
+                'motif': d.motif
+            })
+        
+        return JsonResponse({'success': True, 'conges': data})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    
