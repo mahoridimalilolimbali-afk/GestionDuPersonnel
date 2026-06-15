@@ -154,16 +154,18 @@ LOGIN_URL='/Appl/login/'
 
 # CONFIGURATION EMAIL DJANGO
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# settings.py - Configuration SendGrid
 
-EMAIL_HOST = 'smtp.gmail.com'
+# Désactiver l'ancienne configuration Gmail (commentez ou supprimez)
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = 'mahoridimalilolimbali@gmail.com'
+# EMAIL_HOST_PASSWORD = '...'
 
-EMAIL_PORT = 587
-
-EMAIL_USE_TLS = True
-
-EMAIL_HOST_USER = 'mahoridimalilolimbali@gmail.com'
-
-EMAIL_HOST_PASSWORD = 'uiss xwsl wocw scdg'
-
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+# Activer SendGrid
+EMAIL_BACKEND = "sendgrid_backend.SendgridBackend"
+SENDGRID_API_KEY = "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"
+DEFAULT_FROM_EMAIL = "mahoridimalilolimbali@gmail.com"
+SENDGRID_SANDBOX_MODE_IN_DEBUG = False
