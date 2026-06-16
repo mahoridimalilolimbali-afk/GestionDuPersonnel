@@ -164,7 +164,7 @@ LOGIN_URL='/Appl/login/'
 # EMAIL_HOST_USER = 'mahoridimalilolimbali@gmail.com'
 # EMAIL_HOST_PASSWORD = '...'
 
-# Activer SendGrid
+# Assurez-vous que c'est bien "sendgrid_backend" (avec un 'k')
 EMAIL_BACKEND = "sendgrid_backend.SendgridBackend"
 SENDGRID_API_KEY = "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"
 DEFAULT_FROM_EMAIL = "mahoridimalilolimbali@gmail.com"
