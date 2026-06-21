@@ -278,7 +278,7 @@
                         </div>
                     </div>
                     
-                    <!-- Tab 2: Candidats retenus pour test -->
+                    <!-- Tab 2: Candidats retenus pour test (candidature acceptée) -->
                     <div class="tab-pane fade" id="candidats-retenus" role="tabpanel">
                         <div class="filters-card">
                             <div class="row align-items-end">
@@ -371,139 +371,139 @@
         function getCSRFToken() { return document.querySelector('[name=csrf-token]').getAttribute('content'); }
         
         function imprimerRapport(tabId) {
-    // Convertir l'ID du tab en ID du contenu
-    let contentId = '';
-    if (tabId === 'candidats-offre') contentId = 'candidatsOffreContent';
-    else if (tabId === 'candidats-retenus') contentId = 'candidatsRetenusContent';
-    else if (tabId === 'agents-engages') contentId = 'agentsEngagesContent';
-    else if (tabId === 'agents-conge') contentId = 'agentsCongeContent';
-    
-    const contentDiv = document.getElementById(contentId);
-    if (!contentDiv) {
-        Swal.fire({ icon: 'error', title: 'Erreur', text: 'Contenu non trouvé. ID: ' + contentId });
-        return;
-    }
-    
-    // Chercher le tableau
-    let table = contentDiv.querySelector('table');
-    if (!table) {
-        Swal.fire({ icon: 'error', title: 'Erreur', text: 'Aucun tableau trouvé' });
-        return;
-    }
-    
-    // Vérifier si le tableau a des données
-    const tbody = table.querySelector('tbody');
-    if (!tbody || tbody.querySelectorAll('tr').length === 0) {
-        Swal.fire({ icon: 'error', title: 'Erreur', text: 'Aucune donnée à imprimer' });
-        return;
-    }
-    
-    const titre = getTabTitle(tabId);
-    const date = new Date().toLocaleDateString('fr-FR');
-    const heure = new Date().toLocaleTimeString('fr-FR');
-    
-    // Récupérer le nom de l'offre si applicable
-    let offreNom = '';
-    if (tabId === 'candidats-offre') {
-        const select = document.getElementById('offreSelectCandidats');
-        offreNom = select.options[select.selectedIndex]?.text || '';
-    } else if (tabId === 'candidats-retenus') {
-        const select = document.getElementById('offreSelectRetenus');
-        offreNom = select.options[select.selectedIndex]?.text || '';
-    }
-    
-    // Créer la fenêtre d'impression
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>Rapport GRH ENGINEERING</title>
-            <style>
-                * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { 
-                    font-family: 'Poppins', 'Segoe UI', Arial, sans-serif; 
-                    padding: 40px; 
-                    margin: 0;
-                    font-size: 12px;
-                }
-                .print-header { 
-                    text-align: center; 
-                    margin-bottom: 30px; 
-                    padding-bottom: 20px; 
-                    border-bottom: 2px solid #333;
-                }
-                .print-header h1 { font-size: 22px; margin: 0; font-weight: bold; }
-                .print-header h3 { font-size: 14px; margin: 5px 0; color: #555; }
-                .print-header h2 { font-size: 18px; margin: 10px 0; color: #2c3e50; }
-                .print-header p { font-size: 11px; color: #666; margin: 5px 0; }
-                table { 
-                    width: 100%; 
-                    border-collapse: collapse; 
-                    margin-top: 20px;
-                    font-size: 11px;
-                }
-                th, td { 
-                    border: 1px solid #ddd; 
-                    padding: 8px 6px; 
-                    text-align: center; 
-                }
-                th { 
-                    background: #667eea; 
-                    color: white; 
-                    font-weight: 600;
-                }
-                .print-footer { 
-                    text-align: center; 
-                    margin-top: 30px; 
-                    padding-top: 20px; 
-                    border-top: 1px solid #ddd; 
-                    font-size: 10px; 
-                    color: #777;
-                }
-                @media print {
-                    body { margin: 0; padding: 20px; }
-                    .no-print { display: none; }
-                    th { background: #667eea !important; color: white !important; }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="print-header">
-                <h1>RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</h1>
-                <h3>Province du Nord-Kivu - Ville de Goma</h3>
-                <h2>GRH ENGINEERING SARL</h2>
-                <p>N° GRH/RDC/NK/GOMA/2026</p>
-                <hr>
-                <h4>${titre}</h4>
-                ${offreNom ? `<p><strong>Offre :</strong> ${offreNom}</p>` : ''}
-                <p>Date d'édition: ${date} à ${heure}</p>
-            </div>
-            <div>
-                ${table.outerHTML}
-            </div>
-            <div class="print-footer">
-                <p>Document certifié conforme - Direction des Ressources Humaines</p>
-                <p>GH ENGINEERING SARL - Goma, RDC</p>
-                <p>Signature et sceau</p>
-            </div>
-            <script>
-                window.onload = function() {
-                    window.print();
-                    setTimeout(function() { window.close(); }, 1000);
-                };
-            <\/script>
-        </body>
-        </html>
-    `);
-    printWindow.document.close();
-}
+            // Convertir l'ID du tab en ID du contenu
+            let contentId = '';
+            if (tabId === 'candidats-offre') contentId = 'candidatsOffreContent';
+            else if (tabId === 'candidats-retenus') contentId = 'candidatsRetenusContent';
+            else if (tabId === 'agents-engages') contentId = 'agentsEngagesContent';
+            else if (tabId === 'agents-conge') contentId = 'agentsCongeContent';
+            
+            const contentDiv = document.getElementById(contentId);
+            if (!contentDiv) {
+                Swal.fire({ icon: 'error', title: 'Erreur', text: 'Contenu non trouvé. ID: ' + contentId });
+                return;
+            }
+            
+            // Chercher le tableau
+            let table = contentDiv.querySelector('table');
+            if (!table) {
+                Swal.fire({ icon: 'error', title: 'Erreur', text: 'Aucun tableau trouvé' });
+                return;
+            }
+            
+            // Vérifier si le tableau a des données
+            const tbody = table.querySelector('tbody');
+            if (!tbody || tbody.querySelectorAll('tr').length === 0) {
+                Swal.fire({ icon: 'error', title: 'Erreur', text: 'Aucune donnée à imprimer' });
+                return;
+            }
+            
+            const titre = getTabTitle(tabId);
+            const date = new Date().toLocaleDateString('fr-FR');
+            const heure = new Date().toLocaleTimeString('fr-FR');
+            
+            // Récupérer le nom de l'offre si applicable
+            let offreNom = '';
+            if (tabId === 'candidats-offre') {
+                const select = document.getElementById('offreSelectCandidats');
+                offreNom = select.options[select.selectedIndex]?.text || '';
+            } else if (tabId === 'candidats-retenus') {
+                const select = document.getElementById('offreSelectRetenus');
+                offreNom = select.options[select.selectedIndex]?.text || '';
+            }
+            
+            // Créer la fenêtre d'impression
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Rapport GRH ENGINEERING</title>
+                    <style>
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        body { 
+                            font-family: 'Poppins', 'Segoe UI', Arial, sans-serif; 
+                            padding: 40px; 
+                            margin: 0;
+                            font-size: 12px;
+                        }
+                        .print-header { 
+                            text-align: center; 
+                            margin-bottom: 30px; 
+                            padding-bottom: 20px; 
+                            border-bottom: 2px solid #333;
+                        }
+                        .print-header h1 { font-size: 22px; margin: 0; font-weight: bold; }
+                        .print-header h3 { font-size: 14px; margin: 5px 0; color: #555; }
+                        .print-header h2 { font-size: 18px; margin: 10px 0; color: #2c3e50; }
+                        .print-header p { font-size: 11px; color: #666; margin: 5px 0; }
+                        table { 
+                            width: 100%; 
+                            border-collapse: collapse; 
+                            margin-top: 20px;
+                            font-size: 11px;
+                        }
+                        th, td { 
+                            border: 1px solid #ddd; 
+                            padding: 8px 6px; 
+                            text-align: center; 
+                        }
+                        th { 
+                            background: #667eea; 
+                            color: white; 
+                            font-weight: 600;
+                        }
+                        .print-footer { 
+                            text-align: center; 
+                            margin-top: 30px; 
+                            padding-top: 20px; 
+                            border-top: 1px solid #ddd; 
+                            font-size: 10px; 
+                            color: #777;
+                        }
+                        @media print {
+                            body { margin: 0; padding: 20px; }
+                            .no-print { display: none; }
+                            th { background: #667eea !important; color: white !important; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="print-header">
+                        <h1>RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</h1>
+                        <h3>Province du Nord-Kivu - Ville de Goma</h3>
+                        <h2>GRH ENGINEERING SARL</h2>
+                        <p>N° GRH/RDC/NK/GOMA/2026</p>
+                        <hr>
+                        <h4>${titre}</h4>
+                        ${offreNom ? `<p><strong>Offre :</strong> ${offreNom}</p>` : ''}
+                        <p>Date d'édition: ${date} à ${heure}</p>
+                    </div>
+                    <div>
+                        ${table.outerHTML}
+                    </div>
+                    <div class="print-footer">
+                        <p>Document certifié conforme - Direction des Ressources Humaines</p>
+                        <p>GRH ENGINEERING SARL - Goma, RDC</p>
+                        <p>Signature et sceau</p>
+                    </div>
+                    <script>
+                        window.onload = function() {
+                            window.print();
+                            setTimeout(function() { window.close(); }, 1000);
+                        };
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
         
         function getTabTitle(tabId) {
             const titles = {
                 'candidats-offre': 'LISTE DES CANDIDATS PAR OFFRE',
-                'candidats-retenus': 'LISTE DES CANDIDATS RETENUS POUR LES TESTS (MOYENNE ≥ 70%)',
+                'candidats-retenus': 'LISTE DES CANDIDATS RETENUS POUR LES TESTS',
                 'agents-engages': 'LISTE DES AGENTS ENGAGÉS',
                 'agents-conge': 'LISTE DES AGENTS EN CONGÉ'
             };
@@ -593,7 +593,7 @@
             $('#candidatsOffreContent').html(html);
         }
         
-        // 2. Candidats retenus pour test
+        // 2. Candidats retenus pour test (candidature acceptée - SANS MOYENNE)
         $('#offreSelectRetenus').on('change', function() {
             const offreId = $(this).val();
             if (!offreId) return;
@@ -609,17 +609,28 @@
                     } else {
                         $('#candidatsRetenusContent').html(`<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Erreur de chargement</p></div>`);
                     }
+                },
+                error: function() {
+                    $('#candidatsRetenusContent').html(`<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Erreur de connexion</p></div>`);
                 }
             });
         });
         
         function afficherCandidatsRetenus(candidats) {
             if (!candidats || candidats.length === 0) {
-                $('#candidatsRetenusContent').html(`<div class="empty-state"><i class="fas fa-folder-open"></i><p>Aucun candidat retenu pour les tests (moyenne ≥ 70%)</p></div>`);
+                $('#candidatsRetenusContent').html(`<div class="empty-state"><i class="fas fa-folder-open"></i><p>Aucun candidat retenu pour les tests</p></div>`);
                 return;
             }
             
-            let html = `<div class="table-responsive"><table class="table table-custom"><thead><tr><th>ID</th><th>Nom complet</th><th>Sexe</th><th>Téléphone</th><th>Email</th><th>Moyenne</th><th>Statut</th></tr></thead><tbody>`;
+            let html = `<div class="table-responsive"><table class="table table-custom"><thead><tr>
+                <th>ID</th>
+                <th>Nom complet</th>
+                <th>Sexe</th>
+                <th>Téléphone</th>
+                <th>Email</th>
+                <th>Date candidature</th>
+                <th>Statut</th>
+            </tr></thead><tbody>`;
             
             candidats.forEach(c => {
                 html += `<tr>
@@ -628,8 +639,8 @@
                     <td>${c.sexe}</td>
                     <td>${c.telephone}</td>
                     <td>${c.email || '-'}</td>
-                    <td><span class="badge-retenu">${c.moyenne}%</span></td>
-                    <td>Admissible pour interview</div>
+                    <td>${c.date_candidature}</td>
+                    <td><span class="badge-retenu">✅ Candidature acceptée</span></td>
                 </tr>`;
             });
             
@@ -718,9 +729,9 @@
                     <td><strong>${c.agent_nom}</strong></td>
                     <td>${c.type_conge}</td>
                     <td>${c.date_debut} → ${c.date_fin}</td>
-                    <td>${c.nombre_jours} jours</div>
-                    <td><span class="${statutClass}">${statutText}</span></div>
-                    <td>${c.motif || '-'}</div>
+                    <td>${c.nombre_jours} jours</td>
+                    <td><span class="${statutClass}">${statutText}</span></td>
+                    <td>${c.motif || '-'}</td>
                 </tr>`;
             });
             

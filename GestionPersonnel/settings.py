@@ -167,7 +167,10 @@ LOGIN_URL='/Appl/login/'
 # Assurez-vous que c'est bien "sendgrid_backend" (avec un 'k')
 # settings.py - Sur PythonAnywhere
 
+# settings.py - Configuration SendGrid avec la nouvelle clé
+
+# Activer SendGrid
 EMAIL_BACKEND = "sendgrid_backend.SendgridBackend"
-SENDGRID_API_KEY = "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"
+SENDGRID_API_KEY = "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"
 DEFAULT_FROM_EMAIL = "mahoridimalilolimbali@gmail.com"
 SENDGRID_SANDBOX_MODE_IN_DEBUG = False

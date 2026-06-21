@@ -6422,44 +6422,39 @@ def get_candidats_par_offre(request, id_offre):
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_candidats_retenus_test(request, id_offre):
-    """Rapport: Candidats ayant réussi les tests (moyenne ≥ 70%) - UNIQUEMENT NON AGENTS"""
+    """Rapport: Candidats retenus pour le test (candidature acceptée)"""
     try:
         offre = get_object_or_404(OffreEmploie, id=id_offre)
+        
+        # Récupérer le type de décision "Accepter"
         type_decision_accepter = TypeDecision.objects.filter(Description__icontains='Accepter').first()
         
         if not type_decision_accepter:
             return JsonResponse({'success': True, 'candidats': [], 'offre_titre': offre.titre})
         
-        # Récupérer les IDs des candidats qui sont devenus agents
-        agents_ids = Agent.objects.values_list('candidat_id', flat=True)
-        
-        # Filtrer pour exclure les agents
+        # Récupérer les candidatures acceptées pour cette offre
         candidatures = Candidature.objects.filter(
             offre=offre,
             decisions__type_decision=type_decision_accepter
-        ).exclude(candidat_id__in=agents_ids).select_related('candidat')
+        ).select_related('candidat', 'candidat__user')
         
         data = []
         for c in candidatures:
-            evaluations = Evaluation.objects.filter(candidature=c)
-            if evaluations.exists():
-                moyenne = sum(e.note for e in evaluations) / evaluations.count()
-            else:
-                moyenne = 0
+            # Récupérer l'email du candidat
+            email = c.candidat.user.email if c.candidat.user else None
             
             data.append({
                 'id': c.candidat.id,
                 'nom': f"{c.candidat.nom} {c.candidat.postnom} {c.candidat.prenom}",
                 'sexe': c.candidat.sexe,
                 'telephone': c.candidat.numeroTelephone,
-                'email': c.candidat.user.email if c.candidat.user else None,
-                'moyenne': round(moyenne, 2)
+                'email': email or '-',
+                'date_candidature': c.date_soumission.strftime('%d/%m/%Y')
             })
         
         return JsonResponse({'success': True, 'candidats': data, 'offre_titre': offre.titre})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
-
 
 @csrf_exempt
 @require_http_methods(["GET"])
